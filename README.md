@@ -65,14 +65,27 @@ rails db:migrate
 
 ### 4. Start Services
 
-#### Option A: Using Docker Compose (Recommended)
+#### Option A: Full Docker Setup (Recommended)
+
+```bash
+# Setup everything in Docker (first time only)
+./bin/docker-setup
+
+# Start all services
+docker-compose up
+
+# Or start in background
+docker-compose up -d
+```
+
+#### Option B: Docker + Local Rails
 
 ```bash
 docker-compose up -d db redis
 rails server
 ```
 
-#### Option B: Local Services
+#### Option C: Local Services
 
 Start PostgreSQL and Redis locally, then:
 
@@ -189,20 +202,56 @@ rails db:drop db:create db:migrate
 
 ## 🐳 Docker Development
 
-### Start with Docker Compose
+### Quick Start with Docker
 
 ```bash
-# Start all services
+# First-time setup
+./bin/docker-setup
+
+# Start all services (web, sidekiq, db, redis)
 docker-compose up
 
-# Start only database and Redis
-docker-compose up -d db redis
+# Start in background
+docker-compose up -d
 
 # View logs
-docker-compose logs -f
+docker-compose logs -f web
+docker-compose logs -f sidekiq
 
-# Stop services
+# Stop all services
 docker-compose down
+```
+
+### Docker Helper Scripts
+
+```bash
+# Setup everything (first time)
+./bin/docker-setup
+
+# Start development environment
+./bin/docker-dev
+
+# Open Rails console in Docker
+./bin/docker-console
+
+# Reset entire environment (deletes data!)
+./bin/docker-reset
+```
+
+### Individual Service Management
+
+```bash
+# Start specific services
+docker-compose up -d db redis
+docker-compose up web sidekiq
+
+# Rebuild containers
+docker-compose build
+docker-compose up --build
+
+# Run one-off commands
+docker-compose run --rm web bundle exec rails console
+docker-compose run --rm web bundle exec rails db:migrate
 ```
 
 ### Database in Docker
@@ -211,9 +260,19 @@ docker-compose down
 # Connect to PostgreSQL in Docker
 docker-compose exec db psql -U postgres -d activeagent_development
 
-# Reset database with Docker
-docker-compose exec web rails db:drop db:create db:migrate
+# Run migrations
+docker-compose exec web bundle exec rails db:migrate
+
+# Reset database
+docker-compose exec web bundle exec rails db:drop db:create db:migrate
 ```
+
+### Docker Ports
+
+- **Web Application**: http://localhost:3000
+- **Sidekiq Dashboard**: http://localhost:3000/sidekiq
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6380 (mapped from 6379 to avoid conflicts)
 
 ## 🔒 Security Features
 
