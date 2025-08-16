@@ -1,0 +1,33 @@
+<% content_for :page_title, "Logs" %>
+
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h3 class="text-lg font-medium text-gray-900">System Logs</h3>
+    <div class="flex space-x-2">
+      <button class="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">All</button>
+      <button class="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200">Errors</button>
+      <button class="px-3 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-md hover:bg-yellow-200">Warnings</button>
+      <button class="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200">Info</button>
+    </div>
+  </div>
+  <div class="p-6">
+    <div class="space-y-3">
+      <% @logs.each do |log| %>
+        <div class="flex items-start space-x-3 p-3 rounded-lg border border-gray-200">
+          <div class="flex-shrink-0">
+            <div class="w-2 h-2 rounded-full mt-2 <%= log[:level] == 'error' ? 'bg-red-400' : log[:level] == 'warn' ? 'bg-yellow-400' : 'bg-blue-400' %>"></div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-gray-900"><%= log[:message] %></p>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= log[:level] == 'error' ? 'bg-red-100 text-red-800' : log[:level] == 'warn' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' %>">
+                <%= log[:level].upcase %>
+              </span>
+            </div>
+            <p class="text-sm text-gray-500"><%= time_ago_in_words(log[:timestamp]) %> ago</p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

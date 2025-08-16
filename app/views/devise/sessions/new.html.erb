@@ -1,26 +1,82 @@
-<h2>Log in</h2>
+<% content_for :title, "Sign In" %>
+<% content_for :page_title, "Welcome back" %>
+<% content_for :page_subtitle, "Sign in to your ActiveAgent account" %>
+<% content_for :layout, "auth" %>
 
-<%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
-  <div class="field">
-    <%= f.label :email %><br />
-    <%= f.email_field :email, autofocus: true, autocomplete: "email" %>
-  </div>
-
-  <div class="field">
-    <%= f.label :password %><br />
-    <%= f.password_field :password, autocomplete: "current-password" %>
-  </div>
-
-  <% if devise_mapping.rememberable? %>
-    <div class="field">
-      <%= f.check_box :remember_me %>
-      <%= f.label :remember_me %>
+<%= form_for(resource, as: resource_name, url: session_path(resource_name), local: true, html: { class: "space-y-6" }) do |f| %>
+  <!-- Email Field -->
+  <div>
+    <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+        </svg>
+      </div>
+      <%= f.email_field :email,
+            autofocus: true,
+            autocomplete: "email",
+            placeholder: "Enter your email",
+            class: "block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" %>
     </div>
-  <% end %>
+  </div>
 
-  <div class="actions">
-    <%= f.submit "Log in" %>
+  <!-- Password Field -->
+  <div>
+    <%= f.label :password, class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <%= f.password_field :password,
+            autocomplete: "current-password",
+            placeholder: "Enter your password",
+            class: "block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" %>
+    </div>
+  </div>
+
+  <!-- Remember Me & Forgot Password -->
+  <div class="flex items-center justify-between">
+    <% if devise_mapping.rememberable? %>
+      <div class="flex items-center">
+        <%= f.check_box :remember_me, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+        <%= f.label :remember_me, "Remember me", class: "ml-2 block text-sm text-gray-700" %>
+      </div>
+    <% else %>
+      <div></div>
+    <% end %>
+
+    <% if devise_mapping.recoverable? %>
+      <%= link_to "Forgot password?", new_password_path(resource_name),
+            class: "text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors" %>
+    <% end %>
+  </div>
+
+  <!-- Submit Button -->
+  <div>
+    <%= f.submit "Sign in",
+          class: "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" %>
   </div>
 <% end %>
 
-<%= render "devise/shared/links" %>
+<!-- Divider -->
+<div class="mt-6">
+  <div class="relative">
+    <div class="absolute inset-0 flex items-center">
+      <div class="w-full border-t border-gray-300"></div>
+    </div>
+    <div class="relative flex justify-center text-sm">
+      <span class="px-2 bg-white text-gray-500">New to ActiveAgent?</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sign Up Link -->
+<div class="mt-6">
+  <% if devise_mapping.registerable? %>
+    <%= link_to "Create your account", new_registration_path(resource_name),
+          class: "group relative w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm hover:shadow-md" %>
+  <% end %>
+</div>

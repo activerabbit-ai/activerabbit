@@ -1,6 +1,16 @@
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
+  namespace :admin do
+    root "dashboard#index"
+    get "dashboard", to: "dashboard#index"
+    get "deploys", to: "deploys#index"
+    get "errors", to: "errors#index"
+    get "performance", to: "performance#index"
+    get "security", to: "security#index"
+    get "logs", to: "logs#index"
+    get "settings", to: "settings#index"
+  end
   devise_for :users
   root "home#index"
 

@@ -1,0 +1,36 @@
+<% content_for :page_title, "Errors" %>
+
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-lg font-medium text-gray-900">Error Monitor</h3>
+  </div>
+  <div class="p-6">
+    <div class="space-y-4">
+      <% @errors.each do |error| %>
+        <div class="border border-gray-200 rounded-lg p-4">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-2 h-2 rounded-full <%= error[:severity] == 'high' ? 'bg-red-400' : error[:severity] == 'medium' ? 'bg-yellow-400' : 'bg-green-400' %>"></div>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-medium text-gray-900"><%= error[:message] %></p>
+                  <p class="text-sm text-gray-500">Last seen <%= time_ago_in_words(error[:last_seen]) %> ago</p>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <%= error[:count] %> occurrences
+              </span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= error[:severity] == 'high' ? 'bg-red-100 text-red-800' : error[:severity] == 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
+                <%= error[:severity].capitalize %>
+              </span>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

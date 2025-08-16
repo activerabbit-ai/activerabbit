@@ -8,3 +8,7 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

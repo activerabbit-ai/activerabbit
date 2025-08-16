@@ -1,0 +1,28 @@
+<% content_for :page_title, "Settings" %>
+
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-lg font-medium text-gray-900">Application Settings</h3>
+  </div>
+  <div class="p-6">
+    <div class="space-y-6">
+      <% @settings.each do |key, value| %>
+        <div class="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
+          <div>
+            <p class="text-sm font-medium text-gray-900 capitalize"><%= key.to_s.humanize %></p>
+            <p class="text-sm text-gray-500">Configure <%= key.to_s.humanize.downcase %></p>
+          </div>
+          <div class="flex items-center">
+            <% if value.is_a?(TrueClass) || value.is_a?(FalseClass) %>
+              <button class="relative inline-flex h-6 w-11 items-center rounded-full <%= value ? 'bg-blue-600' : 'bg-gray-200' %> transition-colors">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform <%= value ? 'translate-x-6' : 'translate-x-1' %>"></span>
+              </button>
+            <% else %>
+              <span class="text-sm text-gray-900 font-medium"><%= value %></span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
