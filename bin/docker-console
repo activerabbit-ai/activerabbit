@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+echo "🐳 Opening Rails console in Docker..."
+docker-compose exec web bundle exec rails console

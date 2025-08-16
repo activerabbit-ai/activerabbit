@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+echo "🐳 Starting ActiveAgent development environment..."
+
+# Start all services
+docker-compose up --build

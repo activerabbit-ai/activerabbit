@@ -1,0 +1,49 @@
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+        Choose Your Plan
+      </h2>
+      <p class="mt-4 text-xl text-gray-600">
+        Select the perfect plan for your needs
+      </p>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-2 lg:gap-x-8">
+      <% @plans.each do |plan| %>
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="px-6 py-8">
+            <h3 class="text-2xl font-semibold text-gray-900"><%= plan[:name] %></h3>
+            <p class="mt-4 text-3xl font-bold text-gray-900"><%= plan[:price] %></p>
+
+            <ul class="mt-6 space-y-4">
+              <% plan[:features].each do |feature| %>
+                <li class="flex items-start">
+                  <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <p class="ml-3 text-base text-gray-700"><%= feature %></p>
+                </li>
+              <% end %>
+            </ul>
+
+            <div class="mt-8">
+              <%= form_with url: subscriptions_path, method: :post, local: true, class: "w-full" do |form| %>
+                <%= form.hidden_field :plan_name, value: plan[:name] %>
+                <%= form.hidden_field :stripe_price_id, value: plan[:stripe_price_id] %>
+                <%= form.submit "Subscribe to #{plan[:name]}",
+                    class: "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-md transition duration-150 ease-in-out" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="mt-8 text-center">
+      <%= link_to "Back to Home", root_path, class: "text-indigo-600 hover:text-indigo-500" %>
+    </div>
+  </div>
+</div>

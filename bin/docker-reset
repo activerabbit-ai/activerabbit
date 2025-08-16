@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+echo "🐳 Resetting ActiveAgent Docker environment..."
+
+# Stop all containers
+docker-compose down
+
+# Remove volumes (this will delete all data!)
+echo "⚠️  This will delete all database data. Continue? (y/N)"
+read -r response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    docker-compose down -v
+    docker system prune -f
+    echo "✅ Environment reset complete!"
+    echo "Run './bin/docker-setup' to initialize again."
+else
+    echo "❌ Reset cancelled."
+fi

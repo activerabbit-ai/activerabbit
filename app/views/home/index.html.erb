@@ -1,0 +1,71 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center py-6">
+      <div class="flex items-center">
+        <h1 class="text-2xl font-bold text-gray-900">ActiveAgent</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <% if user_signed_in? %>
+          <span class="text-gray-700">Hello, <%= current_user.email %>!</span>
+          <%= link_to "Settings", edit_user_registration_path, class: "text-indigo-600 hover:text-indigo-500" %>
+          <%= link_to "Sidekiq", "/sidekiq", class: "text-indigo-600 hover:text-indigo-500", target: "_blank" %>
+          <%= link_to "Sign out", destroy_user_session_path, method: :delete, class: "bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium" %>
+        <% else %>
+          <%= link_to "Sign in", new_user_session_path, class: "text-indigo-600 hover:text-indigo-500" %>
+          <%= link_to "Sign up", new_user_registration_path, class: "bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium" %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="py-12">
+      <div class="text-center">
+        <h2 class="text-4xl font-extrabold text-gray-900 sm:text-5xl">
+          Welcome to ActiveAgent
+        </h2>
+        <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+          A modern Rails 8.2 application with authentication, payments, background jobs, and more.
+        </p>
+
+        <% unless user_signed_in? %>
+          <div class="mt-8">
+            <%= link_to "Get Started", new_user_registration_path, class: "bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-md text-lg font-medium" %>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="mt-16">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="text-center">
+            <div class="bg-indigo-100 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+              <svg class="w-12 h-12 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">Secure Authentication</h3>
+            <p class="mt-2 text-gray-600">Powered by Devise with secure user management</p>
+          </div>
+
+          <div class="text-center">
+            <div class="bg-green-100 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+              <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">Stripe Payments</h3>
+            <p class="mt-2 text-gray-600">Integrated billing and subscription management</p>
+          </div>
+
+          <div class="text-center">
+            <div class="bg-purple-100 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+              <svg class="w-12 h-12 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">Background Jobs</h3>
+            <p class="mt-2 text-gray-600">Sidekiq for reliable background processing</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

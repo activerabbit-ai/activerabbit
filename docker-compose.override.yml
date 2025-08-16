@@ -1,0 +1,28 @@
+# Development overrides for docker-compose.yml
+# This file is automatically loaded by docker-compose
+
+version: '3.8'
+
+services:
+  web:
+    environment:
+      # Enable Rails development features
+      RAILS_ENV: development
+      RACK_ENV: development
+      # Disable bootsnap in Docker for better file watching
+      DISABLE_BOOTSNAP: 1
+    # Enable live reloading
+    command: >
+      bash -c "
+        echo 'Waiting for database...' &&
+        bundle exec rails db:prepare &&
+        echo 'Building Tailwind CSS...' &&
+        bundle exec rails tailwindcss:build &&
+        echo 'Starting Rails server...' &&
+        bundle exec rails server -b 0.0.0.0 -p 3000
+      "
+
+  sidekiq:
+    environment:
+      RAILS_ENV: development
+      RACK_ENV: development
