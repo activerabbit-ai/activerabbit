@@ -1,0 +1,94 @@
+<% content_for :title, "Projects" %>
+
+<div class="mb-8">
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Projects</h1>
+      <p class="text-gray-600">Manage your monitoring projects</p>
+    </div>
+    <%= link_to "New Project", new_admin_project_path,
+        class: "bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors" %>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <% @projects.each do |project| %>
+    <% stats = @project_stats[project.id] %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <!-- Project Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900"><%= project.name %></h3>
+            <p class="text-sm text-gray-500"><%= project.environment %></p>
+          </div>
+        </div>
+
+        <!-- Health Status -->
+        <% health_color = case stats[:health_status]
+                         when 'healthy' then 'text-green-600'
+                         when 'warning' then 'text-yellow-600'
+                         when 'critical' then 'text-red-600'
+                         else 'text-gray-400'
+                         end %>
+        <div class="<%= health_color %>">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Project Stats -->
+      <div class="space-y-3 mb-6">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Open Issues</span>
+          <span class="text-sm font-medium text-gray-900"><%= stats[:issues_count] %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Events Today</span>
+          <span class="text-sm font-medium text-gray-900"><%= stats[:events_today] %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Status</span>
+          <span class="text-sm font-medium <%= project.active? ? 'text-green-600' : 'text-red-600' %>">
+            <%= project.active? ? 'Active' : 'Inactive' %>
+          </span>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <% if project.description.present? %>
+        <p class="text-sm text-gray-600 mb-4"><%= truncate(project.description, length: 100) %></p>
+      <% end %>
+
+      <!-- Actions -->
+      <div class="flex space-x-2">
+        <%= link_to "View", admin_project_path(project),
+            class: "flex-1 bg-indigo-600 text-white text-center py-2 px-3 rounded-md text-sm hover:bg-indigo-700 transition-colors" %>
+        <%= link_to "Issues", admin_project_issues_path(project),
+            class: "flex-1 bg-gray-100 text-gray-700 text-center py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors" %>
+        <%= link_to "Edit", edit_admin_project_path(project),
+            class: "bg-gray-100 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors" %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<% if @projects.empty? %>
+  <div class="text-center py-12">
+    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+      </svg>
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+    <p class="text-gray-600 mb-4">Get started by creating your first monitoring project.</p>
+    <%= link_to "Create Project", new_admin_project_path,
+        class: "bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors" %>
+  </div>
+<% end %>

@@ -10,6 +10,46 @@ Rails.application.routes.draw do
     get "security", to: "security#index"
     get "logs", to: "logs#index"
     get "settings", to: "settings#index"
+
+    # Projects management
+    resources :projects do
+      member do
+        post :regenerate_token
+      end
+
+      # Nested resources for project-specific management
+      resources :issues do
+        member do
+          patch :update  # For resolve/ignore/reopen actions
+        end
+        collection do
+          post :bulk_action
+        end
+      end
+
+      resources :events do
+        collection do
+          post :bulk_delete
+          post :cleanup_old
+        end
+      end
+
+      resources :alert_rules do
+        member do
+          post :toggle
+          post :test_alert
+        end
+      end
+
+      # Performance monitoring
+      get 'performance', to: 'performance#index'
+      get 'performance/sql_fingerprints', to: 'performance#sql_fingerprints'
+      get 'performance/sql_fingerprints/:id', to: 'performance#sql_fingerprint', as: 'performance_sql_fingerprint'
+      post 'performance/sql_fingerprints/:id/create_pr', to: 'performance#create_n_plus_one_pr', as: 'create_n_plus_one_pr'
+    end
+
+    # Global performance overview (no project context)
+    get 'performance', to: 'performance#index'
   end
   devise_for :users
   root "home#index"

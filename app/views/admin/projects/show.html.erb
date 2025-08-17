@@ -1,0 +1,225 @@
+<% content_for :title, @project.name %>
+
+<div class="mb-8">
+  <div class="flex justify-between items-center">
+    <div>
+      <div class="flex items-center space-x-2 mb-2">
+        <%= link_to admin_projects_path, class: "text-gray-500 hover:text-gray-700" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        <% end %>
+        <h1 class="text-2xl font-bold text-gray-900"><%= @project.name %></h1>
+        <span class="px-2 py-1 text-xs font-medium rounded-full <%= @project.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+          <%= @project.active? ? 'Active' : 'Inactive' %>
+        </span>
+      </div>
+      <p class="text-gray-600"><%= @project.description %></p>
+    </div>
+    <div class="flex space-x-3">
+      <%= link_to "Edit Project", edit_admin_project_path(@project),
+          class: "bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" %>
+      <%= link_to "Regenerate Token", regenerate_token_admin_project_path(@project),
+          method: :post,
+          data: { confirm: "This will invalidate the current API token. Continue?" },
+          class: "bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors" %>
+    </div>
+  </div>
+</div>
+
+<!-- Project Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center">
+      <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+      </div>
+      <div class="ml-4">
+        <p class="text-2xl font-bold text-gray-900"><%= @project.issues.open.count %></p>
+        <p class="text-gray-600">Open Issues</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center">
+      <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+        </svg>
+      </div>
+      <div class="ml-4">
+        <p class="text-2xl font-bold text-gray-900"><%= @project.events.where('created_at > ?', 24.hours.ago).count %></p>
+        <p class="text-gray-600">Events Today</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center">
+      <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="ml-4">
+        <p class="text-2xl font-bold text-gray-900"><%= @project.health_status.capitalize %></p>
+        <p class="text-gray-600">Health Status</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center">
+      <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="ml-4">
+        <% avg_response = @performance_stats.values.sum / [@performance_stats.size, 1].max %>
+        <p class="text-2xl font-bold text-gray-900"><%= avg_response.round(0) %>ms</p>
+        <p class="text-gray-600">Avg Response</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+    <div class="space-y-3">
+      <%= link_to admin_project_issues_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
+        <svg class="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        <span class="text-sm font-medium">View Issues</span>
+      <% end %>
+
+      <%= link_to admin_project_events_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
+        <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+        </svg>
+        <span class="text-sm font-medium">View Events</span>
+      <% end %>
+
+      <%= link_to admin_project_performance_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
+        <svg class="w-5 h-5 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+        </svg>
+        <span class="text-sm font-medium">Performance</span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- API Tokens -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">API Tokens</h3>
+    <div class="space-y-3">
+      <% @api_tokens.each do |token| %>
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div>
+            <p class="text-sm font-medium text-gray-900"><%= token.name %></p>
+            <p class="text-xs text-gray-500 font-mono"><%= token.mask_token %></p>
+          </div>
+          <span class="px-2 py-1 text-xs font-medium rounded-full <%= token.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+            <%= token.active? ? 'Active' : 'Revoked' %>
+          </span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Alert Rules -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Alert Rules</h3>
+      <%= link_to admin_project_alert_rules_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
+        Manage →
+      <% end %>
+    </div>
+    <div class="space-y-2">
+      <% @alert_rules.limit(3).each do |rule| %>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-700"><%= rule.name %></span>
+          <span class="px-2 py-1 text-xs font-medium rounded-full <%= rule.enabled? ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' %>">
+            <%= rule.enabled? ? 'On' : 'Off' %>
+          </span>
+        </div>
+      <% end %>
+      <% if @alert_rules.count > 3 %>
+        <p class="text-xs text-gray-500">+ <%= @alert_rules.count - 3 %> more</p>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Recent Issues -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Recent Issues</h3>
+      <%= link_to admin_project_issues_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
+        View All →
+      <% end %>
+    </div>
+    <div class="space-y-3">
+      <% @recent_issues.each do |issue| %>
+        <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
+          <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
+          <div class="flex-1 min-w-0">
+            <%= link_to admin_project_issue_path(@project, issue), class: "block" do %>
+              <p class="text-sm font-medium text-gray-900 truncate"><%= issue.exception_type %></p>
+              <p class="text-xs text-gray-500 truncate"><%= issue.message %></p>
+              <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(issue.last_seen_at) %> ago</p>
+            <% end %>
+          </div>
+          <span class="text-xs text-gray-500"><%= issue.count %></span>
+        </div>
+      <% end %>
+
+      <% if @recent_issues.empty? %>
+        <p class="text-sm text-gray-500 text-center py-4">No recent issues</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Recent Events -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Recent Events</h3>
+      <%= link_to admin_project_events_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
+        View All →
+      <% end %>
+    </div>
+    <div class="space-y-3">
+      <% @recent_events.each do |event| %>
+        <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
+          <% if event.event_type == 'error' %>
+            <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
+          <% else %>
+            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+          <% end %>
+          <div class="flex-1 min-w-0">
+            <%= link_to admin_project_event_path(@project, event), class: "block" do %>
+              <p class="text-sm font-medium text-gray-900 capitalize"><%= event.event_type %></p>
+              <p class="text-xs text-gray-500 truncate"><%= event.controller_action || event.request_path %></p>
+              <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(event.occurred_at) %> ago</p>
+            <% end %>
+          </div>
+          <% if event.duration_ms %>
+            <span class="text-xs text-gray-500"><%= event.duration_ms.round(0) %>ms</span>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% if @recent_events.empty? %>
+        <p class="text-sm text-gray-500 text-center py-4">No recent events</p>
+      <% end %>
+    </div>
+  </div>
+</div>

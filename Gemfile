@@ -22,6 +22,9 @@ gem "devise"
 gem "sidekiq"
 gem "sidekiq-cron"
 
+# Pagination
+gem "kaminari"
+
 # Billing & subscriptions
 gem "pay", "~> 8.0"
 
