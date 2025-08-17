@@ -3,61 +3,73 @@ class PerfRollup < ApplicationRecord
 
   validates :timeframe, inclusion: { in: %w[minute hour day] }
   validates :timestamp, presence: true
-  validates :controller_action, presence: true
+  validates :target, presence: true  # controller#action or job class
 
   scope :for_timeframe, ->(timeframe) { where(timeframe: timeframe) }
   scope :for_timerange, ->(start_time, end_time) { where(timestamp: start_time..end_time) }
-  scope :for_action, ->(action) { where(controller_action: action) }
+  scope :for_target, ->(target) { where(target: target) }
 
-  def self.rollup_minute_data!
-    # Process events from the last 2 minutes to handle any delays
+    def self.rollup_minute_data!
+    require 'hdrhistogram'
+
+    # Process performance events from the last 2 minutes to handle any delays
     start_time = 2.minutes.ago.beginning_of_minute
     end_time = 1.minute.ago.end_of_minute
 
-    Event.performance
-         .for_timerange(start_time, end_time)
-         .group(:project_id, :controller_action, :environment)
-         .group("date_trunc('minute', occurred_at)")
-         .each do |(project_id, controller_action, environment, timestamp)|
+    PerformanceEvent.for_timerange(start_time, end_time)
+                   .group(:project_id, :target, :environment)
+                   .group("date_trunc('minute', occurred_at)")
+                   .each do |(project_id, target, environment, timestamp)|
 
-      events = Event.performance
-                   .where(project_id: project_id)
-                   .where(controller_action: controller_action)
-                   .where(environment: environment)
-                   .for_timerange(timestamp, timestamp + 1.minute)
+      events = PerformanceEvent.where(project_id: project_id)
+                              .where(target: target)
+                              .where(environment: environment)
+                              .for_timerange(timestamp, timestamp + 1.minute)
 
       next if events.empty?
 
       durations = events.pluck(:duration_ms).compact
       next if durations.empty?
 
-      # Calculate percentiles
-      sorted_durations = durations.sort
-      count = sorted_durations.length
+      # Create HDR histogram for accurate percentiles
+      histogram = HDRHistogram.new(1, 60_000, 3) # 1ms to 60s, 3 significant digits
 
-      p50 = percentile(sorted_durations, 50)
-      p95 = percentile(sorted_durations, 95)
-      p99 = percentile(sorted_durations, 99)
+      durations.each do |duration|
+        histogram.record_value([duration.to_i, 1].max) # Minimum 1ms
+      end
+
+      # Calculate percentiles from histogram
+      p50 = histogram.value_at_percentile(50.0)
+      p95 = histogram.value_at_percentile(95.0)
+      p99 = histogram.value_at_percentile(99.0)
+
+      # Count errors that occurred in the same timeframe
+      error_count = Event.joins(:issue)
+                         .where(project_id: project_id)
+                         .where(controller_action: target)
+                         .where(environment: environment)
+                         .for_timerange(timestamp, timestamp + 1.minute)
+                         .count
 
       # Create or update rollup
       rollup = find_or_initialize_by(
         project_id: project_id,
         timeframe: 'minute',
         timestamp: timestamp,
-        controller_action: controller_action,
+        target: target,
         environment: environment
       )
 
       rollup.assign_attributes(
-        request_count: count,
-        avg_duration_ms: durations.sum.to_f / count,
+        request_count: durations.size,
+        avg_duration_ms: durations.sum.to_f / durations.size,
         p50_duration_ms: p50,
         p95_duration_ms: p95,
         p99_duration_ms: p99,
-        min_duration_ms: sorted_durations.first,
-        max_duration_ms: sorted_durations.last,
-        error_count: events.joins(:issue).count,
-        n_plus_one_count: events.where(n_plus_one_detected: true).count
+        min_duration_ms: histogram.min,
+        max_duration_ms: histogram.max,
+        error_count: error_count,
+        hdr_histogram: histogram.serialize
       )
 
       rollup.save!

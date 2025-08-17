@@ -31,7 +31,7 @@ class PerformanceIngestJob
     end
 
     # Ingest the performance event
-    event = Event.ingest_performance(project: project, payload: payload)
+    event = PerformanceEvent.ingest_performance(project: project, payload: payload)
 
     # Update project last event timestamp
     project.update!(last_event_at: Time.current)

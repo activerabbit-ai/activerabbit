@@ -1,65 +1,63 @@
 class Event < ApplicationRecord
   belongs_to :project
-  belongs_to :issue, optional: true
+  belongs_to :issue
   belongs_to :release, optional: true
 
-  validates :event_type, inclusion: { in: %w[error performance] }
-  validates :fingerprint, presence: true
   validates :occurred_at, presence: true
+  validates :exception_class, presence: true
+  validates :message, presence: true
 
-  scope :errors, -> { where(event_type: 'error') }
-  scope :performance, -> { where(event_type: 'performance') }
   scope :recent, -> { order(occurred_at: :desc) }
   scope :for_timerange, ->(start_time, end_time) { where(occurred_at: start_time..end_time) }
+  scope :last_24h, -> { where('occurred_at > ?', 24.hours.ago) }
 
   before_create :set_defaults
 
   def self.ingest_error(project:, payload:)
-    fingerprint = generate_error_fingerprint(payload)
+    # Extract exception details
+    exception_class = payload[:exception_class] || payload[:exception_type]
+    message = payload[:message]
+    backtrace = payload[:backtrace] || []
+    top_frame = extract_top_frame(backtrace)
+    controller_action = payload[:controller_action] || extract_controller_from_backtrace(backtrace)
 
-    # Find or create issue
+    # Find or create issue (grouped problem)
     issue = Issue.find_or_create_by_fingerprint(
       project: project,
-      fingerprint: fingerprint,
-      attributes: {
-        exception_type: payload[:exception_type],
-        message: payload[:message],
-        controller_action: payload[:controller_action],
-        request_path: payload[:request_path]
-      }
+      exception_class: exception_class,
+      top_frame: top_frame,
+      controller_action: controller_action,
+      sample_message: message
     )
 
-    # Create event
+    # Create event (individual occurrence)
     create!(
       project: project,
       issue: issue,
-      event_type: 'error',
-      fingerprint: fingerprint,
-      payload: scrub_pii(payload),
+      exception_class: exception_class,
+      message: message,
+      backtrace: backtrace,
+      controller_action: controller_action,
+      request_path: payload[:request_path],
+      request_method: payload[:request_method],
       occurred_at: payload[:occurred_at] || Time.current,
-      environment: payload[:environment],
+      environment: payload[:environment] || 'production',
       release_version: payload[:release_version],
-      user_id_hash: payload[:user_id] ? Digest::SHA256.hexdigest(payload[:user_id].to_s) : nil
+      user_id_hash: payload[:user_id] ? Digest::SHA256.hexdigest(payload[:user_id].to_s) : nil,
+      context: scrub_pii(payload[:context] || {}),
+      server_name: payload[:server_name],
+      request_id: payload[:request_id]
     )
   end
 
-  def self.ingest_performance(project:, payload:)
-    fingerprint = generate_performance_fingerprint(payload)
+  def top_frame
+    return nil if backtrace.blank?
+    backtrace.is_a?(Array) ? backtrace.first : backtrace.split("\n").first
+  end
 
-    create!(
-      project: project,
-      event_type: 'performance',
-      fingerprint: fingerprint,
-      payload: scrub_pii(payload),
-      occurred_at: payload[:occurred_at] || Time.current,
-      environment: payload[:environment],
-      release_version: payload[:release_version],
-      duration_ms: payload[:duration_ms],
-      controller_action: payload[:controller_action],
-      request_path: payload[:request_path],
-      sql_queries_count: payload[:sql_queries_count],
-      n_plus_one_detected: payload[:n_plus_one_detected] || false
-    )
+  def formatted_backtrace
+    return [] if backtrace.blank?
+    backtrace.is_a?(Array) ? backtrace : backtrace.split("\n")
   end
 
   private
@@ -69,23 +67,43 @@ class Event < ApplicationRecord
     self.environment ||= 'production'
   end
 
-  def self.generate_error_fingerprint(payload)
-    components = [
-      payload[:exception_type],
-      payload[:message]&.gsub(/\d+/, 'N')&.gsub(/[a-f0-9]{8,}/, 'HEX'), # Normalize numbers and hex
-      payload[:controller_action] || payload[:request_path]&.gsub(/\/\d+/, '/N') # Normalize IDs in paths
-    ].compact
+  def self.extract_top_frame(backtrace)
+    return 'unknown' if backtrace.blank?
 
-    Digest::SHA256.hexdigest(components.join('|'))
+    frames = backtrace.is_a?(Array) ? backtrace : backtrace.split("\n")
+
+    # Find first frame that's not from gems/system
+    app_frame = frames.find do |frame|
+      !frame.include?('/gems/') &&
+      !frame.include?('/ruby/') &&
+      !frame.include?('/lib/ruby/') &&
+      frame.include?('/')
+    end
+
+    app_frame || frames.first || 'unknown'
   end
 
-  def self.generate_performance_fingerprint(payload)
-    components = [
-      payload[:controller_action] || payload[:request_path]&.gsub(/\/\d+/, '/N'),
-      payload[:environment]
-    ].compact
+  def self.extract_controller_from_backtrace(backtrace)
+    return 'unknown' if backtrace.blank?
 
-    Digest::SHA256.hexdigest(components.join('|'))
+    frames = backtrace.is_a?(Array) ? backtrace : backtrace.split("\n")
+
+    # Look for controller patterns
+    controller_frame = frames.find do |frame|
+      frame.match?(/controllers\/.*_controller\.rb/) ||
+      frame.match?(/app\/controllers\//)
+    end
+
+    if controller_frame
+      # Extract controller#action pattern
+      if match = controller_frame.match(/([a-z_]+)_controller\.rb.*in `([a-z_]+)'/)
+        "#{match[1].camelize}Controller##{match[2]}"
+      else
+        'UnknownController#unknown'
+      end
+    else
+      'BackgroundJob' # Assume background job if no controller found
+    end
   end
 
   def self.scrub_pii(payload)

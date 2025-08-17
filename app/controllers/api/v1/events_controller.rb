@@ -1,6 +1,6 @@
 class Api::V1::EventsController < Api::BaseController
 
-  # POST /api/v1/events/errors
+    # POST /api/v1/events/errors
   def create_error
     payload = sanitize_error_payload(params)
 
@@ -12,8 +12,8 @@ class Api::V1::EventsController < Api::BaseController
 
     render_created(
       {
-        fingerprint: Event.generate_error_fingerprint(payload),
-        project_id: @current_project.id
+        project_id: @current_project.id,
+        exception_class: payload[:exception_class] || payload[:exception_type]
       },
       message: 'Error event queued for processing'
     )
@@ -31,8 +31,8 @@ class Api::V1::EventsController < Api::BaseController
 
     render_created(
       {
-        fingerprint: Event.generate_performance_fingerprint(payload),
-        project_id: @current_project.id
+        project_id: @current_project.id,
+        target: payload[:controller_action] || payload[:job_class]
       },
       message: 'Performance event queued for processing'
     )
@@ -93,7 +93,7 @@ class Api::V1::EventsController < Api::BaseController
 
   def sanitize_error_payload(params)
     {
-      exception_type: params[:exception_type] || params['exception_type'],
+      exception_class: params[:exception_class] || params['exception_class'] || params[:exception_type] || params['exception_type'],
       message: params[:message] || params['message'],
       backtrace: params[:backtrace] || params['backtrace'],
       controller_action: params[:controller_action] || params['controller_action'],
@@ -104,7 +104,6 @@ class Api::V1::EventsController < Api::BaseController
       release_version: params[:release_version] || params['release_version'],
       occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at']),
       context: params[:context] || params['context'] || {},
-      tags: params[:tags] || params['tags'] || [],
       server_name: params[:server_name] || params['server_name'],
       request_id: params[:request_id] || params['request_id']
     }
@@ -113,29 +112,28 @@ class Api::V1::EventsController < Api::BaseController
   def sanitize_performance_payload(params)
     {
       controller_action: params[:controller_action] || params['controller_action'],
+      job_class: params[:job_class] || params['job_class'],
       request_path: params[:request_path] || params['request_path'],
       request_method: params[:request_method] || params['request_method'],
       duration_ms: parse_float(params[:duration_ms] || params['duration_ms']),
       db_duration_ms: parse_float(params[:db_duration_ms] || params['db_duration_ms']),
       view_duration_ms: parse_float(params[:view_duration_ms] || params['view_duration_ms']),
+      allocations: parse_int(params[:allocations] || params['allocations']),
       sql_queries_count: parse_int(params[:sql_queries_count] || params['sql_queries_count']),
-      sql_queries: params[:sql_queries] || params['sql_queries'] || [],
-      memory_usage_mb: parse_float(params[:memory_usage_mb] || params['memory_usage_mb']),
       user_id: params[:user_id] || params['user_id'],
       environment: params[:environment] || params['environment'] || 'production',
       release_version: params[:release_version] || params['release_version'],
       occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at']),
       context: params[:context] || params['context'] || {},
-      tags: params[:tags] || params['tags'] || [],
       server_name: params[:server_name] || params['server_name'],
       request_id: params[:request_id] || params['request_id']
     }
   end
 
-  def validate_error_payload!(payload)
+    def validate_error_payload!(payload)
     errors = []
 
-    errors << 'exception_type is required' if payload[:exception_type].blank?
+    errors << 'exception_class is required' if payload[:exception_class].blank?
     errors << 'message is required' if payload[:message].blank?
 
     if errors.any?
@@ -154,7 +152,7 @@ class Api::V1::EventsController < Api::BaseController
     errors = []
 
     errors << 'duration_ms is required' if payload[:duration_ms].blank?
-    errors << 'controller_action or request_path is required' if payload[:controller_action].blank? && payload[:request_path].blank?
+    errors << 'controller_action or job_class is required' if payload[:controller_action].blank? && payload[:job_class].blank?
 
     if errors.any?
       render json: {
