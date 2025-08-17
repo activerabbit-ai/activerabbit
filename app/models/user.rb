@@ -17,6 +17,7 @@ class User < ApplicationRecord
       description: "Default project for #{email}"
     ).tap do |project|
       project.generate_api_token!
+      project.create_default_alert_rules!
     end
   end
 end

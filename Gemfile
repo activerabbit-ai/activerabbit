@@ -20,6 +20,7 @@ gem "devise"
 
 # Background jobs
 gem "sidekiq"
+gem "sidekiq-cron"
 
 # Billing & subscriptions
 gem "pay", "~> 8.0"

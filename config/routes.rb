@@ -23,6 +23,23 @@ Rails.application.routes.draw do
   # Subscription management
   resources :subscriptions, only: [:new, :create, :show, :destroy]
 
+  # API routes for data ingestion
+  namespace :api do
+    namespace :v1 do
+      # Event ingestion endpoints
+      post 'events/errors', to: 'events#create_error'
+      post 'events/performance', to: 'events#create_performance'
+      post 'events/batch', to: 'events#create_batch'
+
+      # Release tracking
+      resources :releases, only: [:create, :index, :show] do
+        member do
+          post :trigger_regression_check
+        end
+      end
+    end
+  end
+
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

@@ -1,0 +1,82 @@
+class ErrorIngestJob
+  include Sidekiq::Job
+
+  sidekiq_options queue: :ingest, retry: 3
+
+  def perform(project_id, payload, batch_id = nil)
+    project = Project.find(project_id)
+
+    # Convert string keys to symbols if needed
+    payload = payload.deep_symbolize_keys if payload.respond_to?(:deep_symbolize_keys)
+
+    # Ingest the error event
+    event = Event.ingest_error(project: project, payload: payload)
+
+    # Track SQL queries if provided
+    if payload[:sql_queries].present?
+      payload[:sql_queries].each do |query_data|
+        SqlFingerprint.track_query(
+          project: project,
+          sql: query_data[:sql] || query_data['sql'],
+          duration_ms: query_data[:duration_ms] || query_data['duration_ms'] || 0,
+          controller_action: payload[:controller_action]
+        )
+      end
+
+      # Detect N+1 queries
+      n_plus_one_incidents = SqlFingerprint.detect_n_plus_one(
+        project: project,
+        controller_action: payload[:controller_action],
+        sql_queries: payload[:sql_queries]
+      )
+
+      # Queue alerts for significant N+1 issues
+      if n_plus_one_incidents.any? { |incident| incident[:severity] == 'high' }
+        NPlusOneAlertJob.perform_async(project.id, n_plus_one_incidents)
+      end
+    end
+
+    # Update project last event timestamp
+    project.update!(last_event_at: Time.current)
+
+    # Check if this error should trigger an alert
+    issue = event.issue
+    if issue && should_alert_for_issue?(issue)
+      IssueAlertJob.perform_async(issue.id)
+    end
+
+    Rails.logger.info "Processed error event for project #{project.slug}: #{event.id}"
+
+  rescue ActiveRecord::RecordNotFound => e
+    Rails.logger.error "Project not found for error ingest: #{project_id}"
+    raise e
+  rescue => e
+    Rails.logger.error "Error processing error ingest: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    raise e
+  end
+
+  private
+
+  def should_alert_for_issue?(issue)
+    return false unless issue.status == 'open'
+
+    # Alert conditions:
+    # 1. New issue (first occurrence)
+    # 2. Issue that was resolved but is now happening again
+    # 3. Issue with high frequency (>10 occurrences in last hour)
+
+    return true if issue.count == 1 # New issue
+
+    # Check if issue was recently resolved and is now recurring
+    if issue.resolved_at && issue.resolved_at > 1.day.ago
+      return true
+    end
+
+    # Check frequency in last hour
+    recent_events = issue.events.where('created_at > ?', 1.hour.ago).count
+    return true if recent_events >= 10
+
+    false
+  end
+end

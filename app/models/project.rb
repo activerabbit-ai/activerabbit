@@ -7,6 +7,8 @@ class Project < ApplicationRecord
   has_many :releases, dependent: :destroy
   has_many :api_tokens, dependent: :destroy
   has_many :healthchecks, dependent: :destroy
+  has_many :alert_rules, dependent: :destroy
+  has_many :alert_notifications, dependent: :destroy
 
   validates :name, presence: true, uniqueness: { scope: :user_id }
   validates :slug, presence: true, uniqueness: true
@@ -22,6 +24,44 @@ class Project < ApplicationRecord
       token: SecureRandom.hex(32),
       active: true
     )
+  end
+
+  def create_default_alert_rules!
+    # Create default alert rules for new projects
+    alert_rules.create!([
+      {
+        name: "High Error Frequency",
+        rule_type: "error_frequency",
+        threshold_value: 10,
+        time_window_minutes: 5,
+        cooldown_minutes: 30,
+        enabled: true
+      },
+      {
+        name: "Slow Response Time",
+        rule_type: "performance_regression",
+        threshold_value: 2000, # 2 seconds
+        time_window_minutes: 1,
+        cooldown_minutes: 15,
+        enabled: true
+      },
+      {
+        name: "N+1 Query Detection",
+        rule_type: "n_plus_one",
+        threshold_value: 1, # Alert on any high-severity N+1
+        time_window_minutes: 1,
+        cooldown_minutes: 60,
+        enabled: true
+      },
+      {
+        name: "New Issues",
+        rule_type: "new_issue",
+        threshold_value: 1,
+        time_window_minutes: 1,
+        cooldown_minutes: 0, # No cooldown for new issues
+        enabled: true
+      }
+    ])
   end
 
   def update_health_status!(healthcheck_results)
