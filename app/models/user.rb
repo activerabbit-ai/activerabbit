@@ -6,4 +6,17 @@ class User < ApplicationRecord
 
   # Pay gem integration
   pay_customer
+
+  # ActiveAgent relationships
+  has_many :projects, dependent: :destroy
+
+  def create_default_project!
+    projects.create!(
+      name: "Default Project",
+      environment: "production",
+      description: "Default project for #{email}"
+    ).tap do |project|
+      project.generate_api_token!
+    end
+  end
 end

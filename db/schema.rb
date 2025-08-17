@@ -14,6 +14,94 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "api_tokens", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "name", null: false
+    t.string "token", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "usage_count", default: 0, null: false
+    t.datetime "last_used_at"
+    t.datetime "revoked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_api_tokens_on_active"
+    t.index ["project_id", "active"], name: "index_api_tokens_on_project_id_and_active"
+    t.index ["project_id"], name: "index_api_tokens_on_project_id"
+    t.index ["token"], name: "index_api_tokens_on_token", unique: true
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "issue_id"
+    t.bigint "release_id"
+    t.string "event_type", null: false
+    t.string "fingerprint", null: false
+    t.json "payload", null: false
+    t.datetime "occurred_at", null: false
+    t.string "environment", default: "production", null: false
+    t.string "release_version"
+    t.string "user_id_hash"
+    t.float "duration_ms"
+    t.string "controller_action"
+    t.string "request_path"
+    t.integer "sql_queries_count"
+    t.boolean "n_plus_one_detected", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["environment"], name: "index_events_on_environment"
+    t.index ["event_type"], name: "index_events_on_event_type"
+    t.index ["fingerprint"], name: "index_events_on_fingerprint"
+    t.index ["issue_id"], name: "index_events_on_issue_id"
+    t.index ["occurred_at"], name: "index_events_on_occurred_at"
+    t.index ["project_id", "event_type", "occurred_at"], name: "index_events_on_project_id_and_event_type_and_occurred_at"
+    t.index ["project_id", "occurred_at"], name: "index_events_on_project_id_and_occurred_at"
+    t.index ["project_id"], name: "index_events_on_project_id"
+    t.index ["release_id"], name: "index_events_on_release_id"
+    t.index ["release_version"], name: "index_events_on_release_version"
+  end
+
+  create_table "healthchecks", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "name", null: false
+    t.string "check_type", null: false
+    t.json "config", default: {}
+    t.boolean "enabled", default: true, null: false
+    t.string "status", default: "unknown", null: false
+    t.datetime "last_checked_at"
+    t.float "response_time_ms"
+    t.text "message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["check_type"], name: "index_healthchecks_on_check_type"
+    t.index ["enabled"], name: "index_healthchecks_on_enabled"
+    t.index ["last_checked_at"], name: "index_healthchecks_on_last_checked_at"
+    t.index ["project_id", "name"], name: "index_healthchecks_on_project_id_and_name", unique: true
+    t.index ["project_id"], name: "index_healthchecks_on_project_id"
+    t.index ["status"], name: "index_healthchecks_on_status"
+  end
+
+  create_table "issues", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "fingerprint", null: false
+    t.string "exception_type", null: false
+    t.text "message", null: false
+    t.string "controller_action"
+    t.string "request_path"
+    t.string "status", default: "open", null: false
+    t.integer "count", default: 0, null: false
+    t.datetime "first_seen_at", null: false
+    t.datetime "last_seen_at", null: false
+    t.datetime "resolved_at"
+    t.json "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["exception_type"], name: "index_issues_on_exception_type"
+    t.index ["last_seen_at"], name: "index_issues_on_last_seen_at"
+    t.index ["project_id", "fingerprint"], name: "index_issues_on_project_id_and_fingerprint", unique: true
+    t.index ["project_id"], name: "index_issues_on_project_id"
+    t.index ["status"], name: "index_issues_on_status"
+  end
+
   create_table "pay_charges", force: :cascade do |t|
     t.bigint "customer_id", null: false
     t.string "processor_id", null: false
@@ -84,6 +172,89 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "perf_rollups", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "timeframe", null: false
+    t.datetime "timestamp", null: false
+    t.string "controller_action", null: false
+    t.string "environment", default: "production", null: false
+    t.integer "request_count", default: 0, null: false
+    t.float "avg_duration_ms", default: 0.0, null: false
+    t.float "p50_duration_ms", default: 0.0, null: false
+    t.float "p95_duration_ms", default: 0.0, null: false
+    t.float "p99_duration_ms", default: 0.0, null: false
+    t.float "min_duration_ms", default: 0.0, null: false
+    t.float "max_duration_ms", default: 0.0, null: false
+    t.integer "error_count", default: 0, null: false
+    t.integer "n_plus_one_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id", "controller_action", "timestamp"], name: "idx_on_project_id_controller_action_timestamp_dcd9edd5b4"
+    t.index ["project_id", "timeframe", "timestamp", "controller_action", "environment"], name: "index_perf_rollups_unique", unique: true
+    t.index ["project_id", "timeframe", "timestamp"], name: "index_perf_rollups_on_project_id_and_timeframe_and_timestamp"
+    t.index ["project_id"], name: "index_perf_rollups_on_project_id"
+    t.index ["timeframe"], name: "index_perf_rollups_on_timeframe"
+    t.index ["timestamp"], name: "index_perf_rollups_on_timestamp"
+  end
+
+  create_table "projects", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.string "environment", default: "production", null: false
+    t.text "description"
+    t.boolean "active", default: true, null: false
+    t.json "settings", default: {}
+    t.string "health_status", default: "unknown"
+    t.datetime "last_event_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_projects_on_active"
+    t.index ["environment"], name: "index_projects_on_environment"
+    t.index ["slug"], name: "index_projects_on_slug", unique: true
+    t.index ["user_id", "name"], name: "index_projects_on_user_id_and_name", unique: true
+    t.index ["user_id"], name: "index_projects_on_user_id"
+  end
+
+  create_table "releases", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "version", null: false
+    t.string "environment", default: "production", null: false
+    t.datetime "deployed_at", null: false
+    t.boolean "regression_detected", default: false
+    t.json "regression_data", default: {}
+    t.json "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deployed_at"], name: "index_releases_on_deployed_at"
+    t.index ["environment"], name: "index_releases_on_environment"
+    t.index ["project_id", "version"], name: "index_releases_on_project_id_and_version", unique: true
+    t.index ["project_id"], name: "index_releases_on_project_id"
+    t.index ["regression_detected"], name: "index_releases_on_regression_detected"
+  end
+
+  create_table "sql_fingerprints", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "fingerprint", null: false
+    t.string "query_type", null: false
+    t.text "normalized_query", null: false
+    t.string "controller_action"
+    t.integer "total_count", default: 0, null: false
+    t.float "total_duration_ms", default: 0.0, null: false
+    t.float "avg_duration_ms", default: 0.0, null: false
+    t.float "max_duration_ms", default: 0.0, null: false
+    t.datetime "first_seen_at", null: false
+    t.datetime "last_seen_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["avg_duration_ms"], name: "index_sql_fingerprints_on_avg_duration_ms"
+    t.index ["last_seen_at"], name: "index_sql_fingerprints_on_last_seen_at"
+    t.index ["project_id", "fingerprint"], name: "index_sql_fingerprints_on_project_id_and_fingerprint", unique: true
+    t.index ["project_id"], name: "index_sql_fingerprints_on_project_id"
+    t.index ["query_type"], name: "index_sql_fingerprints_on_query_type"
+    t.index ["total_count"], name: "index_sql_fingerprints_on_total_count"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -101,7 +272,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "api_tokens", "projects"
+  add_foreign_key "events", "issues"
+  add_foreign_key "events", "projects"
+  add_foreign_key "events", "releases"
+  add_foreign_key "healthchecks", "projects"
+  add_foreign_key "issues", "projects"
   add_foreign_key "pay_charges", "pay_customers", column: "customer_id"
   add_foreign_key "pay_payment_methods", "pay_customers", column: "customer_id"
   add_foreign_key "pay_subscriptions", "pay_customers", column: "customer_id"
+  add_foreign_key "perf_rollups", "projects"
+  add_foreign_key "projects", "users"
+  add_foreign_key "releases", "projects"
+  add_foreign_key "sql_fingerprints", "projects"
 end
