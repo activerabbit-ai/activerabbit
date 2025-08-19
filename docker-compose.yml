@@ -102,3 +102,8 @@ volumes:
   redis_data:
   bundle_cache:
   node_modules:
+
+networks:
+  default:
+    name: bugrabbit_network
+    driver: bridge

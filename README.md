@@ -1,6 +1,6 @@
-# ActiveAgent
+# ActiveRabbit
 
-A modern Rails 8.2 application scaffold with a complete stack including authentication, payments, background jobs, and security features.
+A comprehensive application monitoring and error tracking platform built with Rails 8.2, featuring real-time monitoring, performance analytics, and intelligent alerting.
 
 ## 🚀 Stack
 

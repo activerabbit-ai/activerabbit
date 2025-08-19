@@ -1,6 +1,6 @@
 <% content_for :title, "Sign In" %>
 <% content_for :page_title, "Welcome back" %>
-<% content_for :page_subtitle, "Sign in to your ActiveAgent account" %>
+<% content_for :page_subtitle, "Sign in to your ActiveRabbit account" %>
 <% content_for :layout, "auth" %>
 
 <%= form_for(resource, as: resource_name, url: session_path(resource_name), local: true, html: { class: "space-y-6" }) do |f| %>
@@ -68,7 +68,7 @@
       <div class="w-full border-t border-gray-300"></div>
     </div>
     <div class="relative flex justify-center text-sm">
-      <span class="px-2 bg-white text-gray-500">New to ActiveAgent?</span>
+      <span class="px-2 bg-white text-gray-500">New to ActiveRabbit?</span>
     </div>
   </div>
 </div>

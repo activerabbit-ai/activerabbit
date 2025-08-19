@@ -6,10 +6,16 @@ Rails.application.routes.draw do
     get "dashboard", to: "dashboard#index"
     get "deploys", to: "deploys#index"
     get "errors", to: "errors#index"
+    get "errors/:id", to: "errors#show", as: "error"
+    patch "errors/:id", to: "errors#update"
+    delete "errors/:id", to: "errors#destroy"
     get "performance", to: "performance#index"
     get "security", to: "security#index"
     get "logs", to: "logs#index"
     get "settings", to: "settings#index"
+
+    # Public demo endpoints (no auth required)
+    get "public/errors", to: "public#errors"
 
     # Projects management
     resources :projects do

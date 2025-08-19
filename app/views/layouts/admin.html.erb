@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Admin - ActiveAgent" %></title>
+    <title><%= content_for(:title) || "Admin - ActiveRabbit" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -26,11 +26,30 @@
       <div class="bg-gray-900 text-white w-64 min-h-screen p-4">
         <div class="flex items-center mb-8">
           <div class="bg-indigo-600 rounded-lg p-2 mr-3">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
+              <!-- Rabbit ears -->
+              <ellipse cx="8" cy="4" rx="1.5" ry="3" transform="rotate(-20 8 4)"/>
+              <ellipse cx="16" cy="4" rx="1.5" ry="3" transform="rotate(20 16 4)"/>
+              <!-- Inner ears -->
+              <ellipse cx="8.2" cy="4.5" rx="0.7" ry="1.8" fill="#e0e7ff" transform="rotate(-20 8.2 4.5)"/>
+              <ellipse cx="15.8" cy="4.5" rx="0.7" ry="1.8" fill="#e0e7ff" transform="rotate(20 15.8 4.5)"/>
+              <!-- Head -->
+              <circle cx="12" cy="12" r="6"/>
+              <!-- Eyes -->
+              <circle cx="10" cy="10" r="1" fill="#1e293b"/>
+              <circle cx="14" cy="10" r="1" fill="#1e293b"/>
+              <!-- Eye shine -->
+              <circle cx="10.3" cy="9.7" r="0.3" fill="white"/>
+              <circle cx="14.3" cy="9.7" r="0.3" fill="white"/>
+              <!-- Nose -->
+              <path d="M12 13 L11.5 14 L12.5 14 Z" fill="#f59e0b"/>
+              <!-- Mouth -->
+              <path d="M12 14.5 Q10.5 15.5 9.5 14.5" stroke="#1e293b" stroke-width="0.5" fill="none" stroke-linecap="round"/>
+              <path d="M12 14.5 Q13.5 15.5 14.5 14.5" stroke="#1e293b" stroke-width="0.5" fill="none" stroke-linecap="round"/>
+              <!-- Cheeks -->
+              <circle cx="8.5" cy="13" r="0.8" fill="#fecaca" opacity="0.6"/>
+              <circle cx="15.5" cy="13" r="0.8" fill="#fecaca" opacity="0.6"/>
           </div>
-          <span class="text-xl font-bold">ActiveAgent</span>
+          <span class="text-xl font-bold">ActiveRabbit</span>
         </div>
 
         <nav class="space-y-2">
