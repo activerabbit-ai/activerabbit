@@ -17,9 +17,13 @@ class PerfRollup < ApplicationRecord
     end_time = 1.minute.ago.end_of_minute
 
     PerformanceEvent.for_timerange(start_time, end_time)
-                   .group(:project_id, :target, :environment)
-                   .group("date_trunc('minute', occurred_at)")
-                   .each do |(project_id, target, environment, timestamp)|
+                   .select(:project_id, :target, :environment, "date_trunc('minute', occurred_at) as truncated_timestamp")
+                   .group(:project_id, :target, :environment, "date_trunc('minute', occurred_at)")
+                   .each do |grouped_event|
+      project_id = grouped_event.project_id
+      target = grouped_event.target
+      environment = grouped_event.environment
+      timestamp = grouped_event.truncated_timestamp
 
       events = PerformanceEvent.where(project_id: project_id)
                               .where(target: target)
@@ -83,14 +87,18 @@ class PerfRollup < ApplicationRecord
 
     where(timeframe: 'minute')
       .for_timerange(start_time, end_time)
-      .group(:project_id, :controller_action, :environment)
-      .group("date_trunc('hour', timestamp)")
-      .each do |(project_id, controller_action, environment, timestamp)|
+      .select(:project_id, :target, :environment, "date_trunc('hour', timestamp) as truncated_timestamp")
+      .group(:project_id, :target, :environment, "date_trunc('hour', timestamp)")
+      .each do |grouped_rollup|
+      project_id = grouped_rollup.project_id
+      target = grouped_rollup.target
+      environment = grouped_rollup.environment
+      timestamp = grouped_rollup.truncated_timestamp
 
       minute_rollups = where(
         project_id: project_id,
         timeframe: 'minute',
-        controller_action: controller_action,
+        target: target,
         environment: environment,
         timestamp: timestamp..(timestamp + 1.hour)
       )
@@ -105,7 +113,7 @@ class PerfRollup < ApplicationRecord
         project_id: project_id,
         timeframe: 'hour',
         timestamp: timestamp,
-        controller_action: controller_action,
+        target: target,
         environment: environment
       )
 
@@ -117,8 +125,7 @@ class PerfRollup < ApplicationRecord
         p99_duration_ms: minute_rollups.average(:p99_duration_ms),
         min_duration_ms: minute_rollups.minimum(:min_duration_ms),
         max_duration_ms: minute_rollups.maximum(:max_duration_ms),
-        error_count: minute_rollups.sum(:error_count),
-        n_plus_one_count: minute_rollups.sum(:n_plus_one_count)
+        error_count: minute_rollups.sum(:error_count)
       )
 
       rollup.save!

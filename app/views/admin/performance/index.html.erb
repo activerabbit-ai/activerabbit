@@ -61,7 +61,7 @@
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-600">Memory Usage</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= @metrics[:memory_usage] %></p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @metrics[:memory_usage] || "N/A" %></p>
       </div>
       <div class="p-3 rounded-full bg-purple-100 text-purple-600">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,4 +70,185 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Performance Rollups Table -->
+<div class="mt-8 bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg font-medium text-gray-900">🚀 Performance Data</h3>
+      <div class="text-sm text-gray-500">
+        <%= @project ? "#{@project.name} Performance" : "All Projects" %>
+      </div>
+    </div>
+  </div>
+
+  <% if @project && @rollups.any? %>
+    <!-- Single Project Performance Table -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Controller Action
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Avg Response Time
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              P95 Response Time
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Total Requests
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Error Count
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Last Updated
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @performance_data.each do |target, rollups| %>
+            <% latest_rollup = rollups.last %>
+            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="alert('Performance detail view for <%= target %> - Coming soon!')">
+              <td class="px-6 py-4">
+                <div class="text-sm font-medium text-indigo-600">
+                  <%= target || 'Unknown Action' %>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  Click to view detailed metrics
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
+                  <%= latest_rollup.avg_duration_ms ? "#{latest_rollup.avg_duration_ms.round(1)}ms" : "N/A" %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
+                  <%= latest_rollup.p95_duration_ms ? "#{latest_rollup.p95_duration_ms.round(1)}ms" : "N/A" %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm font-semibold text-gray-900">
+                  <%= rollups.sum(&:request_count) %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
+                  <%= rollups.sum(&:error_count) %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
+                  <%= time_ago_in_words(latest_rollup.timestamp) %> ago
+                </div>
+                <div class="text-xs text-gray-500">
+                  <%= latest_rollup.timestamp.strftime("%b %d, %Y %H:%M") %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% elsif @projects && @projects.any? %>
+    <!-- Global Projects Performance Table -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Project
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Avg Response Time
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              P95 Response Time
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Total Requests
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Error Count
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Status
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @projects.each do |project| %>
+            <% stats = @global_stats[project.id] %>
+            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="window.location.href='<%= admin_project_performance_path(project) %>'">
+              <td class="px-6 py-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 w-2 h-2 rounded-full <%= stats[:error_count] > 0 ? 'bg-red-400' : stats[:avg_response_time] && stats[:avg_response_time] > 1000 ? 'bg-yellow-400' : 'bg-green-400' %> mr-3"></div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">
+                      <%= project.name %>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      <%= project.description || "Environment: #{project.environment}" %>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
+                  <%= stats[:avg_response_time] ? "#{stats[:avg_response_time]}ms" : "N/A" %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
+                  <%= stats[:p95_response_time] ? "#{stats[:p95_response_time]}ms" : "N/A" %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm font-semibold text-gray-900">
+                  <%= stats[:total_requests] %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
+                  <%= stats[:error_count] %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <% if stats[:error_count] > 0 %>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    Issues
+                  </span>
+                <% elsif stats[:avg_response_time] && stats[:avg_response_time] > 1000 %>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Slow
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Healthy
+                  </span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <!-- No Data State -->
+    <div class="p-12 text-center">
+      <div class="w-12 h-12 mx-auto mb-4 text-gray-400">
+        🚀
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No performance data yet</h3>
+      <p class="text-gray-500 mb-4">ActiveRabbit is monitoring your applications. Performance data will appear here once your app starts sending metrics.</p>
+      <div class="text-sm text-gray-400">
+        <p>Try triggering some test performance data:</p>
+        <code class="bg-gray-100 px-2 py-1 rounded">curl http://localhost:3001/test/performance</code>
+      </div>
+    </div>
+  <% end %>
 </div>

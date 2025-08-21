@@ -14,8 +14,8 @@ class Admin::PerformanceController < ApplicationController
                          .where('timestamp > ?', @hours_back.hours.ago)
                          .order(:timestamp)
 
-      # Group by controller action
-      @performance_data = @rollups.group_by(&:controller_action)
+      # Group by target (controller action)
+      @performance_data = @rollups.group_by(&:target)
 
       # N+1 queries
       @n_plus_one_incidents = @project.sql_fingerprints
@@ -26,20 +26,52 @@ class Admin::PerformanceController < ApplicationController
       @slow_queries = @project.sql_fingerprints
                               .slow
                               .limit(20)
+
+      # Calculate project-specific metrics
+      recent_rollups = @project.perf_rollups.where('timestamp > ?', 24.hours.ago)
+      total_requests = recent_rollups.sum(:request_count)
+      total_errors = recent_rollups.sum(:error_count)
+      avg_response = recent_rollups.average(:avg_duration_ms)
+
+      @metrics = {
+        response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
+        throughput: "#{total_requests}/day",
+        error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%"
+      }
     else
       # Global performance overview
       @projects = current_user.projects.includes(:perf_rollups)
 
       @global_stats = {}
+      total_requests = 0
+      total_errors = 0
+      response_times = []
+
       @projects.each do |project|
         recent_rollups = project.perf_rollups.where('timestamp > ?', 24.hours.ago)
+        avg_response = recent_rollups.average(:avg_duration_ms)
+        requests = recent_rollups.sum(:request_count)
+        errors = recent_rollups.sum(:error_count)
+
         @global_stats[project.id] = {
-          avg_response_time: recent_rollups.average(:avg_duration_ms)&.round(2),
+          avg_response_time: avg_response&.round(2),
           p95_response_time: recent_rollups.average(:p95_duration_ms)&.round(2),
-          total_requests: recent_rollups.sum(:request_count),
-          error_count: recent_rollups.sum(:error_count)
+          total_requests: requests,
+          error_count: errors
         }
+
+        # Accumulate for global metrics
+        total_requests += requests
+        total_errors += errors
+        response_times << avg_response if avg_response
       end
+
+      # Calculate global metrics
+      @metrics = {
+        response_time: response_times.any? ? "#{(response_times.sum / response_times.size).round(1)}ms" : "N/A",
+        throughput: "#{total_requests}/day",
+        error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%"
+      }
     end
   end
 
