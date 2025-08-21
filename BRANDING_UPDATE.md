@@ -87,3 +87,4 @@ Your application monitoring platform now has consistent **ActiveRabbit** brandin
 - ✅ Footer and copyright notices
 
 Perfect for catching those pesky bugs with a friendly rabbit! 🐛🐰✨
+

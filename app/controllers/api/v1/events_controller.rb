@@ -8,7 +8,9 @@ class Api::V1::EventsController < Api::BaseController
     validate_error_payload!(payload)
 
     # Process in background for better performance
-    ErrorIngestJob.perform_async(@current_project.id, payload.to_h)
+    # Ensure payload is JSON-serializable by converting to hash and stringifying
+    serializable_payload = JSON.parse(payload.to_h.to_json)
+    ErrorIngestJob.perform_async(@current_project.id, serializable_payload)
 
     render_created(
       {
@@ -27,7 +29,9 @@ class Api::V1::EventsController < Api::BaseController
     validate_performance_payload!(payload)
 
     # Process in background
-    PerformanceIngestJob.perform_async(@current_project.id, payload.to_h)
+    # Ensure payload is JSON-serializable by converting to hash and stringifying
+    serializable_payload = JSON.parse(payload.to_h.to_json)
+    PerformanceIngestJob.perform_async(@current_project.id, serializable_payload)
 
     render_created(
       {
@@ -68,12 +72,14 @@ class Api::V1::EventsController < Api::BaseController
       when 'error'
         payload = sanitize_error_payload(event_data)
         next unless valid_error_payload?(payload)
-        ErrorIngestJob.perform_async(@current_project.id, payload.to_h, batch_id)
+        serializable_payload = JSON.parse(payload.to_h.to_json)
+        ErrorIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
         processed_count += 1
       when 'performance'
         payload = sanitize_performance_payload(event_data)
         next unless valid_performance_payload?(payload)
-        PerformanceIngestJob.perform_async(@current_project.id, payload.to_h, batch_id)
+        serializable_payload = JSON.parse(payload.to_h.to_json)
+        PerformanceIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
         processed_count += 1
       end
     end

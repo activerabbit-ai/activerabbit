@@ -10,7 +10,7 @@ class PerfRollup < ApplicationRecord
   scope :for_target, ->(target) { where(target: target) }
 
     def self.rollup_minute_data!
-    require 'hdrhistogram'
+    require 'HDRHistogram'
 
     # Process performance events from the last 2 minutes to handle any delays
     start_time = 2.minutes.ago.beginning_of_minute

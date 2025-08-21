@@ -1,13 +1,13 @@
 class ErrorIngestJob
   include Sidekiq::Job
 
-  sidekiq_options queue: :ingest, retry: 3
+  sidekiq_options queue: :default, retry: 3
 
   def perform(project_id, payload, batch_id = nil)
     project = Project.find(project_id)
 
     # Convert string keys to symbols if needed
-    payload = payload.deep_symbolize_keys if payload.respond_to?(:deep_symbolize_keys)
+    payload = payload.is_a?(Hash) ? payload.deep_symbolize_keys : payload
 
     # Ingest the error event
     event = Event.ingest_error(project: project, payload: payload)

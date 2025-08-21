@@ -128,9 +128,9 @@
               <div class="text-sm text-gray-500">
                 <%= time_ago_in_words(event.occurred_at) %> ago
               </div>
-              <% if event.user_id.present? %>
+              <% if event.user_id_hash.present? %>
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  User: <%= event.user_id %>
+                  User: <%= event.user_id_hash[0..7] %>...
                 </span>
               <% end %>
             </div>
@@ -149,3 +149,4 @@
     </div>
   </div>
 </div>
+

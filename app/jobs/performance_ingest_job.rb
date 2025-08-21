@@ -1,7 +1,7 @@
 class PerformanceIngestJob
   include Sidekiq::Job
 
-  sidekiq_options queue: :ingest, retry: 3
+  sidekiq_options queue: :default, retry: 3
 
   def perform(project_id, payload, batch_id = nil)
     project = Project.find(project_id)

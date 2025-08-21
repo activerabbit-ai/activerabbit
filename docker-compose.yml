@@ -64,7 +64,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: bundle exec sidekiq
+    command: bundle exec sidekiq -q default -q ingest
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle

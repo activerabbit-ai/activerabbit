@@ -1,8 +1,7 @@
 class Api::BaseController < ActionController::API
   include ApiAuthentication
 
-  # Disable CSRF for API endpoints
-  skip_before_action :verify_authenticity_token, if: :json_request?
+  # Disable CSRF for API endpoints (ActionController::API doesn't have CSRF protection by default)
 
   # Set JSON content type
   before_action :set_content_type
