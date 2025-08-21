@@ -49,6 +49,7 @@ Rails.application.routes.draw do
 
       # Performance monitoring
       get 'performance', to: 'performance#index'
+      get 'performance/actions/:target', to: 'performance#action_detail', as: 'performance_action_detail'
       get 'performance/sql_fingerprints', to: 'performance#sql_fingerprints'
       get 'performance/sql_fingerprints/:id', to: 'performance#sql_fingerprint', as: 'performance_sql_fingerprint'
       post 'performance/sql_fingerprints/:id/create_pr', to: 'performance#create_n_plus_one_pr', as: 'create_n_plus_one_pr'

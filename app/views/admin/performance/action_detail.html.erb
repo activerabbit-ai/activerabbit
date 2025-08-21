@@ -1,0 +1,187 @@
+<% content_for :page_title, "Performance: #{@target}" %>
+
+<!-- Breadcrumb -->
+<nav class="flex mb-6" aria-label="Breadcrumb">
+  <ol class="flex items-center space-x-4">
+    <li>
+      <%= link_to admin_project_performance_path(@project), class: "text-gray-500 hover:text-gray-700" do %>
+        Performance
+      <% end %>
+    </li>
+    <li class="flex items-center">
+      <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+      </svg>
+      <span class="ml-4 text-sm font-medium text-gray-900"><%= @target %></span>
+    </li>
+  </ol>
+</nav>
+
+<!-- Header -->
+<div class="mb-8">
+  <h1 class="text-2xl font-bold text-gray-900 mb-2">
+    <span class="inline-flex items-center">
+      🚀 <%= @target %>
+    </span>
+  </h1>
+  <p class="text-gray-600">Detailed performance metrics for this controller action</p>
+</div>
+
+<!-- Key Metrics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Avg Response Time</p>
+        <p class="text-2xl font-semibold text-gray-900">
+          <%= @avg_response_time ? "#{@avg_response_time.round(1)}ms" : "N/A" %>
+        </p>
+      </div>
+      <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Total Requests</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @total_requests.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></p>
+      </div>
+      <div class="p-3 rounded-full bg-green-100 text-green-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Error Rate</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @error_rate %>%</p>
+      </div>
+      <div class="p-3 rounded-full <%= @error_rate > 5 ? 'bg-red-100 text-red-600' : @error_rate > 1 ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600' %>">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">P95 Response</p>
+        <p class="text-2xl font-semibold text-gray-900">
+          <%= @p95_response_time ? "#{@p95_response_time.round(1)}ms" : "N/A" %>
+        </p>
+      </div>
+      <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Response Time Percentiles -->
+<div class="bg-white rounded-lg shadow mb-8">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-lg font-medium text-gray-900">📊 Response Time Distribution</h3>
+  </div>
+  <div class="p-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-green-600"><%= @min_response_time ? "#{@min_response_time.round(1)}ms" : "N/A" %></div>
+        <div class="text-sm text-gray-500">Minimum</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-blue-600"><%= @p50_response_time ? "#{@p50_response_time.round(1)}ms" : "N/A" %></div>
+        <div class="text-sm text-gray-500">P50 (Median)</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-yellow-600"><%= @p95_response_time ? "#{@p95_response_time.round(1)}ms" : "N/A" %></div>
+        <div class="text-sm text-gray-500">P95</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-orange-600"><%= @p99_response_time ? "#{@p99_response_time.round(1)}ms" : "N/A" %></div>
+        <div class="text-sm text-gray-500">P99</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-red-600"><%= @max_response_time ? "#{@max_response_time.round(1)}ms" : "N/A" %></div>
+        <div class="text-sm text-gray-500">Maximum</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Performance History -->
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-lg font-medium text-gray-900">📈 Performance History (Last 7 Days)</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Timestamp
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Avg Response
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            P95 Response
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Requests
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Errors
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Error Rate
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <% @rollups.reverse.each do |rollup| %>
+          <% error_rate = rollup.request_count > 0 ? ((rollup.error_count.to_f / rollup.request_count) * 100).round(2) : 0 %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900"><%= rollup.timestamp.strftime("%b %d, %Y %H:%M") %></div>
+              <div class="text-xs text-gray-500"><%= time_ago_in_words(rollup.timestamp) %> ago</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">
+                <%= rollup.avg_duration_ms ? "#{rollup.avg_duration_ms.round(1)}ms" : "N/A" %>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">
+                <%= rollup.p95_duration_ms ? "#{rollup.p95_duration_ms.round(1)}ms" : "N/A" %>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-semibold text-gray-900"><%= rollup.request_count %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900"><%= rollup.error_count %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <%= error_rate > 5 ? 'bg-red-100 text-red-800' : error_rate > 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
+                <%= error_rate %>%
+              </span>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

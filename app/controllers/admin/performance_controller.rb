@@ -75,6 +75,38 @@ class Admin::PerformanceController < ApplicationController
     end
   end
 
+  def action_detail
+    @target = params[:target]
+
+    # Find rollups for this specific target
+    @rollups = @project.perf_rollups
+                       .where(target: @target)
+                       .where('timestamp > ?', 7.days.ago)
+                       .order(:timestamp)
+
+    if @rollups.empty?
+      redirect_to admin_project_performance_path(@project), alert: "No performance data found for #{@target}"
+      return
+    end
+
+    # Calculate detailed metrics
+    @total_requests = @rollups.sum(:request_count)
+    @total_errors = @rollups.sum(:error_count)
+    @avg_response_time = @rollups.average(:avg_duration_ms)
+    @p50_response_time = @rollups.average(:p50_duration_ms)
+    @p95_response_time = @rollups.average(:p95_duration_ms)
+    @p99_response_time = @rollups.average(:p99_duration_ms)
+    @min_response_time = @rollups.minimum(:min_duration_ms)
+    @max_response_time = @rollups.maximum(:max_duration_ms)
+    @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
+
+    # Group by timeframe for charts
+    @hourly_data = @rollups.where('timestamp > ?', 24.hours.ago)
+                           .group_by { |r| r.timestamp.beginning_of_hour }
+
+    @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
+  end
+
   def sql_fingerprints
     @sql_fingerprints = @project.sql_fingerprints.includes(:project)
 

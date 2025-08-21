@@ -112,7 +112,7 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <% @performance_data.each do |target, rollups| %>
             <% latest_rollup = rollups.last %>
-            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="alert('Performance detail view for <%= target %> - Coming soon!')">
+            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="window.location.href='<%= admin_project_performance_action_detail_path(@project, target: target) %>'">
               <td class="px-6 py-4">
                 <div class="text-sm font-medium text-indigo-600">
                   <%= target || 'Unknown Action' %>
