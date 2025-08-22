@@ -141,7 +141,7 @@ class AlertJob
               short: true
             }
           ],
-          footer: "ActiveAgent",
+          footer: "ActiveRabbit",
           ts: Time.current.to_i
         }
       ]
@@ -176,7 +176,7 @@ class AlertJob
               short: true
             }
           ],
-          footer: "ActiveAgent",
+          footer: "ActiveRabbit",
           ts: Time.current.to_i
         }
       ]
@@ -209,7 +209,7 @@ class AlertJob
               short: false
             }
           ],
-          footer: "ActiveAgent",
+          footer: "ActiveRabbit",
           ts: Time.current.to_i
         }
       ]
@@ -244,7 +244,7 @@ class AlertJob
               short: true
             }
           ],
-          footer: "ActiveAgent",
+          footer: "ActiveRabbit",
           ts: Time.current.to_i
         }
       ]

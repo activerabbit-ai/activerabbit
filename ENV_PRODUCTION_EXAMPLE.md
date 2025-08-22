@@ -1,4 +1,4 @@
-# Production Environment Variables for ActiveAgent
+# Production Environment Variables for ActiveRabbit
 
 Copy these to your `.env` file or set them in your production environment:
 

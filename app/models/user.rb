@@ -7,7 +7,7 @@ class User < ApplicationRecord
   # Pay gem integration
   pay_customer
 
-  # ActiveAgent relationships
+  # ActiveRabbit relationships
   has_many :projects, dependent: :destroy
 
   def create_default_project!

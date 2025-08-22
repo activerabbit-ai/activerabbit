@@ -296,13 +296,13 @@ flowchart TD
 ### 1. Add the Gem
 ```ruby
 # Gemfile
-gem 'active_agent-client'
+gem 'active_rabbit-client'
 ```
 
 ### 2. Configure
 ```ruby
-# config/initializers/active_agent.rb
-ActiveAgent::Client.configure do |config|
+# config/initializers/active_rabbit.rb
+ActiveRabbit::Client.configure do |config|
   config.api_key = ENV['ACTIVERABBIT_API_KEY']
   config.project_id = 'your-rails-app'
   config.api_url = 'https://your-activerabbit-app.com'
@@ -329,7 +329,7 @@ end
 begin
   risky_operation
 rescue => e
-  ActiveAgent::Client.track_exception(e, {
+  ActiveRabbit::Client.track_exception(e, {
     context: 'manual_tracking',
     user_id: current_user.id
   })
@@ -340,7 +340,7 @@ end
 ### Performance Monitoring
 ```ruby
 # Track slow operations
-ActiveAgent::Client.track_performance(
+ActiveRabbit::Client.track_performance(
   'database_query',
   duration_ms: 1500,
   metadata: { query_type: 'complex_join' }
@@ -349,7 +349,7 @@ ActiveAgent::Client.track_performance(
 
 ### Custom Callbacks
 ```ruby
-ActiveAgent::Client.configure do |config|
+ActiveRabbit::Client.configure do |config|
   config.before_send_exception = proc do |exception_data|
     # Add custom metadata
     exception_data[:deployment_version] = ENV['APP_VERSION']
@@ -389,8 +389,8 @@ end
 
 ### Support
 
-- 📚 Documentation: [ActiveRabbit Docs](https://github.com/activerabbit/active_agent-client)
-- 🐛 Issues: [GitHub Issues](https://github.com/activerabbit/active_agent-client/issues)
+- 📚 Documentation: [ActiveRabbit Docs](https://github.com/activerabbit/active_rabbit-client)
+- 🐛 Issues: [GitHub Issues](https://github.com/activerabbit/active_rabbit-client/issues)
 - 💬 Community: [Discord Server](https://discord.gg/activerabbit)
 
 ---

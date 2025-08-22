@@ -29,7 +29,7 @@ A comprehensive application monitoring and error tracking platform built with Ra
 
 ```bash
 git clone <repository-url>
-cd activeagent
+cd activerabbit
 bundle install
 ```
 
@@ -45,7 +45,7 @@ Edit `.env` with your actual values:
 
 ```env
 # Database
-DATABASE_URL=postgresql://username:password@localhost:5432/activeagent_development
+DATABASE_URL=postgresql://username:password@localhost:5432/activerabbit_development
 
 # Redis
 REDIS_URL=redis://localhost:6379/0
@@ -153,7 +153,7 @@ Pre-configured rate limiting:
 
 ```bash
 # 1. Create Rails app
-rails new activeagent --database=postgresql --skip-test --skip-system-test --skip-jbuilder
+rails new activerabbit --database=postgresql --skip-test --skip-system-test --skip-jbuilder
 
 # 2. Add gems to Gemfile
 bundle add devise sidekiq pay tailwindcss-rails rack-attack faraday HDRHistogram dotenv-rails
@@ -258,7 +258,7 @@ docker-compose run --rm web bundle exec rails db:migrate
 
 ```bash
 # Connect to PostgreSQL in Docker
-docker-compose exec db psql -U postgres -d activeagent_development
+docker-compose exec db psql -U postgres -d activerabbit_development
 
 # Run migrations
 docker-compose exec web bundle exec rails db:migrate

@@ -2,7 +2,11 @@ class Api::V1::EventsController < Api::BaseController
 
     # POST /api/v1/events/errors
   def create_error
+    Rails.logger.info "=== DEBUG: create_error called ==="
+    Rails.logger.info "Raw params: #{params.inspect}"
+
     payload = sanitize_error_payload(params)
+    Rails.logger.info "Sanitized payload: #{payload.inspect}"
 
     # Validate required fields
     validate_error_payload!(payload)
@@ -10,6 +14,8 @@ class Api::V1::EventsController < Api::BaseController
     # Process in background for better performance
     # Ensure payload is JSON-serializable by converting to hash and stringifying
     serializable_payload = JSON.parse(payload.to_h.to_json)
+    Rails.logger.info "Serializable payload: #{serializable_payload.inspect}"
+    Rails.logger.info "Calling ErrorIngestJob.perform_async(#{@current_project.id}, payload)"
     ErrorIngestJob.perform_async(@current_project.id, serializable_payload)
 
     render_created(
@@ -44,7 +50,11 @@ class Api::V1::EventsController < Api::BaseController
 
   # POST /api/v1/events/batch
   def create_batch
+    Rails.logger.info "=== DEBUG: create_batch called ==="
+    Rails.logger.info "Raw params: #{params.inspect}"
+
     events = params[:events] || []
+    Rails.logger.info "Events array: #{events.inspect}"
 
     if events.empty?
       render json: {
@@ -67,16 +77,19 @@ class Api::V1::EventsController < Api::BaseController
 
     events.each do |event_data|
       event_type = event_data[:event_type] || event_data['event_type']
+      
+      # Extract the actual payload from the data field
+      actual_data = event_data[:data] || event_data['data'] || event_data
 
       case event_type
       when 'error'
-        payload = sanitize_error_payload(event_data)
+        payload = sanitize_error_payload(actual_data)
         next unless valid_error_payload?(payload)
         serializable_payload = JSON.parse(payload.to_h.to_json)
         ErrorIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
         processed_count += 1
       when 'performance'
-        payload = sanitize_performance_payload(event_data)
+        payload = sanitize_performance_payload(actual_data)
         next unless valid_performance_payload?(payload)
         serializable_payload = JSON.parse(payload.to_h.to_json)
         PerformanceIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
@@ -99,7 +112,7 @@ class Api::V1::EventsController < Api::BaseController
 
   def sanitize_error_payload(params)
     {
-      exception_class: params[:exception_class] || params['exception_class'] || params[:exception_type] || params['exception_type'],
+      exception_class: params[:exception_class] || params['exception_class'] || params[:exception_type] || params['exception_type'] || params[:type] || params['type'],
       message: params[:message] || params['message'],
       backtrace: params[:backtrace] || params['backtrace'],
       controller_action: params[:controller_action] || params['controller_action'],
@@ -108,7 +121,7 @@ class Api::V1::EventsController < Api::BaseController
       user_id: params[:user_id] || params['user_id'],
       environment: params[:environment] || params['environment'] || 'production',
       release_version: params[:release_version] || params['release_version'],
-      occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at']),
+      occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at'] || params[:timestamp] || params['timestamp']),
       context: params[:context] || params['context'] || {},
       server_name: params[:server_name] || params['server_name'],
       request_id: params[:request_id] || params['request_id']

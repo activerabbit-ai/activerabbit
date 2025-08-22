@@ -1,4 +1,4 @@
-# ActiveAgent Setup Summary
+# ActiveRabbit Setup Summary
 
 ## ✅ Complete Rails 8.2 Application Scaffold
 
@@ -46,7 +46,7 @@ This Rails application has been successfully created with all requested componen
 
 ### 📁 File Structure Created
 ```
-activeagent/
+activerabbit/
 ├── app/
 │   ├── controllers/
 │   │   ├── home_controller.rb

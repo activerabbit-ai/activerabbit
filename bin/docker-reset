@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🐳 Resetting ActiveAgent Docker environment..."
+echo "🐳 Resetting ActiveRabbit Docker environment..."
 
 # Stop all containers
 docker-compose down

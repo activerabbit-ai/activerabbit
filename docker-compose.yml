@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: activeagent_development
+      POSTGRES_DB: activerabbit_development
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
@@ -52,7 +52,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/activeagent_development
+      DATABASE_URL: postgresql://postgres:password@db:5432/activerabbit_development
       REDIS_URL: redis://redis:6379/0
       RAILS_ENV: development
     env_file:
@@ -76,7 +76,7 @@ services:
       web:
         condition: service_started
     environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/activeagent_development
+      DATABASE_URL: postgresql://postgres:password@db:5432/activerabbit_development
       REDIS_URL: redis://redis:6379/0
       RAILS_ENV: development
     env_file:

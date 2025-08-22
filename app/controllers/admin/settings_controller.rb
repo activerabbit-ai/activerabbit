@@ -4,7 +4,7 @@ class Admin::SettingsController < ApplicationController
 
   def index
     @settings = {
-      app_name: 'ActiveAgent',
+      app_name: 'ActiveRabbit',
       maintenance_mode: false,
       debug_mode: Rails.env.development?,
       max_users: 1000,

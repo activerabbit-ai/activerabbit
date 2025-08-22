@@ -1,14 +1,14 @@
-# 🐳 ActiveAgent Docker Setup Complete!
+# 🐳 ActiveRabbit Docker Setup Complete!
 
 ## ✅ **What's Running in Docker**
 
 Your Rails 8.2 application is now fully containerized with:
 
 ### 🏗 **Services Running**
-- **Web Application** (`activeagent-web-1`) - Rails server on port 3000
-- **Background Jobs** (`activeagent-sidekiq-1`) - Sidekiq worker
-- **Database** (`activeagent-db-1`) - PostgreSQL 15 on port 5432
-- **Cache/Jobs** (`activeagent-redis-1`) - Redis on port 6380
+- **Web Application** (`activerabbit-web-1`) - Rails server on port 3000
+- **Background Jobs** (`activerabbit-sidekiq-1`) - Sidekiq worker
+- **Database** (`activerabbit-db-1`) - PostgreSQL 15 on port 5432
+- **Cache/Jobs** (`activerabbit-redis-1`) - Redis on port 6380
 
 ### 📂 **Docker Files Created**
 - `Dockerfile.dev` - Development-optimized container
@@ -74,10 +74,10 @@ All containers are healthy and running:
 
 ```
 NAME                    STATUS                   PORTS
-activeagent-web-1       Up (healthy)            0.0.0.0:3000->3000/tcp
-activeagent-sidekiq-1   Up                      3000/tcp
-activeagent-db-1        Up (healthy)            0.0.0.0:5432->5432/tcp
-activeagent-redis-1     Up (healthy)            0.0.0.0:6380->6379/tcp
+activerabbit-web-1       Up (healthy)            0.0.0.0:3000->3000/tcp
+activerabbit-sidekiq-1   Up                      3000/tcp
+activerabbit-db-1        Up (healthy)            0.0.0.0:5432->5432/tcp
+activerabbit-redis-1     Up (healthy)            0.0.0.0:6380->6379/tcp
 ```
 
 ## 🔧 **Features Working**
@@ -140,7 +140,7 @@ docker-compose up
 docker-compose exec web bundle exec rails db:drop db:create db:migrate
 
 # Connect directly to PostgreSQL
-docker-compose exec db psql -U postgres -d activeagent_development
+docker-compose exec db psql -U postgres -d activerabbit_development
 ```
 
 ### Port Conflicts

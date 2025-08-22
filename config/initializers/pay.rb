@@ -5,5 +5,5 @@
 # STRIPE_SIGNING_SECRET
 
 # Basic Pay configuration
-Pay.application_name = "ActiveAgent"
-Pay.business_name = "ActiveAgent"
+Pay.application_name = "ActiveRabbit"
+Pay.business_name = "ActiveRabbit"

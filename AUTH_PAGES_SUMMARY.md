@@ -11,7 +11,7 @@ Your Rails application now has gorgeous, modern authentication pages that rival 
 - **Subtle grid pattern** for texture and depth
 - **Floating animated blobs** for visual appeal
 - **Centered card design** with rounded corners and shadows
-- **ActiveAgent branding** with custom logo and colors
+- **ActiveRabbit branding** with custom logo and colors
 - **Responsive design** that works on all devices
 
 #### **🔐 Sign In Page** (`/users/sign_in`)
@@ -109,7 +109,7 @@ Your Rails application now has gorgeous, modern authentication pages that rival 
 
 ### 🎨 **Brand Consistency**
 
-#### **ActiveAgent Branding**
+#### **ActiveRabbit Branding**
 - **Logo design** with lightning bolt icon
 - **Consistent color scheme** throughout
 - **Professional typography** choices
@@ -153,7 +153,7 @@ Your Rails application now has gorgeous, modern authentication pages that rival 
 3. **📱 Mobile Perfect**: Works beautifully on all devices
 4. **⚡ Performance**: Fast, smooth, responsive interactions
 5. **♿ Accessible**: Built with accessibility best practices
-6. **🎭 Brand Consistent**: Matches your ActiveAgent identity
+6. **🎭 Brand Consistent**: Matches your ActiveRabbit identity
 
 ### 🌟 **User Experience Highlights**
 

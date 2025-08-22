@@ -8,7 +8,7 @@ Your Rails application now has a beautiful, fully-functional SaaS admin interfac
 
 #### **Left Sidebar (Dark Theme)**
 - **Dark gray background** (`bg-gray-900`) with white text
-- **ActiveAgent logo** with icon at the top
+- **ActiveRabbit logo** with icon at the top
 - **Navigation menu** with hover effects and active states:
   - 📊 **Dashboard** - Main overview with metrics
   - 🚀 **Deploys** - Deployment history and status

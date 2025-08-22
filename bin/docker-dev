@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🐳 Starting ActiveAgent development environment..."
+echo "🐳 Starting ActiveRabbit development environment..."
 
 # Start all services
 docker-compose up --build
