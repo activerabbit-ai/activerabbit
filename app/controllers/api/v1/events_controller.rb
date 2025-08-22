@@ -76,18 +76,31 @@ class Api::V1::EventsController < Api::BaseController
     processed_count = 0
 
     events.each do |event_data|
-      event_type = event_data[:event_type] || event_data['event_type']
-      
-      # Extract the actual payload from the data field
+      # Extract the actual payload from the data field first
       actual_data = event_data[:data] || event_data['data'] || event_data
+
+      # Event type can be at top level or inside the data
+      event_type = event_data[:event_type] || event_data['event_type'] ||
+                   actual_data[:event_type] || actual_data['event_type']
+      Rails.logger.info "Processing event with type: #{event_type.inspect}"
+      Rails.logger.info "Event data structure: #{event_data.keys.inspect}"
+      Rails.logger.info "Actual data structure: #{actual_data.keys.inspect if actual_data.respond_to?(:keys)}"
 
       case event_type
       when 'error'
+        Rails.logger.info "Processing error event. actual_data: #{actual_data.inspect}"
         payload = sanitize_error_payload(actual_data)
-        next unless valid_error_payload?(payload)
-        serializable_payload = JSON.parse(payload.to_h.to_json)
-        ErrorIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
-        processed_count += 1
+        Rails.logger.info "Error payload after sanitization: #{payload.inspect}"
+
+        if valid_error_payload?(payload)
+          Rails.logger.info "Payload is valid, queuing job"
+          serializable_payload = JSON.parse(payload.to_h.to_json)
+          Rails.logger.info "Calling ErrorIngestJob.perform_async(#{@current_project.id}, payload, #{batch_id})"
+          ErrorIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
+          processed_count += 1
+        else
+          Rails.logger.info "Payload validation failed, skipping"
+        end
       when 'performance'
         payload = sanitize_performance_payload(actual_data)
         next unless valid_performance_payload?(payload)
@@ -111,18 +124,22 @@ class Api::V1::EventsController < Api::BaseController
   private
 
   def sanitize_error_payload(params)
+    # Extract context data for better field mapping
+    context = params[:context] || params['context'] || {}
+    request_context = context[:request] || context['request'] || {}
+    
     {
       exception_class: params[:exception_class] || params['exception_class'] || params[:exception_type] || params['exception_type'] || params[:type] || params['type'],
       message: params[:message] || params['message'],
-      backtrace: params[:backtrace] || params['backtrace'],
-      controller_action: params[:controller_action] || params['controller_action'],
-      request_path: params[:request_path] || params['request_path'],
-      request_method: params[:request_method] || params['request_method'],
+      backtrace: params[:backtrace] || params['backtrace'] || [],
+      controller_action: params[:controller_action] || params['controller_action'] || extract_controller_action(request_context),
+      request_path: params[:request_path] || params['request_path'] || request_context[:path] || request_context['path'],
+      request_method: params[:request_method] || params['request_method'] || request_context[:method] || request_context['method'],
       user_id: params[:user_id] || params['user_id'],
       environment: params[:environment] || params['environment'] || 'production',
       release_version: params[:release_version] || params['release_version'],
       occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at'] || params[:timestamp] || params['timestamp']),
-      context: params[:context] || params['context'] || {},
+      context: context,
       server_name: params[:server_name] || params['server_name'],
       request_id: params[:request_id] || params['request_id']
     }
@@ -186,7 +203,7 @@ class Api::V1::EventsController < Api::BaseController
   end
 
   def valid_error_payload?(payload)
-    payload[:exception_type].present? && payload[:message].present?
+    (payload[:exception_class].present? || payload[:exception_type].present?) && payload[:message].present?
   end
 
   def valid_performance_payload?(payload)

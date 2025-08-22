@@ -68,8 +68,8 @@ class ErrorIngestJob
 
     return true if issue.count == 1 # New issue
 
-    # Check if issue was recently resolved and is now recurring
-    if issue.resolved_at && issue.resolved_at > 1.day.ago
+    # Check if issue was recently closed and is now recurring
+    if issue.closed_at && issue.closed_at > 1.day.ago
       return true
     end
 
