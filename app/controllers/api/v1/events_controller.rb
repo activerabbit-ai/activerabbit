@@ -127,11 +127,11 @@ class Api::V1::EventsController < Api::BaseController
     # Extract context data for better field mapping
     context = params[:context] || params['context'] || {}
     request_context = context[:request] || context['request'] || {}
-    
+
     {
       exception_class: params[:exception_class] || params['exception_class'] || params[:exception_type] || params['exception_type'] || params[:type] || params['type'],
       message: params[:message] || params['message'],
-      backtrace: params[:backtrace] || params['backtrace'] || [],
+      backtrace: normalize_backtrace(params[:backtrace] || params['backtrace'] || []),
       controller_action: params[:controller_action] || params['controller_action'] || extract_controller_action(request_context),
       request_path: params[:request_path] || params['request_path'] || request_context[:path] || request_context['path'],
       request_method: params[:request_method] || params['request_method'] || request_context[:method] || request_context['method'],
@@ -232,5 +232,40 @@ class Api::V1::EventsController < Api::BaseController
   def parse_int(value)
     return nil if value.blank?
     value.to_i rescue nil
+  end
+
+  def extract_controller_action(request_context)
+    controller = request_context[:controller] || request_context['controller']
+    action = request_context[:action] || request_context['action']
+
+    if controller && action
+      "#{controller}##{action}"
+    elsif controller
+      controller
+    else
+      "unknown"
+    end
+  end
+
+  def normalize_backtrace(backtrace)
+    return [] if backtrace.blank?
+
+    # Handle array of strings (normal case)
+    return backtrace if backtrace.is_a?(Array) && backtrace.first.is_a?(String)
+
+    # Handle array of hashes/parameters (from gem)
+    if backtrace.is_a?(Array)
+      backtrace.map do |frame|
+        if frame.is_a?(Hash) || frame.respond_to?(:[])
+          # Extract the 'line' field which contains the full stack frame
+          frame[:line] || frame['line'] || frame.to_s
+        else
+          frame.to_s
+        end
+      end
+    else
+      # Handle string backtrace
+      backtrace.to_s.split("\n")
+    end
   end
 end
