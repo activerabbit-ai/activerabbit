@@ -1,10 +1,12 @@
 class Admin::ErrorsController < ApplicationController
   layout 'admin'
   before_action :authenticate_user!
+  before_action :set_project, if: -> { params[:project_id] }
 
     def index
     # Get all issues (errors) ordered by most recent
-    @issues = Issue.includes(:project)
+    scope = @project ? @project.issues : Issue
+    @issues = scope.includes(:project)
                    .recent
                    .limit(50)
 
@@ -15,12 +17,12 @@ class Admin::ErrorsController < ApplicationController
   end
 
   def show
-    @issue = Issue.find(params[:id])
+    @issue = (@project ? @project.issues : Issue).find(params[:id])
     @events = @issue.events.recent.limit(20)
   end
 
   def update
-    @issue = Issue.find(params[:id])
+    @issue = (@project ? @project.issues : Issue).find(params[:id])
 
     if @issue.update(issue_params)
       redirect_to admin_error_path(@issue), notice: 'Error status updated successfully.'
@@ -32,12 +34,16 @@ class Admin::ErrorsController < ApplicationController
   def destroy
     @issue = Issue.find(params[:id])
     @issue.destroy
-    redirect_to admin_errors_path, notice: 'Error deleted successfully.'
+    redirect_to(@project ? project_errors_path(@project) : errors_path, notice: 'Error deleted successfully.')
   end
 
   private
 
   def issue_params
     params.require(:issue).permit(:status)
+  end
+
+  def set_project
+    @project = current_user.projects.find(params[:project_id])
   end
 end

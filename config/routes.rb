@@ -61,6 +61,36 @@ Rails.application.routes.draw do
   devise_for :users
   root "home#index"
 
+  # Top-level replacements for admin pages (no /admin in URLs)
+  get 'dashboard', to: 'admin/dashboard#index', as: 'dashboard'
+  get 'deploys', to: 'admin/deploys#index', as: 'deploys'
+  get 'errors', to: 'admin/errors#index', as: 'errors'
+  get 'security', to: 'admin/security#index', as: 'security'
+  get 'settings', to: 'admin/settings#index', as: 'settings'
+
+  # Top-level Performance routes (no /admin or /projects/:id required)
+  get 'performance', to: 'admin/performance#index', as: 'performance'
+  get 'performance/actions/:target', to: 'admin/performance#action_detail', as: 'performance_action_detail'
+  get 'performance/sql_fingerprints', to: 'admin/performance#sql_fingerprints', as: 'performance_sql_fingerprints'
+  get 'performance/sql_fingerprints/:id', to: 'admin/performance#sql_fingerprint', as: 'performance_sql_fingerprint'
+  post 'performance/sql_fingerprints/:id/create_pr', to: 'admin/performance#create_n_plus_one_pr', as: 'performance_create_n_plus_one_pr'
+
+  # Project-scoped Performance routes at top-level (no /admin)
+  get 'projects/:project_id/performance', to: 'admin/performance#index', as: 'project_performance'
+  get 'projects/:project_id/performance/actions/:target', to: 'admin/performance#action_detail', as: 'project_performance_action_detail'
+  get 'projects/:project_id/performance/sql_fingerprints', to: 'admin/performance#sql_fingerprints', as: 'project_performance_sql_fingerprints'
+  get 'projects/:project_id/performance/sql_fingerprints/:id', to: 'admin/performance#sql_fingerprint', as: 'project_performance_sql_fingerprint'
+  post 'projects/:project_id/performance/sql_fingerprints/:id/create_pr', to: 'admin/performance#create_n_plus_one_pr', as: 'project_performance_create_n_plus_one_pr'
+
+  # Top-level Logs route (no /admin)
+  get 'logs', to: 'admin/logs#index', as: 'logs'
+
+  # Project-scoped Errors routes (no /admin)
+  get 'projects/:project_id/errors', to: 'admin/errors#index', as: 'project_errors'
+  get 'projects/:project_id/errors/:id', to: 'admin/errors#show', as: 'project_error'
+  patch 'projects/:project_id/errors/:id', to: 'admin/errors#update'
+  delete 'projects/:project_id/errors/:id', to: 'admin/errors#destroy'
+
   # Sidekiq Web UI (protect this in production)
   mount Sidekiq::Web => '/sidekiq'
 

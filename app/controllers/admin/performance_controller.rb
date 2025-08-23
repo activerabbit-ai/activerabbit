@@ -85,7 +85,7 @@ class Admin::PerformanceController < ApplicationController
                        .order(:timestamp)
 
     if @rollups.empty?
-      redirect_to admin_project_performance_path(@project), alert: "No performance data found for #{@target}"
+      redirect_to project_performance_path(@project), alert: "No performance data found for #{@target}"
       return
     end
 
@@ -141,10 +141,10 @@ class Admin::PerformanceController < ApplicationController
     result = pr_service.create_n_plus_one_fix_pr(@sql_fingerprint)
 
     if result[:success]
-      redirect_to admin_project_performance_sql_fingerprint_path(@project, @sql_fingerprint),
+      redirect_to project_performance_sql_fingerprint_path(@project, @sql_fingerprint),
                   notice: "PR created: #{result[:pr_url]}"
     else
-      redirect_to admin_project_performance_sql_fingerprint_path(@project, @sql_fingerprint),
+      redirect_to project_performance_sql_fingerprint_path(@project, @sql_fingerprint),
                   alert: "Failed to create PR: #{result[:error]}"
     end
   end
