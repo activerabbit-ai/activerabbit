@@ -133,8 +133,8 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <% mock_performance_issues.each do |perf_issue| %>
-            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="window.location.href='<%= project_performance_action_detail_path(@project, perf_issue[:action]) %>'">
+          <% mock_performance_issues.each_with_index do |perf_issue, idx| %>
+            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="window.location.href='<%= project_performance_issue_path(@project, idx + 1) %>'">
               <td class="px-6 py-4">
                 <div class="flex items-start">
                   <div class="flex-shrink-0 w-2 h-2 rounded-full mt-2 mr-3 <%= perf_issue[:status] == 'slow' ? 'bg-yellow-400' : perf_issue[:error_count] > 0 ? 'bg-red-400' : 'bg-green-400' %>"></div>

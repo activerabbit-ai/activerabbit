@@ -21,6 +21,7 @@ Rails.application.routes.draw do
 
   # Project-scoped Performance routes at top-level (no /admin)
   get 'projects/:project_id/performance', to: 'performance#index', as: 'project_performance'
+  get 'projects/:project_id/performance/:id', to: 'performance#show', as: 'project_performance_issue'
   get 'projects/:project_id/performance/actions/:target', to: 'performance#action_detail', as: 'project_performance_action_detail'
   get 'projects/:project_id/performance/sql_fingerprints', to: 'performance#sql_fingerprints', as: 'project_performance_sql_fingerprints'
   get 'projects/:project_id/performance/sql_fingerprints/:id', to: 'performance#sql_fingerprint', as: 'project_performance_sql_fingerprint'
