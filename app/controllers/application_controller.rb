@@ -5,6 +5,8 @@ class ApplicationController < ActionController::Base
   # Devise authentication
   before_action :authenticate_user!
 
+  helper_method :current_project
+
   protected
 
   # Use auth layout for Devise controllers
@@ -14,6 +16,15 @@ class ApplicationController < ActionController::Base
     else
       "application"
     end
+  end
+
+  def after_sign_in_path_for(resource)
+    dashboard_path
+  end
+
+  def current_project
+    return @current_project if defined?(@current_project)
+    @current_project = current_user.respond_to?(:projects) ? current_user.projects.first : nil
   end
 
   layout :layout_by_resource

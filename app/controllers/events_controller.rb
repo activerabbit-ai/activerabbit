@@ -1,4 +1,4 @@
-class Admin::EventsController < ApplicationController
+class EventsController < ApplicationController
   layout 'admin'
   before_action :authenticate_user!
   before_action :set_project
@@ -43,21 +43,21 @@ class Admin::EventsController < ApplicationController
 
   def destroy
     @event.destroy
-    redirect_to admin_project_events_path(@project), notice: 'Event deleted successfully.'
+    redirect_to project_events_path(@project), notice: 'Event deleted successfully.'
   end
 
   def bulk_delete
     event_ids = params[:event_ids] || []
 
     if event_ids.empty?
-      redirect_to admin_project_events_path(@project), alert: 'No events selected.'
+      redirect_to project_events_path(@project), alert: 'No events selected.'
       return
     end
 
     count = @project.events.where(id: event_ids).count
     @project.events.where(id: event_ids).destroy_all
 
-    redirect_to admin_project_events_path(@project), notice: "#{count} events deleted."
+    redirect_to project_events_path(@project), notice: "#{count} events deleted."
   end
 
   def cleanup_old
@@ -65,14 +65,14 @@ class Admin::EventsController < ApplicationController
     days = params[:days]&.to_i || 90
 
     if days < 7
-      redirect_to admin_project_events_path(@project), alert: 'Minimum retention period is 7 days.'
+      redirect_to project_events_path(@project), alert: 'Minimum retention period is 7 days.'
       return
     end
 
     count = @project.events.where('created_at < ?', days.days.ago).count
     @project.events.where('created_at < ?', days.days.ago).destroy_all
 
-    redirect_to admin_project_events_path(@project), notice: "#{count} old events deleted (older than #{days} days)."
+    redirect_to project_events_path(@project), notice: "#{count} old events deleted (older than #{days} days)."
   end
 
   private

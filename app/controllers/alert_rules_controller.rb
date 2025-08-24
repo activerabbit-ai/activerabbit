@@ -1,4 +1,4 @@
-class Admin::AlertRulesController < ApplicationController
+class AlertRulesController < ApplicationController
   layout 'admin'
   before_action :authenticate_user!
   before_action :set_project
@@ -21,7 +21,7 @@ class Admin::AlertRulesController < ApplicationController
     @alert_rule = @project.alert_rules.build(alert_rule_params)
 
     if @alert_rule.save
-      redirect_to admin_project_alert_rules_path(@project),
+      redirect_to project_alert_rules_path(@project),
                   notice: 'Alert rule created successfully.'
     else
       render :new, status: :unprocessable_entity
@@ -33,7 +33,7 @@ class Admin::AlertRulesController < ApplicationController
 
   def update
     if @alert_rule.update(alert_rule_params)
-      redirect_to admin_project_alert_rules_path(@project),
+      redirect_to project_alert_rules_path(@project),
                   notice: 'Alert rule updated successfully.'
     else
       render :edit, status: :unprocessable_entity
@@ -42,14 +42,14 @@ class Admin::AlertRulesController < ApplicationController
 
   def destroy
     @alert_rule.destroy
-    redirect_to admin_project_alert_rules_path(@project),
+    redirect_to project_alert_rules_path(@project),
                 notice: 'Alert rule deleted successfully.'
   end
 
   def toggle
     @alert_rule.update!(enabled: !@alert_rule.enabled)
     status = @alert_rule.enabled? ? 'enabled' : 'disabled'
-    redirect_to admin_project_alert_rules_path(@project),
+    redirect_to project_alert_rules_path(@project),
                 notice: "Alert rule #{status}."
   end
 
@@ -60,7 +60,7 @@ class Admin::AlertRulesController < ApplicationController
     test_payload = generate_test_payload(@alert_rule)
     AlertJob.perform_async(@alert_rule.id, @alert_rule.rule_type, test_payload)
 
-    redirect_to admin_project_alert_rule_path(@project, @alert_rule),
+    redirect_to project_alert_rule_path(@project, @alert_rule),
                 notice: 'Test alert queued. Check your notifications.'
   end
 

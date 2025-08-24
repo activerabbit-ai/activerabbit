@@ -1,95 +1,74 @@
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
-  namespace :admin do
-    root "dashboard#index"
-    get "dashboard", to: "dashboard#index"
-    get "deploys", to: "deploys#index"
-    get "errors", to: "errors#index"
-    get "errors/:id", to: "errors#show", as: "error"
-    patch "errors/:id", to: "errors#update"
-    delete "errors/:id", to: "errors#destroy"
-    get "performance", to: "performance#index"
-    get "security", to: "security#index"
-    get "logs", to: "logs#index"
-    get "settings", to: "settings#index"
-
-    # Public demo endpoints (no auth required)
-    get "public/errors", to: "public#errors"
-
-    # Projects management
-    resources :projects do
-      member do
-        post :regenerate_token
-      end
-
-      # Nested resources for project-specific management
-      resources :issues do
-        member do
-          patch :update  # For resolve/ignore/reopen actions
-        end
-        collection do
-          post :bulk_action
-        end
-      end
-
-      resources :events do
-        collection do
-          post :bulk_delete
-          post :cleanup_old
-        end
-      end
-
-      resources :alert_rules do
-        member do
-          post :toggle
-          post :test_alert
-        end
-      end
-
-      # Performance monitoring
-      get 'performance', to: 'performance#index'
-      get 'performance/actions/:target', to: 'performance#action_detail', as: 'performance_action_detail'
-      get 'performance/sql_fingerprints', to: 'performance#sql_fingerprints'
-      get 'performance/sql_fingerprints/:id', to: 'performance#sql_fingerprint', as: 'performance_sql_fingerprint'
-      post 'performance/sql_fingerprints/:id/create_pr', to: 'performance#create_n_plus_one_pr', as: 'create_n_plus_one_pr'
-    end
-
-    # Global performance overview (no project context)
-    get 'performance', to: 'performance#index'
-  end
   devise_for :users
-  root "home#index"
+  root "dashboard#index"
 
   # Top-level replacements for admin pages (no /admin in URLs)
-  get 'dashboard', to: 'admin/dashboard#index', as: 'dashboard'
-  get 'deploys', to: 'admin/deploys#index', as: 'deploys'
-  get 'errors', to: 'admin/errors#index', as: 'errors'
-  get 'security', to: 'admin/security#index', as: 'security'
-  get 'settings', to: 'admin/settings#index', as: 'settings'
+  get 'dashboard', to: 'dashboard#index', as: 'dashboard'
+  get 'deploys', to: 'deploys#index', as: 'deploys'
+  get 'errors', to: 'errors#index', as: 'errors'
+  resources :errors, only: [:show, :update, :destroy]
+  get 'security', to: 'security#index', as: 'security'
+  get 'settings', to: 'settings#index', as: 'settings'
 
   # Top-level Performance routes (no /admin or /projects/:id required)
-  get 'performance', to: 'admin/performance#index', as: 'performance'
-  get 'performance/actions/:target', to: 'admin/performance#action_detail', as: 'performance_action_detail'
-  get 'performance/sql_fingerprints', to: 'admin/performance#sql_fingerprints', as: 'performance_sql_fingerprints'
-  get 'performance/sql_fingerprints/:id', to: 'admin/performance#sql_fingerprint', as: 'performance_sql_fingerprint'
-  post 'performance/sql_fingerprints/:id/create_pr', to: 'admin/performance#create_n_plus_one_pr', as: 'performance_create_n_plus_one_pr'
+  get 'performance', to: 'performance#index', as: 'performance'
+  get 'performance/actions/:target', to: 'performance#action_detail', as: 'performance_action_detail'
+  get 'performance/sql_fingerprints', to: 'performance#sql_fingerprints', as: 'performance_sql_fingerprints'
+  get 'performance/sql_fingerprints/:id', to: 'performance#sql_fingerprint', as: 'performance_sql_fingerprint'
+  post 'performance/sql_fingerprints/:id/create_pr', to: 'performance#create_n_plus_one_pr', as: 'performance_create_n_plus_one_pr'
 
   # Project-scoped Performance routes at top-level (no /admin)
-  get 'projects/:project_id/performance', to: 'admin/performance#index', as: 'project_performance'
-  get 'projects/:project_id/performance/actions/:target', to: 'admin/performance#action_detail', as: 'project_performance_action_detail'
-  get 'projects/:project_id/performance/sql_fingerprints', to: 'admin/performance#sql_fingerprints', as: 'project_performance_sql_fingerprints'
-  get 'projects/:project_id/performance/sql_fingerprints/:id', to: 'admin/performance#sql_fingerprint', as: 'project_performance_sql_fingerprint'
-  post 'projects/:project_id/performance/sql_fingerprints/:id/create_pr', to: 'admin/performance#create_n_plus_one_pr', as: 'project_performance_create_n_plus_one_pr'
+  get 'projects/:project_id/performance', to: 'performance#index', as: 'project_performance'
+  get 'projects/:project_id/performance/actions/:target', to: 'performance#action_detail', as: 'project_performance_action_detail'
+  get 'projects/:project_id/performance/sql_fingerprints', to: 'performance#sql_fingerprints', as: 'project_performance_sql_fingerprints'
+  get 'projects/:project_id/performance/sql_fingerprints/:id', to: 'performance#sql_fingerprint', as: 'project_performance_sql_fingerprint'
+  post 'projects/:project_id/performance/sql_fingerprints/:id/create_pr', to: 'performance#create_n_plus_one_pr', as: 'project_performance_create_n_plus_one_pr'
 
   # Top-level Logs route (no /admin)
-  get 'logs', to: 'admin/logs#index', as: 'logs'
+  get 'logs', to: 'logs#index', as: 'logs'
 
   # Project-scoped Errors routes (no /admin)
-  get 'projects/:project_id/errors', to: 'admin/errors#index', as: 'project_errors'
-  get 'projects/:project_id/errors/:id', to: 'admin/errors#show', as: 'project_error'
-  patch 'projects/:project_id/errors/:id', to: 'admin/errors#update'
-  delete 'projects/:project_id/errors/:id', to: 'admin/errors#destroy'
+  get 'projects/:project_id/errors', to: 'errors#index', as: 'project_errors'
+  get 'projects/:project_id/errors/:id', to: 'errors#show', as: 'project_error'
+  patch 'projects/:project_id/errors/:id', to: 'errors#update'
+  delete 'projects/:project_id/errors/:id', to: 'errors#destroy'
+
+  # Projects management (non-admin)
+  resources :projects do
+    member do
+      post :regenerate_token
+    end
+
+    resources :issues do
+      member do
+        patch :update
+      end
+      collection do
+        post :bulk_action
+      end
+    end
+
+    resources :events do
+      collection do
+        post :bulk_delete
+        post :cleanup_old
+      end
+    end
+
+    resources :alert_rules do
+      member do
+        post :toggle
+        post :test_alert
+      end
+    end
+  end
+
+  # Project-scoped Security, Logs, Deploys
+  get 'projects/:project_id/security', to: 'security#index', as: 'project_security'
+  get 'projects/:project_id/logs', to: 'logs#index', as: 'project_logs'
+  get 'projects/:project_id/deploys', to: 'deploys#index', as: 'project_deploys'
 
   # Sidekiq Web UI (protect this in production)
   mount Sidekiq::Web => '/sidekiq'

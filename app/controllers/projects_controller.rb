@@ -1,4 +1,4 @@
-class Admin::ProjectsController < ApplicationController
+class ProjectsController < ApplicationController
   layout 'admin'
   before_action :authenticate_user!
   before_action :set_project, only: [:show, :edit, :update, :destroy, :regenerate_token]
@@ -43,7 +43,7 @@ class Admin::ProjectsController < ApplicationController
       @project.generate_api_token!
       @project.create_default_alert_rules!
 
-      redirect_to admin_project_path(@project), notice: 'Project created successfully.'
+      redirect_to project_path(@project), notice: 'Project created successfully.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -54,7 +54,7 @@ class Admin::ProjectsController < ApplicationController
 
   def update
     if @project.update(project_params)
-      redirect_to admin_project_path(@project), notice: 'Project updated successfully.'
+      redirect_to project_path(@project), notice: 'Project updated successfully.'
     else
       render :edit, status: :unprocessable_entity
     end
@@ -62,14 +62,14 @@ class Admin::ProjectsController < ApplicationController
 
   def destroy
     @project.destroy
-    redirect_to admin_projects_path, notice: 'Project deleted successfully.'
+    redirect_to projects_path, notice: 'Project deleted successfully.'
   end
 
   def regenerate_token
     @project.api_tokens.active.update_all(active: false, revoked_at: Time.current)
     new_token = @project.generate_api_token!
 
-    redirect_to admin_project_path(@project),
+    redirect_to project_path(@project),
                 notice: "New API token generated: #{new_token.mask_token}"
   end
 

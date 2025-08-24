@@ -1,4 +1,5 @@
-class Admin::PerformanceController < ApplicationController
+class PerformanceController < ApplicationController
+  # Keep views under admin/performance
   layout 'admin'
   before_action :authenticate_user!
   before_action :set_project, if: -> { params[:project_id] }

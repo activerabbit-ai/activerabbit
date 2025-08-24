@@ -17,9 +17,9 @@
       <p class="text-gray-600"><%= @project.description %></p>
     </div>
     <div class="flex space-x-3">
-      <%= link_to "Edit Project", edit_admin_project_path(@project),
+      <%= link_to "Edit Project", edit_project_path(@project),
           class: "bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" %>
-      <%= link_to "Regenerate Token", regenerate_token_admin_project_path(@project),
+      <%= link_to "Regenerate Token", regenerate_token_project_path(@project),
           method: :post,
           data: { confirm: "This will invalidate the current API token. Continue?" },
           class: "bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors" %>
@@ -92,14 +92,14 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
     <div class="space-y-3">
-      <%= link_to admin_project_issues_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
+      <%= link_to project_issues_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
         <svg class="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
         </svg>
         <span class="text-sm font-medium">View Issues</span>
       <% end %>
 
-      <%= link_to admin_project_events_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
+      <%= link_to project_events_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
         <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
         </svg>
@@ -137,7 +137,7 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-gray-900">Alert Rules</h3>
-      <%= link_to admin_project_alert_rules_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
+      <%= link_to project_alert_rules_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
         Manage →
       <% end %>
     </div>
@@ -163,7 +163,7 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-gray-900">Recent Issues</h3>
-      <%= link_to admin_project_issues_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
+      <%= link_to project_issues_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
         View All →
       <% end %>
     </div>
@@ -172,7 +172,7 @@
         <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
           <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
           <div class="flex-1 min-w-0">
-            <%= link_to admin_project_issue_path(@project, issue), class: "block" do %>
+            <%= link_to project_issue_path(@project, issue), class: "block" do %>
               <p class="text-sm font-medium text-gray-900 truncate"><%= issue.exception_type %></p>
               <p class="text-xs text-gray-500 truncate"><%= issue.message %></p>
               <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(issue.last_seen_at) %> ago</p>
@@ -192,7 +192,7 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-gray-900">Recent Events</h3>
-      <%= link_to admin_project_events_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
+      <%= link_to project_events_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
         View All →
       <% end %>
     </div>
@@ -205,7 +205,7 @@
             <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
           <% end %>
           <div class="flex-1 min-w-0">
-            <%= link_to admin_project_event_path(@project, event), class: "block" do %>
+            <%= link_to project_event_path(@project, event), class: "block" do %>
               <p class="text-sm font-medium text-gray-900 capitalize"><%= event.event_type %></p>
               <p class="text-xs text-gray-500 truncate"><%= event.controller_action || event.request_path %></p>
               <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(event.occurred_at) %> ago</p>

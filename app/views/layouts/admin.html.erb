@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Admin - ActiveRabbit" %></title>
+    <title><%= content_for?(:page_title) ? content_for(:page_title) : "ActiveRabbit" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -26,28 +26,7 @@
       <div class="bg-gray-900 text-white w-64 min-h-screen p-4">
         <div class="flex items-center mb-8">
           <div class="bg-indigo-600 rounded-lg p-2 mr-3">
-              <!-- Rabbit ears -->
-              <ellipse cx="8" cy="4" rx="1.5" ry="3" transform="rotate(-20 8 4)"/>
-              <ellipse cx="16" cy="4" rx="1.5" ry="3" transform="rotate(20 16 4)"/>
-              <!-- Inner ears -->
-              <ellipse cx="8.2" cy="4.5" rx="0.7" ry="1.8" fill="#e0e7ff" transform="rotate(-20 8.2 4.5)"/>
-              <ellipse cx="15.8" cy="4.5" rx="0.7" ry="1.8" fill="#e0e7ff" transform="rotate(20 15.8 4.5)"/>
-              <!-- Head -->
-              <circle cx="12" cy="12" r="6"/>
-              <!-- Eyes -->
-              <circle cx="10" cy="10" r="1" fill="#1e293b"/>
-              <circle cx="14" cy="10" r="1" fill="#1e293b"/>
-              <!-- Eye shine -->
-              <circle cx="10.3" cy="9.7" r="0.3" fill="white"/>
-              <circle cx="14.3" cy="9.7" r="0.3" fill="white"/>
-              <!-- Nose -->
-              <path d="M12 13 L11.5 14 L12.5 14 Z" fill="#f59e0b"/>
-              <!-- Mouth -->
-              <path d="M12 14.5 Q10.5 15.5 9.5 14.5" stroke="#1e293b" stroke-width="0.5" fill="none" stroke-linecap="round"/>
-              <path d="M12 14.5 Q13.5 15.5 14.5 14.5" stroke="#1e293b" stroke-width="0.5" fill="none" stroke-linecap="round"/>
-              <!-- Cheeks -->
-              <circle cx="8.5" cy="13" r="0.8" fill="#fecaca" opacity="0.6"/>
-              <circle cx="15.5" cy="13" r="0.8" fill="#fecaca" opacity="0.6"/>
+            <span class="text-white font-bold">AR</span>
           </div>
           <span class="text-xl font-bold">ActiveRabbit</span>
         </div>
@@ -62,7 +41,7 @@
             Dashboard
           <% end %>
 
-          <%= link_to deploys_path,
+          <%= link_to current_project ? project_deploys_path(current_project) : deploys_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(deploys_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -70,7 +49,7 @@
             Deploys
           <% end %>
 
-          <%= link_to errors_path,
+          <%= link_to current_project ? project_errors_path(current_project) : errors_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(errors_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
@@ -78,7 +57,7 @@
             Errors
           <% end %>
 
-          <%= link_to performance_path,
+          <%= link_to current_project ? project_performance_path(current_project) : performance_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(performance_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -86,7 +65,7 @@
             Performance
           <% end %>
 
-          <%= link_to security_path,
+          <%= link_to current_project ? project_security_path(current_project) : security_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(security_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
@@ -94,7 +73,7 @@
             Security
           <% end %>
 
-          <%= link_to logs_path,
+          <%= link_to current_project ? project_logs_path(current_project) : logs_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(logs_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -122,7 +101,7 @@
           <div class="flex items-center justify-between px-6 py-4">
             <div class="flex items-center">
               <h1 class="text-2xl font-semibold text-gray-900">
-                <%= content_for(:page_title) || "Dashboard" %>
+                <%= content_for?(:page_title) ? yield(:page_title) : "Dashboard" %>
               </h1>
             </div>
 

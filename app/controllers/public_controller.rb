@@ -1,4 +1,4 @@
-class Admin::PublicController < ApplicationController
+class PublicController < ApplicationController
   # Skip authentication for public demo
   skip_before_action :authenticate_user!
   layout 'admin'

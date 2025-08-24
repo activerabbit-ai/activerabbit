@@ -1,4 +1,4 @@
-class Admin::ErrorsController < ApplicationController
+class ErrorsController < ApplicationController
   layout 'admin'
   before_action :authenticate_user!
   before_action :set_project, if: -> { params[:project_id] }
@@ -25,9 +25,9 @@ class Admin::ErrorsController < ApplicationController
     @issue = (@project ? @project.issues : Issue).find(params[:id])
 
     if @issue.update(issue_params)
-      redirect_to admin_error_path(@issue), notice: 'Error status updated successfully.'
+      redirect_to(@project ? project_error_path(@project, @issue) : errors_path, notice: 'Error status updated successfully.')
     else
-      redirect_to admin_error_path(@issue), alert: 'Failed to update error status.'
+      redirect_to(@project ? project_error_path(@project, @issue) : errors_path, alert: 'Failed to update error status.')
     end
   end
 

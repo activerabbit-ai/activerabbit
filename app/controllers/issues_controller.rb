@@ -1,4 +1,4 @@
-class Admin::IssuesController < ApplicationController
+class IssuesController < ApplicationController
   layout 'admin'
   before_action :authenticate_user!
   before_action :set_project
@@ -53,16 +53,16 @@ class Admin::IssuesController < ApplicationController
       @issue.reopen!
       message = 'Issue reopened.'
     else
-      redirect_to admin_project_issue_path(@project, @issue), alert: 'Invalid action.'
+      redirect_to project_issue_path(@project, @issue), alert: 'Invalid action.'
       return
     end
 
-    redirect_to admin_project_issue_path(@project, @issue), notice: message
+    redirect_to project_issue_path(@project, @issue), notice: message
   end
 
   def destroy
     @issue.destroy
-    redirect_to admin_project_issues_path(@project), notice: 'Issue deleted successfully.'
+    redirect_to project_issues_path(@project), notice: 'Issue deleted successfully.'
   end
 
   def bulk_action
@@ -70,7 +70,7 @@ class Admin::IssuesController < ApplicationController
     action = params[:bulk_action]
 
     if issue_ids.empty?
-      redirect_to admin_project_issues_path(@project), alert: 'No issues selected.'
+      redirect_to project_issues_path(@project), alert: 'No issues selected.'
       return
     end
 
@@ -88,11 +88,11 @@ class Admin::IssuesController < ApplicationController
       issues.destroy_all
       message = "#{count} issues deleted."
     else
-      redirect_to admin_project_issues_path(@project), alert: 'Invalid bulk action.'
+      redirect_to project_issues_path(@project), alert: 'Invalid bulk action.'
       return
     end
 
-    redirect_to admin_project_issues_path(@project), notice: message
+    redirect_to project_issues_path(@project), notice: message
   end
 
   private

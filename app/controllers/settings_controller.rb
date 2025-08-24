@@ -1,4 +1,4 @@
-class Admin::SettingsController < ApplicationController
+class SettingsController < ApplicationController
   layout 'admin'
   before_action :authenticate_user!
 
