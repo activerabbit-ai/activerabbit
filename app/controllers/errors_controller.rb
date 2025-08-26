@@ -3,8 +3,8 @@ class ErrorsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_project, if: -> { params[:project_id] }
 
-    def index
-    # Get all issues (errors) ordered by most recent
+  def index
+    # Get all issues (errors) ordered by most recent, including resolved ones
     scope = @project ? @project.issues : Issue
     @issues = scope.includes(:project)
                    .recent
@@ -13,6 +13,7 @@ class ErrorsController < ApplicationController
     # Get some summary stats
     @total_errors = Issue.count
     @open_errors = Issue.open.count
+    @resolved_errors = Issue.closed.count
     @recent_errors = Issue.where('last_seen_at > ?', 1.hour.ago).count
   end
 
@@ -32,9 +33,9 @@ class ErrorsController < ApplicationController
   end
 
   def destroy
-    @issue = Issue.find(params[:id])
-    @issue.destroy
-    redirect_to(@project ? project_errors_path(@project) : errors_path, notice: 'Error deleted successfully.')
+    @issue = (@project ? @project.issues : Issue).find(params[:id])
+    @issue.close!  # Mark as closed/resolved instead of deleting
+    redirect_to(@project ? project_errors_path(@project) : errors_path, notice: 'Error resolved successfully.')
   end
 
   private
