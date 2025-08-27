@@ -28,6 +28,9 @@ gem "kaminari"
 # Billing & subscriptions
 gem "pay", "~> 8.0"
 
+# Multi-tenancy
+gem "acts_as_tenant"
+
 # UI styling
 gem "tailwindcss-rails"
 

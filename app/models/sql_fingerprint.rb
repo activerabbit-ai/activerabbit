@@ -1,7 +1,11 @@
 class SqlFingerprint < ApplicationRecord
+  # Multi-tenancy setup - SqlFingerprint belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
 
-  validates :fingerprint, presence: true, uniqueness: { scope: :project_id }
+  validates :fingerprint, presence: true
+  validates_uniqueness_to_tenant :fingerprint, scope: :project_id
   validates :query_type, inclusion: { in: %w[SELECT INSERT UPDATE DELETE] }
 
   scope :frequent, -> { order(total_count: :desc) }

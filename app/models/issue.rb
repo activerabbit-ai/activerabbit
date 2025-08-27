@@ -1,8 +1,12 @@
 class Issue < ApplicationRecord
+  # Multi-tenancy setup - Issue belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
   has_many :events, dependent: :destroy
 
-  validates :fingerprint, presence: true, uniqueness: { scope: :project_id }
+  validates :fingerprint, presence: true
+  validates_uniqueness_to_tenant :fingerprint, scope: :project_id
   validates :exception_class, presence: true
   validates :top_frame, presence: true
   validates :controller_action, presence: true

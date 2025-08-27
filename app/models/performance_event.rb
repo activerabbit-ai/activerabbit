@@ -1,4 +1,7 @@
 class PerformanceEvent < ApplicationRecord
+  # Multi-tenancy setup - PerformanceEvent belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
   belongs_to :release, optional: true
 

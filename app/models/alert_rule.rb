@@ -1,4 +1,7 @@
 class AlertRule < ApplicationRecord
+  # Multi-tenancy setup - AlertRule belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
   has_many :alert_notifications, dependent: :destroy
 

@@ -10,9 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_27_033218) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "accounts", force: :cascade do |t|
+    t.string "name", null: false
+    t.boolean "active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_accounts_on_name"
+  end
 
   create_table "alert_notifications", force: :cascade do |t|
     t.bigint "alert_rule_id", null: false
@@ -25,6 +33,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.text "error_message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id", "alert_rule_id"], name: "index_alert_notifications_on_account_id_and_alert_rule_id"
+    t.index ["account_id"], name: "index_alert_notifications_on_account_id"
     t.index ["alert_rule_id"], name: "index_alert_notifications_on_alert_rule_id"
     t.index ["created_at"], name: "index_alert_notifications_on_created_at"
     t.index ["notification_type"], name: "index_alert_notifications_on_notification_type"
@@ -43,6 +54,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.json "conditions", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id", "project_id"], name: "index_alert_rules_on_account_id_and_project_id"
+    t.index ["account_id"], name: "index_alert_rules_on_account_id"
     t.index ["enabled"], name: "index_alert_rules_on_enabled"
     t.index ["project_id", "rule_type"], name: "index_alert_rules_on_project_id_and_rule_type"
     t.index ["project_id"], name: "index_alert_rules_on_project_id"
@@ -58,6 +72,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.datetime "revoked_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id"], name: "index_api_tokens_on_account_id"
     t.index ["active"], name: "index_api_tokens_on_active"
     t.index ["project_id", "active"], name: "index_api_tokens_on_project_id_and_active"
     t.index ["project_id"], name: "index_api_tokens_on_project_id"
@@ -83,6 +99,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.json "context", default: {}
     t.string "server_name"
     t.string "request_id"
+    t.bigint "account_id", null: false
+    t.index ["account_id", "project_id"], name: "index_events_on_account_id_and_project_id"
+    t.index ["account_id"], name: "index_events_on_account_id"
     t.index ["environment"], name: "index_events_on_environment"
     t.index ["exception_class"], name: "index_events_on_exception_class"
     t.index ["issue_id"], name: "index_events_on_issue_id"
@@ -107,6 +126,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.text "message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id", "project_id"], name: "index_healthchecks_on_account_id_and_project_id"
+    t.index ["account_id"], name: "index_healthchecks_on_account_id"
     t.index ["check_type"], name: "index_healthchecks_on_check_type"
     t.index ["enabled"], name: "index_healthchecks_on_enabled"
     t.index ["last_checked_at"], name: "index_healthchecks_on_last_checked_at"
@@ -129,6 +151,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.text "top_frame", null: false
     t.text "sample_message"
     t.datetime "closed_at"
+    t.bigint "account_id", null: false
+    t.index ["account_id"], name: "index_issues_on_account_id"
     t.index ["closed_at"], name: "index_issues_on_closed_at"
     t.index ["exception_class"], name: "index_issues_on_exception_class"
     t.index ["last_seen_at"], name: "index_issues_on_last_seen_at"
@@ -224,6 +248,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.binary "hdr_histogram"
+    t.bigint "account_id", null: false
+    t.index ["account_id", "project_id"], name: "index_perf_rollups_on_account_id_and_project_id"
+    t.index ["account_id"], name: "index_perf_rollups_on_account_id"
     t.index ["project_id", "target", "timestamp"], name: "index_perf_rollups_on_project_id_and_target_and_timestamp"
     t.index ["project_id", "timeframe", "timestamp", "target", "environment"], name: "index_perf_rollups_unique", unique: true
     t.index ["project_id", "timeframe", "timestamp"], name: "index_perf_rollups_on_project_id_and_timeframe_and_timestamp"
@@ -252,6 +279,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.string "request_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id", "project_id"], name: "index_performance_events_on_account_id_and_project_id"
+    t.index ["account_id"], name: "index_performance_events_on_account_id"
     t.index ["duration_ms"], name: "index_performance_events_on_duration_ms"
     t.index ["environment"], name: "index_performance_events_on_environment"
     t.index ["occurred_at"], name: "index_performance_events_on_occurred_at"
@@ -275,6 +305,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.datetime "last_event_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id"], name: "index_projects_on_account_id"
     t.index ["active"], name: "index_projects_on_active"
     t.index ["environment"], name: "index_projects_on_environment"
     t.index ["slug"], name: "index_projects_on_slug", unique: true
@@ -292,6 +324,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.json "metadata", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id", "project_id"], name: "index_releases_on_account_id_and_project_id"
+    t.index ["account_id"], name: "index_releases_on_account_id"
     t.index ["deployed_at"], name: "index_releases_on_deployed_at"
     t.index ["environment"], name: "index_releases_on_environment"
     t.index ["project_id", "version"], name: "index_releases_on_project_id_and_version", unique: true
@@ -313,6 +348,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.datetime "last_seen_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "account_id", null: false
+    t.index ["account_id", "project_id"], name: "index_sql_fingerprints_on_account_id_and_project_id"
+    t.index ["account_id"], name: "index_sql_fingerprints_on_account_id"
     t.index ["avg_duration_ms"], name: "index_sql_fingerprints_on_avg_duration_ms"
     t.index ["last_seen_at"], name: "index_sql_fingerprints_on_last_seen_at"
     t.index ["project_id", "fingerprint"], name: "index_sql_fingerprints_on_project_id_and_fingerprint", unique: true
@@ -334,26 +372,40 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_040552) do
     t.datetime "last_sign_in_at"
     t.string "current_sign_in_ip"
     t.string "last_sign_in_ip"
+    t.bigint "account_id", null: false
+    t.index ["account_id"], name: "index_users_on_account_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "alert_notifications", "accounts"
   add_foreign_key "alert_notifications", "alert_rules"
   add_foreign_key "alert_notifications", "projects"
+  add_foreign_key "alert_rules", "accounts"
   add_foreign_key "alert_rules", "projects"
+  add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
+  add_foreign_key "events", "accounts"
   add_foreign_key "events", "issues"
   add_foreign_key "events", "projects"
   add_foreign_key "events", "releases"
+  add_foreign_key "healthchecks", "accounts"
   add_foreign_key "healthchecks", "projects"
+  add_foreign_key "issues", "accounts"
   add_foreign_key "issues", "projects"
   add_foreign_key "pay_charges", "pay_customers", column: "customer_id"
   add_foreign_key "pay_payment_methods", "pay_customers", column: "customer_id"
   add_foreign_key "pay_subscriptions", "pay_customers", column: "customer_id"
+  add_foreign_key "perf_rollups", "accounts"
   add_foreign_key "perf_rollups", "projects"
+  add_foreign_key "performance_events", "accounts"
   add_foreign_key "performance_events", "projects"
   add_foreign_key "performance_events", "releases"
+  add_foreign_key "projects", "accounts"
   add_foreign_key "projects", "users"
+  add_foreign_key "releases", "accounts"
   add_foreign_key "releases", "projects"
+  add_foreign_key "sql_fingerprints", "accounts"
   add_foreign_key "sql_fingerprints", "projects"
+  add_foreign_key "users", "accounts"
 end

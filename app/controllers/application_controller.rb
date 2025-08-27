@@ -5,7 +5,10 @@ class ApplicationController < ActionController::Base
   # Devise authentication
   before_action :authenticate_user!
 
-  helper_method :current_project
+  # Multi-tenancy: Set current tenant after authentication
+  before_action :set_current_tenant
+
+  helper_method :current_project, :current_account
 
   protected
 
@@ -25,6 +28,18 @@ class ApplicationController < ActionController::Base
   def current_project
     return @current_project if defined?(@current_project)
     @current_project = current_user.respond_to?(:projects) ? current_user.projects.first : nil
+  end
+
+  def current_account
+    @current_account ||= current_user&.account
+  end
+
+  private
+
+  def set_current_tenant
+    if user_signed_in? && current_user.account
+      ActsAsTenant.current_tenant = current_user.account
+    end
   end
 
   layout :layout_by_resource

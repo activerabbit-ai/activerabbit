@@ -1,4 +1,7 @@
 class Event < ApplicationRecord
+  # Multi-tenancy setup - Event belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
   belongs_to :issue
   belongs_to :release, optional: true

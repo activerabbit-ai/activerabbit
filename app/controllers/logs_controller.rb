@@ -5,12 +5,16 @@ class LogsController < ApplicationController
   before_action :set_project, if: -> { params[:project_id] }
 
   def index
+    # Account-scoped logs (mock data for now, replace with real log aggregation)
+    account_name = current_account&.name || "Unknown Account"
+    project_names = current_account&.projects&.pluck(:name) || []
+
     @logs = [
-      { level: 'info', message: 'User authentication successful', timestamp: 5.minutes.ago },
-      { level: 'warn', message: 'High memory usage detected', timestamp: 10.minutes.ago },
-      { level: 'error', message: 'Database query timeout', timestamp: 15.minutes.ago },
-      { level: 'info', message: 'Background job completed', timestamp: 20.minutes.ago }
-    ]
+      { level: 'info', message: "User signed in to #{account_name}", timestamp: 5.minutes.ago, project: project_names.first },
+      { level: 'info', message: "New error reported in #{project_names.first || 'project'}", timestamp: 10.minutes.ago, project: project_names.first },
+      { level: 'warn', message: "High error rate detected in #{account_name}", timestamp: 15.minutes.ago, project: project_names.first },
+      { level: 'info', message: "Performance alert resolved for #{account_name}", timestamp: 20.minutes.ago, project: project_names.first }
+    ].compact
   end
 
   private

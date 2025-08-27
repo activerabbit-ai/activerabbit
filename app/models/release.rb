@@ -1,8 +1,12 @@
 class Release < ApplicationRecord
+  # Multi-tenancy setup - Release belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
   has_many :events, dependent: :nullify
 
-  validates :version, presence: true, uniqueness: { scope: :project_id }
+  validates :version, presence: true
+  validates_uniqueness_to_tenant :version, scope: :project_id
   validates :environment, presence: true
 
   scope :recent, -> { order(deployed_at: :desc) }

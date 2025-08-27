@@ -1,4 +1,7 @@
 class PerfRollup < ApplicationRecord
+  # Multi-tenancy setup - PerfRollup belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
 
   validates :timeframe, inclusion: { in: %w[minute hour day] }

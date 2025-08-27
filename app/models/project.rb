@@ -1,4 +1,7 @@
 class Project < ApplicationRecord
+  # Multi-tenancy setup - Project belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :user
   has_many :issues, dependent: :destroy
   has_many :events, dependent: :destroy
@@ -10,7 +13,8 @@ class Project < ApplicationRecord
   has_many :alert_rules, dependent: :destroy
   has_many :alert_notifications, dependent: :destroy
 
-  validates :name, presence: true, uniqueness: { scope: :user_id }
+  validates :name, presence: true
+  validates_uniqueness_to_tenant :name, scope: :user_id
   validates :slug, presence: true, uniqueness: true
   validates :environment, presence: true
 

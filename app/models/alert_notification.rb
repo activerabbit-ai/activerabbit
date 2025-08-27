@@ -1,4 +1,7 @@
 class AlertNotification < ApplicationRecord
+  # Multi-tenancy setup - AlertNotification belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :alert_rule
   belongs_to :project
 

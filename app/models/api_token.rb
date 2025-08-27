@@ -1,8 +1,12 @@
 class ApiToken < ApplicationRecord
+  # Multi-tenancy setup - ApiToken belongs to Account (tenant)
+  acts_as_tenant(:account)
+
   belongs_to :project
 
   validates :name, presence: true
-  validates :token, presence: true, uniqueness: true
+  validates :token, presence: true
+  validates_uniqueness_to_tenant :token
   validates :token, length: { minimum: 32 }
 
   scope :active, -> { where(active: true) }
