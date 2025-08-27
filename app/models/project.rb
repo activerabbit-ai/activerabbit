@@ -17,6 +17,7 @@ class Project < ApplicationRecord
   validates_uniqueness_to_tenant :name, scope: :user_id
   validates :slug, presence: true, uniqueness: true
   validates :environment, presence: true
+  validates :url, presence: true, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), message: "must be a valid URL" }
 
   before_validation :generate_slug, if: -> { slug.blank? && name.present? }
 
