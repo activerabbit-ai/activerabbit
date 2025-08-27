@@ -4,6 +4,11 @@ Rails.application.routes.draw do
   devise_for :users
   root "dashboard#index"
 
+  # Onboarding routes for new users
+  get 'onboarding/welcome', to: 'onboarding#welcome', as: 'onboarding_welcome'
+  get 'onboarding/new_project', to: 'onboarding#new_project', as: 'onboarding_new_project'
+  post 'onboarding/create_project', to: 'onboarding#create_project', as: 'onboarding_create_project'
+
   # Top-level replacements for admin pages (no /admin in URLs)
   get 'dashboard', to: 'dashboard#index', as: 'dashboard'
   get 'deploys', to: 'deploys#index', as: 'deploys'

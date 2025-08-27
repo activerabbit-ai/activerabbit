@@ -53,7 +53,7 @@
             Dashboard
           <% end %>
 
-          <%= link_to current_project ? project_deploys_path(current_project) : deploys_path,
+          <%= link_to deploys_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(deploys_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -61,7 +61,7 @@
             Deploys
           <% end %>
 
-          <%= link_to current_project ? project_errors_path(current_project) : errors_path,
+          <%= link_to errors_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(errors_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
@@ -111,10 +111,24 @@
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm border-b border-gray-200">
           <div class="flex items-center justify-between px-6 py-4">
-            <div class="flex items-center">
+            <div class="flex items-center space-x-6">
               <h1 class="text-2xl font-semibold text-gray-900">
                 <%= content_for?(:page_title) ? yield(:page_title) : "Dashboard" %>
               </h1>
+
+              <!-- Account Info in Top Menu -->
+              <% if current_account %>
+                <div class="hidden md:flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
+                  <div class="text-sm">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Account</div>
+                    <div class="font-medium text-gray-900"><%= current_account.name %></div>
+                    <div class="text-xs text-gray-500">
+                      <%= pluralize(current_account.projects.count, 'project') %> •
+                      <%= pluralize(current_account.users.count, 'user') %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
             </div>
 
             <!-- User Menu -->

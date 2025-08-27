@@ -1,7 +1,4 @@
 class Healthcheck < ApplicationRecord
-  # Multi-tenancy setup - Healthcheck belongs to Account (tenant)
-  acts_as_tenant(:account)
-
   belongs_to :project
 
   validates :name, presence: true
