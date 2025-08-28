@@ -411,3 +411,35 @@ COVERAGE=true bundle exec rspec
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+echo ""
+echo "3. NoMethodError:"
+echo 'curl -X POST http://localhost:3000/api/v1/events/errors \
+  -H "Content-Type: application/json" \
+  -H "X-Project-Token: 3d241ebb28fb9dc2e4f9c7cb6a644c4c4102368d9d14a5ad4ff9c9cd6f1e6dce" \
+  -d "{
+    \"exception_class\": \"NoMethodError\",
+    \"message\": \"undefined method `invalid_method` for nil:NilClass\",
+    \"backtrace\": [\"app/controllers/test_controller.rb:25:in database_test\", \"app/models/user.rb:45:in find_by_email\"],
+    \"controller_action\": \"TestController#database_test\",
+    \"request_path\": \"/test/database\",
+    \"request_method\": \"POST\",
+    \"occurred_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+  }"'
+
+
+curl -X POST http://localhost:3000/api/v1/events/errors \
+  -H "Content-Type: application/json" \
+  -H "X-Project-Token: f6ce4c38001115e8aa7d43db3791086d191ade9c6abeec874bfc18be5fff78a2" \
+  -d '{
+    "exception_class": "NewMethodError",
+    "message": "undefined method `invalid_method` for nil:NilClass",
+    "backtrace": ["app/controllers/new_controller.rb:25:in database_test", "app/models/user.rb:45:in find_by_email"],
+    "controller_action": "NewController#database_test",
+    "request_path": "/test/database",
+    "request_method": "POST",
+    "occurred_at": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+  }'
+
+{"status":"created","message":"Error event queued for processing","data":{"project_id":1,"exception_class":"NewMethodError"}}%
+

@@ -28,6 +28,9 @@ module ApiAuthentication
       return
     end
 
+    # Set tenant for the duration of this request
+    ActsAsTenant.current_tenant = @current_api_token.project.account
+
     # Rate limiting per token
     rate_limit_key = "api_token:#{@current_api_token.id}"
     if rate_limited?(rate_limit_key)

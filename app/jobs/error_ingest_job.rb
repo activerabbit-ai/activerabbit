@@ -4,7 +4,9 @@ class ErrorIngestJob
   sidekiq_options queue: :default, retry: 3
 
   def perform(project_id, payload, batch_id = nil)
-    project = Project.find(project_id)
+    # Find project without tenant scoping, then set the tenant
+    project = ActsAsTenant.without_tenant { Project.find(project_id) }
+    ActsAsTenant.current_tenant = project.account
 
     # Convert string keys to symbols if needed
     payload = payload.is_a?(Hash) ? payload.deep_symbolize_keys : payload

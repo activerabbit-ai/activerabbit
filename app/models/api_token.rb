@@ -17,9 +17,17 @@ class ApiToken < ApplicationRecord
   def self.authenticate(token_value)
     return nil if token_value.blank?
 
-    find_by(token: token_value, active: true)&.tap do |token|
-      token.touch(:last_used_at)
-      token.increment!(:usage_count)
+    # Find token without tenant scoping, but don't set global tenant
+    ActsAsTenant.without_tenant do
+      token = find_by(token: token_value, active: true)
+      if token
+        # Update usage stats within the token's tenant context
+        ActsAsTenant.with_tenant(token.project.account) do
+          token.touch(:last_used_at)
+          token.increment!(:usage_count)
+        end
+        token
+      end
     end
   end
 
