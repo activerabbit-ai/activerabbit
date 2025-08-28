@@ -2,11 +2,11 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   # allow_browser versions: :modern  # Temporarily disabled for deployment testing
 
-  # Devise authentication
-  before_action :authenticate_user!
+  # Devise authentication - skip for Devise controllers (sign up, sign in, etc.)
+  before_action :authenticate_user!, unless: :devise_controller?
 
-  # Multi-tenancy: Set current tenant after authentication
-  before_action :set_current_tenant
+  # Multi-tenancy: Set current tenant after authentication (skip for Devise controllers)
+  before_action :set_current_tenant, unless: :devise_controller?
 
   # Onboarding: Redirect users without projects to onboarding
   before_action :check_onboarding_needed
