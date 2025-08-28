@@ -19,6 +19,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_27_053251) do
     t.boolean "active", default: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "settings", default: {}
     t.index ["name"], name: "index_accounts_on_name"
   end
 

@@ -332,6 +332,7 @@ GEM
       fugit (~> 1.8, >= 1.11.1)
       globalid (>= 1.0.1)
       sidekiq (>= 6.5.0)
+    slack-notifier (2.4.0)
     sshkit (1.24.0)
       base64
       logger
@@ -416,6 +417,7 @@ DEPENDENCIES
   rubocop-rails-omakase
   sidekiq
   sidekiq-cron
+  slack-notifier
   stimulus-rails
   tailwindcss-rails
   thruster

@@ -1,0 +1,208 @@
+<% content_for :page_title do %>
+  <%= @project.name %> - Settings
+<% end %>
+
+<div class="max-w-4xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-4">
+      <%= link_to "Projects", projects_path, class: "hover:text-gray-700" %>
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+      </svg>
+      <%= link_to @project.name, project_path(@project), class: "hover:text-gray-700" %>
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+      </svg>
+      <span class="text-gray-900">Settings</span>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-gray-900">Project Settings</h1>
+    <p class="text-gray-600 mt-1">Configure notifications and integrations for <%= @project.name %></p>
+  </div>
+
+  <!-- Slack Integration Card -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-purple-600 mr-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52-2.523c0-1.393 1.135-2.524 2.52-2.524h2.52v2.524c0 1.393-1.127 2.523-2.52 2.523zm0 0c-1.393 0-2.52 1.135-2.52 2.523v2.52c0 1.393 1.127 2.524 2.52 2.524 1.393 0 2.523-1.131 2.523-2.524v-2.52c0-1.388-1.13-2.523-2.523-2.523zm7.12-7.12a2.528 2.528 0 0 1-2.523-2.52c0-1.393 1.135-2.524 2.523-2.524 1.393 0 2.524 1.131 2.524 2.524v2.52c0 1.393-1.131 2.52-2.524 2.52zm0 0c1.393 0 2.524 1.127 2.524 2.52v2.523c0 1.393-1.131 2.524-2.524 2.524-1.388 0-2.523-1.131-2.523-2.524V15.685c0-1.393 1.135-2.52 2.523-2.52z"/>
+          </svg>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Slack Integration</h3>
+            <p class="text-sm text-gray-500">Get real-time notifications in your Slack workspace</p>
+          </div>
+        </div>
+        <div class="flex items-center">
+          <% if @project.slack_configured? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              Configured
+            </span>
+          <% else %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              Not Configured
+            </span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-6">
+      <%= form_with(model: @project, url: project_settings_path(@project), method: :patch, local: true, class: "space-y-6") do |form| %>
+
+                <!-- Webhook URL -->
+        <div>
+          <label for="slack_webhook_url" class="block text-sm font-medium text-gray-700 mb-2">
+            Slack Webhook URL
+            <span class="text-red-500">*</span>
+          </label>
+
+          <% if @project.slack_webhook_from_env? %>
+            <div class="mb-3 p-3 bg-green-50 border border-green-200 rounded-md">
+              <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-sm text-green-800 font-medium">Webhook URL configured via environment variable</span>
+              </div>
+              <p class="text-xs text-green-700 mt-1">
+                Using secure environment variable for webhook URL. This is the recommended approach for production.
+              </p>
+            </div>
+          <% end %>
+
+          <%= form.url_field :slack_webhook_url,
+                value: @project.slack_webhook_from_env? ? '' : @project.slack_webhook_url,
+                placeholder: @project.slack_webhook_from_env? ? "Configured via environment variable" : "https://hooks.slack.com/services/...",
+                disabled: @project.slack_webhook_from_env?,
+                class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm #{'bg-gray-50 text-gray-500' if @project.slack_webhook_from_env?}" %>
+
+          <div class="mt-2 space-y-1">
+            <p class="text-xs text-gray-500">
+              Get your webhook URL from
+              <a href="https://api.slack.com/apps" target="_blank" class="text-blue-600 hover:text-blue-500">
+                Slack Apps → Incoming Webhooks
+              </a>
+            </p>
+            <details class="text-xs text-gray-500">
+              <summary class="cursor-pointer text-blue-600 hover:text-blue-500">🔒 Security Options</summary>
+              <div class="mt-2 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
+                <p class="mb-2"><strong>For production environments:</strong></p>
+                <p class="mb-1">• Set <code>SLACK_WEBHOOK_URL</code> environment variable (all projects)</p>
+                <p class="mb-1">• Set <code>SLACK_WEBHOOK_URL_<%= @project.slug.upcase %></code> for this project only</p>
+                <p class="text-gray-400">Environment variables are more secure than database storage</p>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Channel -->
+        <div>
+          <label for="slack_channel" class="block text-sm font-medium text-gray-700 mb-2">
+            Slack Channel
+          </label>
+          <%= form.text_field :slack_channel,
+                value: @project.slack_channel,
+                placeholder: "#alerts",
+                class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
+          <p class="mt-1 text-xs text-gray-500">
+            Channel or user to send notifications to (e.g., #alerts or @username)
+          </p>
+        </div>
+
+        <!-- Enable/Disable Toggle -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <%= form.check_box :slack_notifications_enabled,
+                  checked: @project.slack_notifications_enabled?,
+                  class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+            <label for="project_slack_notifications_enabled" class="ml-2 block text-sm text-gray-900">
+              Enable Slack notifications
+            </label>
+          </div>
+          <p class="text-xs text-gray-500">
+            Turn notifications on/off without removing configuration
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div class="flex space-x-3">
+            <%= form.submit "Save Settings",
+                  class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+
+            <% if @project.slack_configured? %>
+              <%= button_to "Test Notification",
+                    test_notification_project_settings_path(@project),
+                    method: :post,
+                    class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+            <% end %>
+          </div>
+
+          <% if @project.slack_configured? %>
+            <%= form.submit "Save & Test",
+                  name: "test_slack",
+                  value: "true",
+                  class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Alert Rules Card -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900">Alert Rules</h3>
+      <p class="text-sm text-gray-500">Configure when to send notifications</p>
+    </div>
+    <div class="p-6">
+      <div class="space-y-4">
+        <% @project.alert_rules.each do |rule| %>
+          <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div>
+              <h4 class="font-medium text-gray-900"><%= rule.name %></h4>
+              <p class="text-sm text-gray-500"><%= rule.formatted_threshold %></p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span class="text-sm <%= rule.enabled? ? 'text-green-600' : 'text-gray-400' %>">
+                <%= rule.enabled? ? 'Enabled' : 'Disabled' %>
+              </span>
+              <% if rule.enabled? %>
+                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+              <% else %>
+                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+        <div class="flex">
+          <svg class="w-5 h-5 text-blue-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+          </svg>
+          <div>
+            <h4 class="text-sm font-medium text-blue-800">About Alert Rules</h4>
+            <p class="text-sm text-blue-700 mt-1">
+              These rules determine when Slack notifications are sent. When Slack is configured and enabled,
+              notifications will be sent to your channel when any of these conditions are met.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

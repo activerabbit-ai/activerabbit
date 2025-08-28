@@ -16,6 +16,15 @@ Rails.application.routes.draw do
   resources :errors, only: [:show, :update, :destroy]
   get 'security', to: 'security#index', as: 'security'
   get 'settings', to: 'settings#index', as: 'settings'
+  patch 'settings/update_slack_settings', to: 'settings#update_slack_settings', as: 'update_slack_settings_settings'
+  patch 'settings/update_user_slack_preferences', to: 'settings#update_user_slack_preferences', as: 'update_user_slack_preferences_settings'
+  post 'settings/test_slack_notification', to: 'settings#test_slack_notification', as: 'test_slack_notification_settings'
+
+  # Account-wide settings
+  resource :account_settings, path: 'account/settings', only: [:show, :update] do
+    post :test_notification
+    patch :update_user_preferences
+  end
 
   # Top-level Performance routes (no /admin or /projects/:id required)
   get 'performance', to: 'performance#index', as: 'performance'
@@ -45,6 +54,10 @@ Rails.application.routes.draw do
   resources :projects do
     member do
       post :regenerate_token
+    end
+
+    resource :settings, controller: 'project_settings', only: [:show, :update] do
+      post :test_notification
     end
 
     resources :issues do

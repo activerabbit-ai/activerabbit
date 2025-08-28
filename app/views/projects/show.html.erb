@@ -17,6 +17,8 @@
       <p class="text-gray-600"><%= @project.description %></p>
     </div>
     <div class="flex space-x-3">
+      <%= link_to "Settings", project_settings_path(@project),
+          class: "bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors" %>
       <%= link_to "Edit Project", edit_project_path(@project),
           class: "bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors" %>
       <%= link_to "Regenerate Token", regenerate_token_project_path(@project),

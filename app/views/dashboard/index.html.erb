@@ -156,6 +156,16 @@
           </div>
         <% end %>
 
+        <%= link_to account_settings_path, class: "flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" do %>
+          <svg class="w-8 h-8 text-purple-600 mr-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52-2.523c0-1.393 1.135-2.524 2.52-2.524h2.52v2.524c0 1.393-1.127 2.523-2.52 2.523zm0 0c-1.393 0-2.52 1.135-2.52 2.523v2.52c0 1.393 1.127 2.524 2.52 2.524 1.393 0 2.523-1.131 2.523-2.524v-2.52c0-1.388-1.13-2.523-2.523-2.523zm7.12-7.12a2.528 2.528 0 0 1-2.523-2.52c0-1.393 1.135-2.524 2.523-2.524 1.393 0 2.524 1.131 2.524 2.524v2.52c0 1.393-1.131 2.52-2.524 2.52zm0 0c1.393 0 2.524 1.127 2.524 2.52v2.523c0 1.393-1.131 2.524-2.524 2.524-1.388 0-2.523-1.131-2.523-2.524V15.685c0-1.393 1.135-2.52 2.523-2.52z"/>
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-gray-900">Slack Settings</p>
+            <p class="text-xs text-gray-500">Configure notifications</p>
+          </div>
+        <% end %>
+
         <%= link_to settings_path, class: "flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" do %>
           <svg class="w-8 h-8 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>

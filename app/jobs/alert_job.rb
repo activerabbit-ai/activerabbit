@@ -43,19 +43,66 @@ class AlertJob
   private
 
   def determine_notification_type(alert_rule)
-    # For now, prioritize Slack if configured, otherwise email
-    if alert_rule.project.settings['slack_webhook_url'].present?
+    # Priority: Account Slack > Project Slack > Email
+    if alert_rule.project.account.slack_configured? || alert_rule.project.settings['slack_webhook_url'].present?
       'slack'
     else
       'email'
     end
   end
 
+  # Send account-level Slack notification to all users based on their preferences
+  def send_account_slack_notification(account, alert_type, *args)
+    return false unless account.slack_configured? && account.slack_notifications_enabled?
+
+    account_service = AccountSlackNotificationService.new(account)
+
+    case alert_type
+    when :error_frequency
+      issue, payload = args
+      account_service.broadcast_to_account("error_notifications") do |user|
+        account_service.send_error_frequency_alert(issue, payload, user: user)
+      end
+    when :performance
+      event, payload = args
+      account_service.broadcast_to_account("performance_notifications") do |user|
+        account_service.send_performance_alert(event, payload, user: user)
+      end
+    when :n_plus_one
+      payload = args.first
+      account_service.broadcast_to_account("n_plus_one_notifications") do |user|
+        account_service.send_n_plus_one_alert(payload, user: user)
+      end
+    when :new_issue
+      issue = args.first
+      account_service.broadcast_to_account("new_issue_notifications") do |user|
+        account_service.send_new_issue_alert(issue, user: user)
+      end
+    else
+      return false
+    end
+
+    true
+  rescue StandardError => e
+    Rails.logger.error "Account Slack notification failed: #{e.message}"
+    false
+  end
+
   def send_error_frequency_alert(alert_rule, payload, notification)
     issue = Issue.find(payload['issue_id'])
 
     if notification.notification_type == 'slack'
-      send_slack_alert(alert_rule, build_error_frequency_slack_message(issue, payload))
+      # Try account-level notification first, then fall back to project-level
+      if send_account_slack_notification(alert_rule.project.account, :error_frequency, issue, payload)
+        Rails.logger.info "Sent account-level error frequency alert for issue #{issue.id}"
+      elsif alert_rule.project.slack_configured?
+        slack_service = SlackNotificationService.new(alert_rule.project)
+        slack_service.send_error_frequency_alert(issue, payload)
+        Rails.logger.info "Sent project-level error frequency alert for issue #{issue.id}"
+      else
+        Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
+        send_email_alert(alert_rule, 'Error Frequency Alert', build_error_frequency_email(issue, payload))
+      end
     else
       send_email_alert(alert_rule, 'Error Frequency Alert', build_error_frequency_email(issue, payload))
     end
@@ -65,7 +112,17 @@ class AlertJob
     event = Event.find(payload['event_id'])
 
     if notification.notification_type == 'slack'
-      send_slack_alert(alert_rule, build_performance_slack_message(event, payload))
+      # Try account-level notification first, then fall back to project-level
+      if send_account_slack_notification(alert_rule.project.account, :performance, event, payload)
+        Rails.logger.info "Sent account-level performance alert for event #{event.id}"
+      elsif alert_rule.project.slack_configured?
+        slack_service = SlackNotificationService.new(alert_rule.project)
+        slack_service.send_performance_alert(event, payload)
+        Rails.logger.info "Sent project-level performance alert for event #{event.id}"
+      else
+        Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
+        send_email_alert(alert_rule, 'Performance Alert', build_performance_email(event, payload))
+      end
     else
       send_email_alert(alert_rule, 'Performance Alert', build_performance_email(event, payload))
     end
@@ -73,7 +130,17 @@ class AlertJob
 
   def send_n_plus_one_alert(alert_rule, payload, notification)
     if notification.notification_type == 'slack'
-      send_slack_alert(alert_rule, build_n_plus_one_slack_message(payload))
+      # Try account-level notification first, then fall back to project-level
+      if send_account_slack_notification(alert_rule.project.account, :n_plus_one, payload)
+        Rails.logger.info "Sent account-level N+1 alert for #{payload['controller_action']}"
+      elsif alert_rule.project.slack_configured?
+        slack_service = SlackNotificationService.new(alert_rule.project)
+        slack_service.send_n_plus_one_alert(payload)
+        Rails.logger.info "Sent project-level N+1 alert for #{payload['controller_action']}"
+      else
+        Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
+        send_email_alert(alert_rule, 'N+1 Query Alert', build_n_plus_one_email(payload))
+      end
     else
       send_email_alert(alert_rule, 'N+1 Query Alert', build_n_plus_one_email(payload))
     end
@@ -83,24 +150,36 @@ class AlertJob
     issue = Issue.find(payload['issue_id'])
 
     if notification.notification_type == 'slack'
-      send_slack_alert(alert_rule, build_new_issue_slack_message(issue))
+      # Try account-level notification first, then fall back to project-level
+      if send_account_slack_notification(alert_rule.project.account, :new_issue, issue)
+        Rails.logger.info "Sent account-level new issue alert for issue #{issue.id}"
+      elsif alert_rule.project.slack_configured?
+        slack_service = SlackNotificationService.new(alert_rule.project)
+        slack_service.send_new_issue_alert(issue)
+        Rails.logger.info "Sent project-level new issue alert for issue #{issue.id}"
+      else
+        Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
+        send_email_alert(alert_rule, 'New Issue Alert', build_new_issue_email(issue))
+      end
     else
       send_email_alert(alert_rule, 'New Issue Alert', build_new_issue_email(issue))
     end
   end
 
   def send_slack_alert(alert_rule, message)
-    webhook_url = alert_rule.project.settings['slack_webhook_url']
-    raise 'Slack webhook URL not configured' unless webhook_url.present?
+    # This method is deprecated - individual alert methods now call SlackNotificationService directly
+    # Keeping for backward compatibility
+    slack_service = SlackNotificationService.new(alert_rule.project)
 
-    response = Faraday.post(webhook_url) do |req|
-      req.headers['Content-Type'] = 'application/json'
-      req.body = message.to_json
+    unless slack_service.configured?
+      raise 'Slack webhook URL not configured'
     end
 
-    unless response.success?
-      raise "Slack webhook failed with status #{response.status}: #{response.body}"
-    end
+    # Fallback to custom alert for any legacy message format
+    slack_service.send_custom_alert(
+      message[:text] || 'Alert',
+      message[:fallback] || 'Alert triggered'
+    )
   end
 
   def send_email_alert(alert_rule, subject, body)

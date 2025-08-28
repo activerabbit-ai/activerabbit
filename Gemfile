@@ -40,6 +40,9 @@ gem "rack-attack"
 # HTTP client
 gem "faraday"
 
+# Slack notifications
+gem "slack-notifier"
+
 # Metrics
 gem "HDRHistogram"
 
