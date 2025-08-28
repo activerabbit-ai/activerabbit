@@ -22,6 +22,9 @@ gem "devise"
 gem "sidekiq"
 gem "sidekiq-cron"
 
+# Redis for caching and Sidekiq
+gem "redis", ">= 4.0.1"
+
 # Pagination
 gem "kaminari"
 
