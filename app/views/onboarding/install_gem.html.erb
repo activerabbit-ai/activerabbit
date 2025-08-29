@@ -6,8 +6,40 @@
 <div class="mb-8">
   <div>
     <h1 class="text-2xl font-bold text-gray-900">Install ActiveRabbit Gem</h1>
-    <p class="text-gray-600 mt-1">Add monitoring to your Rails application</p>
+    <p class="text-gray-600 mt-1">
+      <% if current_user.projects.count > 1 %>
+        Add monitoring for "<%= @project.name %>" to your Rails application
+      <% else %>
+        Add monitoring to your Rails application
+      <% end %>
+    </p>
   </div>
+
+  <!-- Error Messages -->
+  <% if flash[:alert] %>
+    <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <span class="text-red-500 text-xl">❌</span>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm font-medium text-red-800 mb-2">Verification Failed</h3>
+          <p class="text-sm text-red-700 mb-3"><%= flash[:alert] %></p>
+
+          <% if flash[:suggestions] %>
+            <div class="text-sm text-red-700">
+              <p class="font-medium mb-2">Troubleshooting suggestions:</p>
+              <ul class="list-disc pl-5 space-y-1">
+                <% flash[:suggestions].each do |suggestion| %>
+                  <li><%= suggestion %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
 </div>
 
 <!-- Main Content -->
@@ -71,7 +103,7 @@
   config.project_id = "<%= @project.id %>"
   config.api_url = "<%= request.base_url %>"
   config.environment = Rails.env
-  
+
   # Enable monitoring features
   config.enable_performance_monitoring = true
   config.enable_n_plus_one_detection = true
@@ -118,7 +150,7 @@ ACTIVERABBIT_API_URL=<%= request.base_url %></code></pre>
         <pre id="test-code" class="text-green-400 text-sm"><code># Test error tracking
 ActiveRabbit::Client.track_exception(StandardError.new("Test error from ActiveRabbit!"))
 
-# Test performance tracking  
+# Test performance tracking
 ActiveRabbit::Client.track_performance("test_operation", 100, { custom: "data" })</code></pre>
       </div>
 
@@ -126,9 +158,16 @@ ActiveRabbit::Client.track_performance("test_operation", 100, { custom: "data" }
       <div class="pt-6 border-t border-gray-200">
         <%= form_with url: onboarding_verify_gem_path(@project), method: :post, local: true do |form| %>
           <div class="flex items-center justify-between">
-            <%= link_to onboarding_new_project_path,
-                class: "text-sm text-gray-500 hover:text-gray-700" do %>
-              ← Back to project setup
+            <% if current_user.projects.count > 1 %>
+              <%= link_to dashboard_path,
+                  class: "text-sm text-gray-500 hover:text-gray-700" do %>
+                ← Back to dashboard
+              <% end %>
+            <% else %>
+              <%= link_to onboarding_new_project_path,
+                  class: "text-sm text-gray-500 hover:text-gray-700" do %>
+                ← Back to project setup
+              <% end %>
             <% end %>
 
             <%= form.submit "Verify Installation ✓",
@@ -157,7 +196,7 @@ ActiveRabbit::Client.track_performance("test_operation", 100, { custom: "data" }
         <div>
           <dt class="text-sm font-medium text-gray-500">API Token</dt>
           <dd class="text-sm text-gray-900 font-mono break-all">
-            <span id="api-token" class="blur-sm hover:blur-none transition-all cursor-pointer" 
+            <span id="api-token" class="blur-sm hover:blur-none transition-all cursor-pointer"
                   title="Click to reveal">
               <%= @project.api_token %>
             </span>
@@ -202,7 +241,7 @@ ActiveRabbit::Client.track_performance("test_operation", 100, { custom: "data" }
 function copyToClipboard(elementId) {
   const element = document.getElementById(elementId);
   const text = element.textContent;
-  
+
   navigator.clipboard.writeText(text).then(function() {
     // Show feedback
     const button = event.target;
