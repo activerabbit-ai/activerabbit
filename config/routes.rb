@@ -8,6 +8,8 @@ Rails.application.routes.draw do
   get 'onboarding/welcome', to: 'onboarding#welcome', as: 'onboarding_welcome'
   get 'onboarding/new_project', to: 'onboarding#new_project', as: 'onboarding_new_project'
   post 'onboarding/create_project', to: 'onboarding#create_project', as: 'onboarding_create_project'
+  get 'onboarding/install_gem/:project_id', to: 'onboarding#install_gem', as: 'onboarding_install_gem'
+  post 'onboarding/verify_gem/:project_id', to: 'onboarding#verify_gem', as: 'onboarding_verify_gem'
 
   # Top-level replacements for admin pages (no /admin in URLs)
   get 'dashboard', to: 'dashboard#index', as: 'dashboard'
@@ -105,6 +107,9 @@ Rails.application.routes.draw do
       post 'events/errors', to: 'events#create_error'
       post 'events/performance', to: 'events#create_performance'
       post 'events/batch', to: 'events#create_batch'
+
+      # Connection test endpoint
+      post 'test/connection', to: 'events#test_connection'
 
       # Release tracking
       resources :releases, only: [:create, :index, :show] do

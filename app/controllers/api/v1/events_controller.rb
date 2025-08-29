@@ -121,6 +121,18 @@ class Api::V1::EventsController < Api::BaseController
     )
   end
 
+  # POST /api/v1/test/connection
+  def test_connection
+    render json: {
+      status: 'success',
+      message: 'ActiveRabbit connection successful!',
+      project_id: @current_project.id,
+      project_name: @current_project.name,
+      timestamp: Time.current.iso8601,
+      gem_version: params[:gem_version] || 'unknown'
+    }
+  end
+
   private
 
   def sanitize_error_payload(params)
