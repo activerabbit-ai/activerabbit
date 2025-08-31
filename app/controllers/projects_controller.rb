@@ -4,8 +4,9 @@ class ProjectsController < ApplicationController
   before_action :set_project, only: [:show, :edit, :update, :destroy, :regenerate_token]
 
   def index
-    @projects = current_user.projects.includes(:api_tokens, :issues, :events)
-                           .order(:name)
+    # Show all projects for the current account
+    @projects = current_account.projects.includes(:api_tokens, :issues, :events, :user)
+                               .order(:name)
 
     # Stats for each project
     @project_stats = {}
@@ -27,7 +28,7 @@ class ProjectsController < ApplicationController
     # Performance metrics for last 24 hours
     @performance_stats = @project.perf_rollups
                                 .where('timestamp > ?', 24.hours.ago)
-                                .group(:controller_action)
+                                .group(:target)
                                 .average(:avg_duration_ms)
                                 .transform_values { |v| v.round(2) }
   end
@@ -43,7 +44,8 @@ class ProjectsController < ApplicationController
       @project.generate_api_token!
       @project.create_default_alert_rules!
 
-      redirect_to project_path(@project), notice: 'Project created successfully.'
+      # For additional projects, also show gem installation instructions
+      redirect_to onboarding_install_gem_path(@project), notice: 'Project created! Now let\'s set up monitoring for this project.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -73,13 +75,15 @@ class ProjectsController < ApplicationController
                 notice: "New API token generated: #{new_token.mask_token}"
   end
 
+
+
   private
 
   def set_project
-    @project = current_user.projects.find(params[:id])
+    @project = current_account.projects.find(params[:id])
   end
 
   def project_params
-    params.require(:project).permit(:name, :description, :environment, :active, settings: {})
+    params.require(:project).permit(:name, :description, :environment, :active, :url, :tech_stack, settings: {})
   end
 end

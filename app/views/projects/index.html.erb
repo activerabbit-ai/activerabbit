@@ -3,13 +3,38 @@
 <div class="mb-8">
   <div class="flex justify-between items-center">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Projects</h1>
-      <p class="text-gray-600">Manage your monitoring projects</p>
+      <h1 class="text-2xl font-bold text-gray-900">Account Projects</h1>
+      <p class="text-gray-600">All monitoring projects in your account (<%= @projects.count %> projects)</p>
     </div>
-    <%= link_to "New Project", new_admin_project_path,
+    <%= link_to "New Project", new_project_path,
         class: "bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors" %>
   </div>
 </div>
+
+<!-- Account Summary Stats -->
+<% unless @projects.empty? %>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Account Overview</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-indigo-600"><%= @projects.count %></div>
+        <div class="text-sm text-gray-500">Total Projects</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-green-600"><%= @projects.where(active: true).count %></div>
+        <div class="text-sm text-gray-500">Active Projects</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-red-600"><%= @project_stats.values.sum { |s| s[:issues_count] } %></div>
+        <div class="text-sm text-gray-500">Open Issues</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-blue-600"><%= @project_stats.values.sum { |s| s[:events_today] } %></div>
+        <div class="text-sm text-gray-500">Events Today</div>
+      </div>
+    </div>
+  </div>
+<% end %>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
   <% @projects.each do |project| %>
@@ -25,7 +50,11 @@
           </div>
           <div>
             <h3 class="text-lg font-semibold text-gray-900"><%= project.name %></h3>
-            <p class="text-sm text-gray-500"><%= project.environment %></p>
+            <div class="flex items-center space-x-2 text-sm text-gray-500">
+              <span><%= project.environment %></span>
+              <span>•</span>
+              <span>by <%= project.user.email %></span>
+            </div>
           </div>
         </div>
 
@@ -59,6 +88,16 @@
             <%= project.active? ? 'Active' : 'Inactive' %>
           </span>
         </div>
+        <% if project.tech_stack.present? %>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Tech Stack</span>
+            <span class="text-sm font-medium text-gray-900"><%= project.tech_stack.humanize %></span>
+          </div>
+        <% end %>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Created</span>
+          <span class="text-sm font-medium text-gray-900"><%= project.created_at.strftime("%b %d, %Y") %></span>
+        </div>
       </div>
 
       <!-- Description -->
@@ -88,7 +127,7 @@
     </div>
     <h3 class="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
     <p class="text-gray-600 mb-4">Get started by creating your first monitoring project.</p>
-    <%= link_to "Create Project", new_admin_project_path,
+    <%= link_to "Create Project", new_project_path,
         class: "bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors" %>
   </div>
 <% end %>

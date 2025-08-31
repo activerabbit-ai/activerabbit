@@ -59,6 +59,7 @@ class ApplicationController < ActionController::Base
     return unless user_signed_in?
     return if devise_controller?
     return if controller_name == 'onboarding'
+    return if controller_name == 'projects' # Allow access to projects controller during onboarding
 
     begin
       if current_user.needs_onboarding?

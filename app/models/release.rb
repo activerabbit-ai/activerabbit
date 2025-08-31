@@ -38,20 +38,20 @@ class Release < ApplicationRecord
 
     regressions = []
 
-    # Get performance data for each controller action
-    controller_actions = project.perf_rollups
-                                .where(environment: environment)
-                                .where(timestamp: before_window.begin..after_window.end)
-                                .distinct
-                                .pluck(:controller_action)
+    # Get performance data for each target (controller action)
+    targets = project.perf_rollups
+                     .where(environment: environment)
+                     .where(timestamp: before_window.begin..after_window.end)
+                     .distinct
+                     .pluck(:target)
 
-    controller_actions.each do |action|
+    targets.each do |action|
       before_rollups = project.perf_rollups
-                              .where(environment: environment, controller_action: action)
+                              .where(environment: environment, target: action)
                               .where(timestamp: before_window)
 
       after_rollups = project.perf_rollups
-                             .where(environment: environment, controller_action: action)
+                             .where(environment: environment, target: action)
                              .where(timestamp: after_window)
 
       next if before_rollups.empty? || after_rollups.empty?

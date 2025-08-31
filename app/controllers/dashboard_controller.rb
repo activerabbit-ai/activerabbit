@@ -18,17 +18,22 @@ class DashboardController < ApplicationController
       active_users: account_users.where('current_sign_in_at > ?', 7.days.ago).count
     }
 
-    # Recent activity (account-scoped)
-    @recent_issues = Issue.recent.limit(5)
+    # Recent activity (account-scoped) - keeping recent_events for potential future use
     @recent_events = Event.recent.limit(10)
     @recent_projects = account_projects.order(created_at: :desc).limit(3)
 
-    # Health status for account projects
-    @system_health = {
-      total_healthchecks: Healthcheck.count,
-      healthy_checks: Healthcheck.where(status: 'healthy').count,
-      warning_checks: Healthcheck.where(status: 'warning').count,
-      critical_checks: Healthcheck.where(status: 'critical').count
-    }
+    # Projects data for the projects grid (same as projects index)
+    @projects = current_account.projects.includes(:api_tokens, :issues, :events, :user)
+                               .order(:name)
+
+    # Stats for each project
+    @project_stats = {}
+    @projects.each do |project|
+      @project_stats[project.id] = {
+        issues_count: project.issues.open.count,
+        events_today: project.events.where('created_at > ?', 24.hours.ago).count,
+        health_status: project.health_status
+      }
+    end
   end
 end

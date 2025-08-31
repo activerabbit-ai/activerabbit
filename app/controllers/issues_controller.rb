@@ -28,8 +28,8 @@ class IssuesController < ApplicationController
     @stats = {
       total: @project.issues.count,
       open: @project.issues.open.count,
-      resolved: @project.issues.resolved.count,
-      ignored: @project.issues.ignored.count
+      wip: @project.issues.wip.count,
+      closed: @project.issues.closed.count
     }
   end
 

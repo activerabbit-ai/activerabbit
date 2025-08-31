@@ -1,0 +1,161 @@
+<% content_for :title, "Issue ##{@issue.id} - #{@project.name}" %>
+
+<div class="mb-8">
+  <div class="flex justify-between items-center">
+    <div>
+      <div class="flex items-center space-x-2 mb-2">
+        <%= link_to project_issues_path(@project), class: "text-gray-500 hover:text-gray-700" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        <% end %>
+        <h1 class="text-2xl font-bold text-gray-900"><%= @issue.title %></h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= @issue.status == 'open' ? 'bg-red-100 text-red-800' : @issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
+          <%= @issue.status.upcase %>
+        </span>
+      </div>
+      <p class="text-gray-600"><%= @issue.source_location %></p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex space-x-3">
+      <% if @issue.status == 'open' %>
+        <%= link_to "Mark as WIP", project_issue_path(@project, @issue),
+            method: :patch,
+            params: { issue: { status: 'wip' } },
+            class: "bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors" %>
+        <%= link_to "Close Issue", project_issue_path(@project, @issue),
+            method: :patch,
+            params: { issue: { status: 'closed' } },
+            class: "bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors" %>
+      <% elsif @issue.status == 'wip' %>
+        <%= link_to "Reopen", project_issue_path(@project, @issue),
+            method: :patch,
+            params: { issue: { status: 'open' } },
+            class: "bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors" %>
+        <%= link_to "Close Issue", project_issue_path(@project, @issue),
+            method: :patch,
+            params: { issue: { status: 'closed' } },
+            class: "bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors" %>
+      <% else %>
+        <%= link_to "Reopen Issue", project_issue_path(@project, @issue),
+            method: :patch,
+            params: { issue: { status: 'open' } },
+            class: "bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors" %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Issue Details -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <!-- Main Content -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Issue Summary -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Issue Details</h3>
+
+      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Exception Class</dt>
+          <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @issue.exception_class %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Controller Action</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @issue.controller_action %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">First Seen</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @issue.first_seen_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Last Seen</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @issue.last_seen_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Total Occurrences</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= number_with_delimiter(@issue.count) %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Events (24h)</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @issue.events_last_24h %></dd>
+        </div>
+      </dl>
+
+      <% if @issue.sample_message.present? %>
+        <div class="mt-6">
+          <dt class="text-sm font-medium text-gray-500 mb-2">Sample Message</dt>
+          <dd class="text-sm text-gray-900 bg-gray-50 rounded-md p-3 font-mono"><%= @issue.sample_message %></dd>
+        </div>
+      <% end %>
+
+      <div class="mt-6">
+        <dt class="text-sm font-medium text-gray-500 mb-2">Top Frame</dt>
+        <dd class="text-sm text-gray-900 bg-gray-50 rounded-md p-3 font-mono"><%= @issue.top_frame %></dd>
+      </div>
+    </div>
+
+    <!-- Recent Events -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Recent Events</h3>
+      </div>
+
+      <% if @events.any? %>
+        <div class="divide-y divide-gray-200">
+          <% @events.each do |event| %>
+            <div class="px-6 py-4">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="text-sm text-gray-900">
+                    <% if event.message.present? %>
+                      <p class="font-medium"><%= truncate(event.message, length: 100) %></p>
+                    <% else %>
+                      <p class="font-medium text-gray-500">No message available</p>
+                    <% end %>
+                  </div>
+                  <div class="mt-1 text-xs text-gray-500">
+                    <%= event.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+                    <% if event.request_path.present? %>
+                      • <%= event.request_path %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="px-6 py-8 text-center text-gray-500">
+          <p>No recent events found for this issue.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Related Issues</h3>
+
+      <% if @related_issues.any? %>
+        <div class="space-y-3">
+          <% @related_issues.limit(5).each do |related_issue| %>
+            <div class="border border-gray-200 rounded-lg p-3">
+              <h4 class="text-sm font-medium text-gray-900">
+                <%= link_to related_issue.title, project_issue_path(@project, related_issue),
+                    class: "hover:text-indigo-600" %>
+              </h4>
+              <p class="text-xs text-gray-500 mt-1">
+                <%= pluralize(related_issue.count, 'occurrence') %> •
+                Last seen <%= time_ago_in_words(related_issue.last_seen_at) %> ago
+              </p>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-gray-500">No related issues found.</p>
+      <% end %>
+    </div>
+  </div>
+</div>

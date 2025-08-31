@@ -11,6 +11,9 @@ services:
       RACK_ENV: development
       # Disable bootsnap in Docker for better file watching
       DISABLE_BOOTSNAP: 1
+      # ActiveRabbit Self-Monitoring Configuration
+      ACTIVERABBIT_SELF_MONITOR_TOKEN: d52be1708750a355818dc4a3b511bb208e8519d262ae3281ab1494dd800df220
+      ACTIVERABBIT_SELF_MONITOR_PROJECT_ID: 7
     # Enable live reloading
     command: >
       bash -c "
@@ -26,3 +29,6 @@ services:
     environment:
       RAILS_ENV: development
       RACK_ENV: development
+      # ActiveRabbit Self-Monitoring Configuration
+      ACTIVERABBIT_SELF_MONITOR_TOKEN: d52be1708750a355818dc4a3b511bb208e8519d262ae3281ab1494dd800df220
+      ACTIVERABBIT_SELF_MONITOR_PROJECT_ID: 7

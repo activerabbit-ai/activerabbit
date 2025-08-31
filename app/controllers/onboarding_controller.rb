@@ -1,10 +1,10 @@
 class OnboardingController < ApplicationController
   before_action :authenticate_user!
-  before_action :redirect_if_has_projects, except: [:welcome]
+  before_action :redirect_if_has_projects, except: [:install_gem, :verify_gem]  # Allow gem installation for additional projects
   layout 'admin'
 
   def welcome
-    # Welcome page - always accessible
+    # Welcome page - only for users without projects
     @user = current_user
     @account = current_account
   end
@@ -37,15 +37,18 @@ class OnboardingController < ApplicationController
 
   def verify_gem
     @project = current_user.projects.find(params[:project_id])
-    
-    # Make a test API call to verify the gem is working
-    test_result = test_gem_connection(@project)
-    
-    if test_result[:success]
-      redirect_to dashboard_path, notice: 'Perfect! ActiveRabbit gem is successfully connected. Welcome to ActiveRabbit!'
+
+    verification_service = GemVerificationService.new(@project)
+    result = verification_service.verify_connection
+
+    if result[:success]
+      redirect_to dashboard_path,
+                  notice: "Perfect! #{result[:message]} Welcome to ActiveRabbit!"
     else
-      redirect_to onboarding_install_gem_path(@project), 
-                  alert: "Gem verification failed: #{test_result[:error]}. Please check your installation."
+      flash[:alert] = result[:error]
+      flash[:error_code] = result[:error_code]
+      flash[:suggestions] = result[:suggestions]
+      redirect_to onboarding_install_gem_path(@project)
     end
   end
 
@@ -59,24 +62,5 @@ class OnboardingController < ApplicationController
     if current_user.projects.any?
       redirect_to dashboard_path
     end
-  end
-
-  def test_gem_connection(project)
-    # Check if we've received any events from this project in the last 30 seconds
-    recent_events = project.events.where('created_at > ?', 30.seconds.ago)
-    
-    if recent_events.any?
-      { success: true, message: 'Gem is working correctly!' }
-    else
-      # Also check if we have any events at all (maybe they tested before)
-      all_events = project.events.limit(1)
-      if all_events.any?
-        { success: true, message: 'Gem was previously connected and working!' }
-      else
-        { success: false, error: 'No events received from your application. Please ensure the gem is properly installed and configured.' }
-      end
-    end
-  rescue => e
-    { success: false, error: "Connection test failed: #{e.message}" }
   end
 end

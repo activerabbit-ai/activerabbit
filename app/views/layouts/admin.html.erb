@@ -64,7 +64,9 @@
             </svg>
             Performance
           <% end %>
-
+<%
+=begin%>
+ 
           <%= link_to security_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(security_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,6 +82,8 @@
             </svg>
             Logs
           <% end %>
+<%
+=end%>
 
           <div class="border-t border-gray-700 my-4"></div>
 

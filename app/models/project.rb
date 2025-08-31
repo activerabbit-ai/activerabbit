@@ -31,6 +31,10 @@ class Project < ApplicationRecord
     )
   end
 
+  def api_token
+    api_tokens.active.first&.token
+  end
+
   def create_default_alert_rules!
     # Create default alert rules for new projects
     alert_rules.create!([
