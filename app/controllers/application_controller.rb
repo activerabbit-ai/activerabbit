@@ -8,6 +8,9 @@ class ApplicationController < ActionController::Base
   # Multi-tenancy: Set current tenant after authentication (skip for Devise controllers)
   before_action :set_current_tenant, unless: :devise_controller?
 
+  # Project selection from slug
+  before_action :set_current_project_from_slug
+
   # Onboarding: Redirect users without projects to onboarding
   before_action :check_onboarding_needed
 
@@ -39,8 +42,7 @@ class ApplicationController < ActionController::Base
   end
 
   def current_project
-    return @current_project if defined?(@current_project)
-    @current_project = current_user.respond_to?(:projects) ? current_user.projects.first : nil
+    @current_project
   end
 
   def current_account
@@ -52,6 +54,21 @@ class ApplicationController < ActionController::Base
   def set_current_tenant
     if user_signed_in? && current_user.account
       ActsAsTenant.current_tenant = current_user.account
+    end
+  end
+
+  def set_current_project_from_slug
+    return unless user_signed_in?
+    return if devise_controller?
+
+    if params[:project_slug].present?
+      @current_project = current_account&.projects&.find_by(slug: params[:project_slug])
+
+      # If project not found or doesn't belong to current account, redirect to dashboard
+      unless @current_project
+        redirect_to dashboard_path, alert: "Project not found or access denied."
+        return
+      end
     end
   end
 

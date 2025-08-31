@@ -85,12 +85,17 @@
 <!-- Projects Grid -->
 <div class="mt-8">
   <div class="mb-6">
-    <h3 class="text-lg font-medium text-gray-900 mb-2">Your Projects</h3>
-    <p class="text-gray-600">All monitoring projects in your account (<%= @projects.count %> projects)</p>
+    <% if defined?(@current_project) && @current_project %>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Project: <%= @current_project.name %></h3>
+      <p class="text-gray-600">Monitoring dashboard for <%= @current_project.name %> (<%= @current_project.environment %>)</p>
+    <% else %>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Your Projects</h3>
+      <p class="text-gray-600">All monitoring projects in your account (<%= @projects&.count || 0 %> projects)</p>
+    <% end %>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <% @projects.each do |project| %>
+    <% (@projects || []).each do |project| %>
       <% stats = @project_stats[project.id] %>
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <!-- Project Header -->
@@ -171,7 +176,7 @@
     <% end %>
   </div>
 
-  <% if @projects.empty? %>
+  <% if @projects.nil? || @projects.empty? %>
     <div class="text-center py-12">
       <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -120,6 +120,15 @@ Rails.application.routes.draw do
     end
   end
 
+  # Slug-based project routes (e.g., /remotely/errors, /remotely/performance)
+  # These must come after other routes to avoid conflicts
+  get ':project_slug', to: 'dashboard#project_dashboard', as: 'project_dashboard'
+  get ':project_slug/errors', to: 'errors#index', as: 'project_slug_errors'
+  get ':project_slug/errors/:id', to: 'errors#show', as: 'project_slug_error'
+  get ':project_slug/performance', to: 'performance#index', as: 'project_slug_performance'
+  get ':project_slug/deploys', to: 'deploys#index', as: 'project_slug_deploys'
+  get ':project_slug/settings', to: 'project_settings#show', as: 'project_slug_settings'
+
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
