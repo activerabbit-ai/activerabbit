@@ -78,6 +78,9 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 end
 
+# ActiveRabbit AI monitoring gem
+gem "activerabbit-ai"
+
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
