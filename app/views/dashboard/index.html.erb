@@ -132,12 +132,18 @@
               <%= project.active? ? 'Active' : 'Inactive' %>
             </span>
           </div>
-          <% if project.tech_stack.present? %>
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-gray-600">Tech Stack</span>
-              <span class="text-sm font-medium text-gray-900"><%= project.tech_stack.humanize %></span>
-            </div>
-          <% end %>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Tech Stack</span>
+            <span class="text-sm font-medium text-gray-900">
+              <%= project.tech_stack.present? ? project.tech_stack.humanize : 'Not specified' %>
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Environment</span>
+            <span class="text-sm font-medium text-gray-900">
+              <%= project.environment.present? ? project.environment.capitalize : 'Not specified' %>
+            </span>
+          </div>
           <div class="flex justify-between items-center">
             <span class="text-sm text-gray-600">Created</span>
             <span class="text-sm font-medium text-gray-900"><%= project.created_at.strftime("%b %d, %Y") %></span>
@@ -154,7 +160,7 @@
           <!-- Primary Actions Row -->
           <div class="flex space-x-2">
             <%= link_to "View", project_path(project),
-                class: "flex-1 bg-indigo-600 text-white text-center py-2 px-3 rounded-md text-sm hover:bg-indigo-700 transition-colors" %>
+                class: "bg-indigo-600 text-white py-2 px-3 rounded-md text-sm hover:bg-indigo-700 transition-colors" %>
             <%= link_to "Edit", edit_project_path(project),
                 class: "bg-gray-100 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors" %>
           </div>
