@@ -43,7 +43,15 @@ class ProjectSettingsController < ApplicationController
   private
 
   def set_project
-    @project = current_user.projects.find(params[:project_id])
+    # Use @current_project set by ApplicationController for slug-based routes
+    # or find by project_id for regular routes
+    if @current_project
+      @project = @current_project
+    elsif params[:project_id].present?
+      @project = current_user.projects.find(params[:project_id])
+    else
+      redirect_to dashboard_path, alert: "Project not found."
+    end
   end
 
   def update_slack_settings

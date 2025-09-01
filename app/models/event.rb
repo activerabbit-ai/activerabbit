@@ -63,6 +63,12 @@ class Event < ApplicationRecord
     backtrace.is_a?(Array) ? backtrace : backtrace.split("\n")
   end
 
+  def event_type
+    # For now, all events are error events
+    # This could be extended in the future to support performance events, etc.
+    'error'
+  end
+
   private
 
   def set_defaults

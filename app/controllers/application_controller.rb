@@ -14,7 +14,7 @@ class ApplicationController < ActionController::Base
   # Onboarding: Redirect users without projects to onboarding
   before_action :check_onboarding_needed
 
-  helper_method :current_project, :current_account
+  helper_method :current_project, :current_account, :selected_project_for_menu
 
   protected
 
@@ -49,6 +49,10 @@ class ApplicationController < ActionController::Base
     @current_account ||= current_user&.account
   end
 
+  def selected_project_for_menu
+    @selected_project_for_menu
+  end
+
   private
 
   def set_current_tenant
@@ -69,6 +73,17 @@ class ApplicationController < ActionController::Base
         redirect_to dashboard_path, alert: "Project not found or access denied."
         return
       end
+
+      # Store selected project in session for dashboard menu
+      session[:selected_project_slug] = @current_project.slug
+    else
+      # When on dashboard or other non-project pages, try to use last selected project for menu
+      if session[:selected_project_slug].present?
+        @selected_project_for_menu = current_account&.projects&.find_by(slug: session[:selected_project_slug])
+      end
+
+      # If no selected project in session or project not found, use first project
+      @selected_project_for_menu ||= current_account&.projects&.first
     end
   end
 

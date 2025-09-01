@@ -21,7 +21,7 @@
 </div>
 
 <!-- Account Stats Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
   <div class="bg-white rounded-lg shadow p-6">
     <div class="flex items-center">
       <div class="p-3 rounded-full bg-blue-100 text-blue-600">
@@ -58,38 +58,24 @@
         </svg>
       </div>
       <div class="ml-4">
-        <p class="text-sm font-medium text-gray-600">Recent Events</p>
+        <p class="text-sm font-medium text-gray-600">Events Today</p>
         <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:recent_events]) %></p>
       </div>
     </div>
   </div>
 
-  <div class="bg-white rounded-lg shadow p-6">
-    <div class="flex items-center">
-      <div class="p-3 rounded-full bg-purple-100 text-purple-600">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-        </svg>
-      </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-600">Account Users</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:account_users]) %></p>
-      </div>
-    </div>
-  </div>
+  <%# Account Users section - hidden for now %>
 
 </div>
 
-
-
 <!-- Projects Grid -->
-<div class="mt-8">
+<div class="mt-6">
   <div class="mb-6">
     <% if defined?(@current_project) && @current_project %>
       <h3 class="text-lg font-medium text-gray-900 mb-2">Project: <%= @current_project.name %></h3>
       <p class="text-gray-600">Monitoring dashboard for <%= @current_project.name %> (<%= @current_project.environment %>)</p>
     <% else %>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">Your Projects</h3>
+      <h2 class="text-xl font-semibold text-gray-900 mb-2">Your Projects</h2>
       <p class="text-gray-600">All monitoring projects in your account (<%= @projects&.count || 0 %> projects)</p>
     <% end %>
   </div>
@@ -164,13 +150,37 @@
         <% end %>
 
         <!-- Actions -->
-        <div class="flex space-x-2">
-          <%= link_to "View", project_path(project),
-              class: "flex-1 bg-indigo-600 text-white text-center py-2 px-3 rounded-md text-sm hover:bg-indigo-700 transition-colors" %>
-          <%= link_to "Issues", project_issues_path(project),
-              class: "flex-1 bg-gray-100 text-gray-700 text-center py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors" %>
-          <%= link_to "Edit", edit_project_path(project),
-              class: "bg-gray-100 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors" %>
+        <div class="space-y-2">
+          <!-- Primary Actions Row -->
+          <div class="flex space-x-2">
+            <%= link_to "View", project_path(project),
+                class: "flex-1 bg-indigo-600 text-white text-center py-2 px-3 rounded-md text-sm hover:bg-indigo-700 transition-colors" %>
+            <%= link_to "Edit", edit_project_path(project),
+                class: "bg-gray-100 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors" %>
+          </div>
+
+                    <!-- Quick Access Links Row -->
+          <div class="flex space-x-2">
+            <%= link_to "/#{project.slug}/errors",
+                class: "flex-1 bg-red-50 text-red-700 text-center py-2 px-3 rounded-md text-sm hover:bg-red-100 transition-colors border border-red-200" do %>
+              <div class="flex items-center justify-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                Errors
+              </div>
+            <% end %>
+
+            <%= link_to "/#{project.slug}/performance",
+                class: "flex-1 bg-blue-50 text-blue-700 text-center py-2 px-3 rounded-md text-sm hover:bg-blue-100 transition-colors border border-blue-200" do %>
+              <div class="flex items-center justify-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                Performance
+              </div>
+            <% end %>
+          </div>
         </div>
       </div>
     <% end %>

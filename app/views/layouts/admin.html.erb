@@ -32,16 +32,25 @@
         </div>
 
         <nav class="space-y-2">
-          <%
-            # Determine base paths based on current project
-            base_dashboard_path = defined?(@current_project) && @current_project ? "/#{@current_project.slug}" : dashboard_path
-            base_deploys_path = defined?(@current_project) && @current_project ? "/#{@current_project.slug}/deploys" : deploys_path
-            base_errors_path = defined?(@current_project) && @current_project ? "/#{@current_project.slug}/errors" : errors_path
-            base_performance_path = defined?(@current_project) && @current_project ? "/#{@current_project.slug}/performance" : performance_path
+                    <%
+            # Determine base paths based on current project or user's selected project for menu
+            menu_project = (defined?(@current_project) && @current_project) ? @current_project : selected_project_for_menu
+
+            if menu_project
+              base_deploys_path = "/#{menu_project.slug}/deploys"
+              base_errors_path = "/#{menu_project.slug}/errors"
+              base_performance_path = "/#{menu_project.slug}/performance"
+            else
+              # Fallback to global paths if no projects exist
+              base_deploys_path = deploys_path
+              base_errors_path = errors_path
+              base_performance_path = performance_path
+            end
           %>
 
-          <%= link_to base_dashboard_path,
-              class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_dashboard_path) || (defined?(@current_project) && @current_project && request.path == "/#{@current_project.slug}")}" do %>
+          <!-- Always show Dashboard link -->
+          <%= link_to dashboard_path,
+              class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(dashboard_path)}" do %>
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"></path>
@@ -125,8 +134,10 @@
                     <span>
                       <% if defined?(@current_project) && @current_project %>
                         <%= @current_project.name %>
+                      <% elsif selected_project_for_menu %>
+                        <%= selected_project_for_menu.name %>
                       <% else %>
-                        Select Project
+                        <%= current_account.projects.first&.name || "No Projects" %>
                       <% end %>
                     </span>
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,13 +153,13 @@
                       </div>
                       <% current_account.projects.order(:name).each do |project| %>
                         <%= link_to "/#{project.slug}",
-                            class: "flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 #{'bg-indigo-50 text-indigo-700' if defined?(@current_project) && @current_project&.id == project.id}" do %>
+                            class: "flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 #{'bg-indigo-50 text-indigo-700' if (defined?(@current_project) && @current_project&.id == project.id) || (selected_project_for_menu&.id == project.id && !@current_project)}" do %>
                           <div class="w-2 h-2 bg-<%= project.active? ? 'green' : 'gray' %>-400 rounded-full mr-3"></div>
                           <div class="flex-1">
                             <div class="font-medium"><%= project.name %></div>
                             <div class="text-xs text-gray-500"><%= project.environment %></div>
                           </div>
-                          <% if defined?(@current_project) && @current_project&.id == project.id %>
+                          <% if (defined?(@current_project) && @current_project&.id == project.id) || (selected_project_for_menu&.id == project.id && !@current_project) %>
                             <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
                               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>

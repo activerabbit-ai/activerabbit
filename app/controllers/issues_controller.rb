@@ -36,7 +36,7 @@ class IssuesController < ApplicationController
   def show
     @events = @issue.events.recent.limit(50)
     @related_issues = @project.issues
-                              .where(exception_type: @issue.exception_type)
+                              .where(exception_class: @issue.exception_class)
                               .where.not(id: @issue.id)
                               .limit(5)
   end

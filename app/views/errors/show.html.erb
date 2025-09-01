@@ -6,7 +6,7 @@
 <nav class="flex mb-6" aria-label="Breadcrumb">
   <ol class="inline-flex items-center space-x-1 md:space-x-3">
     <li class="inline-flex items-center">
-      <%= link_to(@project ? project_errors_path(@project) : errors_path, class: "inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600") do %>
+      <%= link_to((@current_project || @project) ? "/#{(@current_project || @project).slug}/errors" : errors_path, class: "inline-flex items-center text-sm font-medium text-gray-700 hover:text-indigo-600") do %>
         <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M7.707 14.707a1 1 0 01-1.414 0L2.586 11a2 2 0 010-2.828l3.707-3.707a1 1 0 011.414 1.414L4.414 9H17a1 1 0 110 2H4.414l3.293 3.293a1 1 0 010 1.414z" clip-rule="evenodd"></path>
         </svg>

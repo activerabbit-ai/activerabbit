@@ -92,7 +92,14 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <% @issues.each do |issue| %>
-            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="window.location.href='<%= @project ? project_error_path(@project, issue) : error_path(issue) %>'">
+            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="window.location.href='<%=
+              if @current_project
+                "/#{@current_project.slug}/errors/#{issue.id}"
+              elsif @project
+                project_error_path(@project, issue)
+              else
+                error_path(issue)
+              end %>'">
               <!-- Error & Action -->
               <td class="px-6 py-4">
                 <div class="flex items-start">
@@ -151,7 +158,15 @@
               <!-- Actions -->
               <td class="px-6 py-4" onclick="event.stopPropagation();">
                 <div class="flex items-center space-x-2">
-                  <%= link_to(@project ? project_error_path(@project, issue) : error_path(issue), class: "inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500") do %>
+                  <%= link_to(
+                    if @current_project
+                      "/#{@current_project.slug}/errors/#{issue.id}"
+                    elsif @project
+                      project_error_path(@project, issue)
+                    else
+                      error_path(issue)
+                    end,
+                    class: "inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500") do %>
                     <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -160,9 +175,17 @@
                   <% end %>
 
                   <% if issue.status != 'closed' %>
-                    <%= link_to @project ? project_error_path(@project, issue) : error_path(issue), method: :delete,
-                        data: { confirm: 'Are you sure you want to resolve this error?' },
-                        class: "inline-flex items-center px-2 py-1 border border-green-300 shadow-sm text-xs font-medium rounded text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-1 focus:ring-green-500" do %>
+                    <%= link_to(
+                      if @current_project
+                        "/#{@current_project.slug}/errors/#{issue.id}"
+                      elsif @project
+                        project_error_path(@project, issue)
+                      else
+                        error_path(issue)
+                      end,
+                      method: :delete,
+                      data: { confirm: 'Are you sure you want to resolve this error?' },
+                      class: "inline-flex items-center px-2 py-1 border border-green-300 shadow-sm text-xs font-medium rounded text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-1 focus:ring-green-500") do %>
                       <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>

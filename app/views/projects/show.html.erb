@@ -181,8 +181,8 @@
           <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
           <div class="flex-1 min-w-0">
             <%= link_to project_issue_path(@project, issue), class: "block" do %>
-              <p class="text-sm font-medium text-gray-900 truncate"><%= issue.exception_type %></p>
-              <p class="text-xs text-gray-500 truncate"><%= issue.message %></p>
+              <p class="text-sm font-medium text-gray-900 truncate"><%= issue.exception_class %></p>
+              <p class="text-xs text-gray-500 truncate"><%= issue.sample_message %></p>
               <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(issue.last_seen_at) %> ago</p>
             <% end %>
           </div>

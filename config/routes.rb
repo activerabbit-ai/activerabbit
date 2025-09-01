@@ -120,6 +120,13 @@ Rails.application.routes.draw do
     end
   end
 
+  # Test endpoints for ActiveRabbit self-monitoring
+  get 'test_monitoring', to: 'test_monitoring#index'
+  get 'test_monitoring/error', to: 'test_monitoring#test_error'
+  get 'test_monitoring/performance', to: 'test_monitoring#test_performance'
+  get 'test_monitoring/manual', to: 'test_monitoring#test_manual_tracking'
+  get 'test_monitoring/connection', to: 'test_monitoring#test_connection'
+
   # Slug-based project routes (e.g., /remotely/errors, /remotely/performance)
   # These must come after other routes to avoid conflicts
   get ':project_slug', to: 'dashboard#project_dashboard', as: 'project_dashboard'
