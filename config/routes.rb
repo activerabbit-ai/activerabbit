@@ -53,7 +53,8 @@ Rails.application.routes.draw do
   delete 'projects/:project_id/errors/:id', to: 'errors#destroy'
 
   # Projects management (non-admin)
-  resources :projects do
+  # Note: projects index page is hidden - dashboard shows all projects instead
+  resources :projects, except: [:index] do
     member do
       post :regenerate_token
     end

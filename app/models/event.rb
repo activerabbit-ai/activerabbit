@@ -69,6 +69,12 @@ class Event < ApplicationRecord
     'error'
   end
 
+  def duration_ms
+    # Error events don't typically have durations
+    # This could be extended in the future to support performance events with durations
+    nil
+  end
+
   private
 
   def set_defaults
