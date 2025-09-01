@@ -20,7 +20,7 @@ class ApplicationController < ActionController::Base
 
   # Skip authentication for Devise controllers and health checks
   def skip_authentication?
-    devise_controller? || controller_name == 'health'
+    devise_controller? || request.path == '/up'
   end
 
   # Use auth layout for Devise controllers
