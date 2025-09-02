@@ -2,26 +2,21 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   # allow_browser versions: :modern  # Temporarily disabled for deployment testing
 
-  # Devise authentication - skip for Devise controllers (sign up, sign in, etc.) and health checks
-  before_action :authenticate_user!, unless: :skip_authentication?
+  # Devise authentication - skip for Devise controllers (sign up, sign in, etc.)
+  before_action :authenticate_user!, unless: :devise_controller?
 
-  # Multi-tenancy: Set current tenant after authentication (skip for Devise controllers and health checks)
-  before_action :set_current_tenant, unless: :skip_authentication?
+  # Multi-tenancy: Set current tenant after authentication (skip for Devise controllers)
+  before_action :set_current_tenant, unless: :devise_controller?
 
   # Project selection from slug
-  before_action :set_current_project_from_slug, unless: :skip_authentication?
+  before_action :set_current_project_from_slug
 
   # Onboarding: Redirect users without projects to onboarding
-  before_action :check_onboarding_needed, unless: :skip_authentication?
+  before_action :check_onboarding_needed
 
   helper_method :current_project, :current_account, :selected_project_for_menu
 
   protected
-
-  # Skip authentication for Devise controllers and health checks
-  def skip_authentication?
-    devise_controller? || request.path == '/up'
-  end
 
   # Use auth layout for Devise controllers
   def layout_by_resource

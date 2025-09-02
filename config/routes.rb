@@ -128,20 +128,25 @@ Rails.application.routes.draw do
   get 'test_monitoring/manual', to: 'test_monitoring#test_manual_tracking'
   get 'test_monitoring/connection', to: 'test_monitoring#test_connection'
 
+  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+
+  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
+  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # Using dedicated HealthCheckController that bypasses all authentication
+  # IMPORTANT: This must come BEFORE the slug-based routes to avoid conflicts
+  get "up" => "health_check#show", as: :rails_health_check
+
+  # Simple test endpoint to debug deployment health check issues
+  get "health_test" => "test_monitoring#health_test"
+
   # Slug-based project routes (e.g., /remotely/errors, /remotely/performance)
-  # These must come after other routes to avoid conflicts
+  # These must come after other specific routes to avoid conflicts
   get ':project_slug', to: 'dashboard#project_dashboard', as: 'project_dashboard'
   get ':project_slug/errors', to: 'errors#index', as: 'project_slug_errors'
   get ':project_slug/errors/:id', to: 'errors#show', as: 'project_slug_error'
   get ':project_slug/performance', to: 'performance#index', as: 'project_slug_performance'
   get ':project_slug/deploys', to: 'deploys#index', as: 'project_slug_deploys'
   get ':project_slug/settings', to: 'project_settings#show', as: 'project_slug_settings'
-
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
 
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest

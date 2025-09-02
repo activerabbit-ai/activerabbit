@@ -102,4 +102,9 @@ class TestMonitoringController < ApplicationController
       timestamp: Time.current
     }
   end
+
+  def health_test
+    # Simple health check that bypasses authentication
+    render json: { status: 'ok', timestamp: Time.current.iso8601 }, status: :ok
+  end
 end
