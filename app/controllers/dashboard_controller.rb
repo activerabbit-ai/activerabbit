@@ -37,42 +37,14 @@ class DashboardController < ApplicationController
     end
   end
 
-  def project_dashboard
-    # Project-specific dashboard - @current_project is set by ApplicationController
+    def project_dashboard
+    # Redirect slug-based project URLs to the full project details page
     unless @current_project
       redirect_to dashboard_path, alert: "Project not found."
       return
     end
 
-    # Project-specific stats (matching the structure expected by the view)
-    @stats = {
-      total_projects: 1, # We're viewing one specific project
-      active_projects: @current_project.active? ? 1 : 0,
-      total_issues: @current_project.issues.count,
-      open_issues: @current_project.issues.open.count,
-      total_events: @current_project.events.count,
-      recent_events: @current_project.events.where('occurred_at > ?', 24.hours.ago).count,
-      account_users: current_account.users.count,
-      active_users: current_account.users.where('current_sign_in_at > ?', 7.days.ago).count
-    }
-
-    # Recent activity for this project
-    @recent_issues = @current_project.issues.recent.limit(5)
-    @recent_events = @current_project.events.recent.limit(10)
-
-    # Set projects to show only the current project in the projects grid
-    @projects = [@current_project]
-
-    # Stats for the current project
-    @project_stats = {
-      @current_project.id => {
-        issues_count: @current_project.issues.open.count,
-        events_today: @current_project.events.where('created_at > ?', 24.hours.ago).count,
-        health_status: @current_project.health_status
-      }
-    }
-
-    # Use the same dashboard view but with project-specific data
-    render :index
+    # Redirect to the full project show page
+    redirect_to project_path(@current_project)
   end
 end
