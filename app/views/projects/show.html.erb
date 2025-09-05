@@ -115,29 +115,6 @@
     </div>
   </div>
 
-  <!-- API Tokens -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">API Token</h3>
-    <div class="space-y-3">
-      <% if @api_tokens.active.any? %>
-        <% token = @api_tokens.active.first %>
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div>
-            <p class="text-sm font-medium text-gray-900"><%= token.name %></p>
-            <p class="text-xs text-gray-500 font-mono"><%= token.mask_token %></p>
-          </div>
-          <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-            Active
-          </span>
-        </div>
-      <% else %>
-        <div class="text-center py-8 text-gray-500">
-          <p>No active API token found.</p>
-          <p class="text-sm mt-1">Click "Regenerate Token" to create one.</p>
-        </div>
-      <% end %>
-    </div>
-  </div>
 
   <!-- Alert Rules -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -229,3 +206,5 @@
     </div>
   </div>
 </div>
+
+

@@ -2,6 +2,7 @@ module ApiAuthentication
   extend ActiveSupport::Concern
 
   included do
+    before_action :log_api_request
     before_action :authenticate_api_token!
     before_action :set_current_project
     before_action :check_project_active
@@ -12,6 +13,17 @@ module ApiAuthentication
   end
 
   private
+
+  def log_api_request
+    Rails.logger.info "🚀 API REQUEST from Remote App:"
+    Rails.logger.info "  Method: #{request.method}"
+    Rails.logger.info "  URL: #{request.url}"
+    Rails.logger.info "  Headers: #{request.headers.to_h.select { |k, v| k.start_with?('HTTP_') || k == 'X-Project-Token' }}"
+    Rails.logger.info "  Body: #{request.body.read}"
+    request.body.rewind # Reset body for further processing
+    Rails.logger.info "  Params: #{params.inspect}"
+    Rails.logger.info "🚀 END API REQUEST"
+  end
 
   def authenticate_api_token!
     token_header = request.headers['X-Project-Token']

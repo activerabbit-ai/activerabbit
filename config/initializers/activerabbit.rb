@@ -16,7 +16,7 @@ if Rails.env.production? || Rails.env.staging?
           ActiveRabbit::Client.configure do |config|
             config.api_key = ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN']
             config.project_id = ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID']
-            config.api_url = "http://localhost:3000"  # Self-monitoring
+            config.api_url = "http://web:3000"  # Self-monitoring (Docker internal)
             config.environment = Rails.env
 
             # Enable all monitoring features for self-monitoring
@@ -46,7 +46,7 @@ elsif Rails.env.development?
           ActiveRabbit::Client.configure do |config|
             config.api_key = ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN']
             config.project_id = ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID']
-            config.api_url = "http://localhost:3000"  # Self-monitoring
+            config.api_url = "http://web:3000"  # Self-monitoring (Docker internal)
             config.environment = Rails.env
 
             # Enable monitoring features

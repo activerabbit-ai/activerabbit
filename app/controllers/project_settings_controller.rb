@@ -5,6 +5,7 @@ class ProjectSettingsController < ApplicationController
 
   def show
     # Show project settings including Slack configuration
+    @api_tokens = @project.api_tokens.active
   end
 
   def update

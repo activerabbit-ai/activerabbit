@@ -6,6 +6,15 @@ class PerformanceIngestJob
   def perform(project_id, payload, batch_id = nil)
     project = Project.find(project_id)
 
+    # Set tenant context for ActsAsTenant
+    ActsAsTenant.with_tenant(project.account) do
+      perform_with_tenant(project, payload, batch_id)
+    end
+  end
+
+  private
+
+  def perform_with_tenant(project, payload, batch_id = nil)
     # Convert string keys to symbols if needed
     payload = payload.deep_symbolize_keys if payload.respond_to?(:deep_symbolize_keys)
 

@@ -4,6 +4,15 @@ class Api::V1::EventsController < Api::BaseController
   def create_error
     Rails.logger.info "=== DEBUG: create_error called ==="
     Rails.logger.info "Raw params: #{params.inspect}"
+    Rails.logger.info "Current project: #{@current_project.inspect}"
+    Rails.logger.info "Current API token: #{@current_api_token.inspect}"
+
+    # Check if project exists
+    unless @current_project
+      Rails.logger.error "ERROR: @current_project is nil!"
+      render json: { error: 'project_not_found', message: 'Project not found' }, status: :not_found
+      return
+    end
 
     payload = sanitize_error_payload(params)
     Rails.logger.info "Sanitized payload: #{payload.inspect}"
@@ -25,11 +34,28 @@ class Api::V1::EventsController < Api::BaseController
       },
       message: 'Error event queued for processing'
     )
+  rescue => e
+    Rails.logger.error "ERROR in create_error: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { error: 'processing_error', message: e.message }, status: :internal_server_error
   end
 
   # POST /api/v1/events/performance
   def create_performance
+
+    Rails.logger.info "=== DEBUG: create_performance called ==="
+    Rails.logger.info "Raw params: #{params.inspect}"
+    Rails.logger.info "Current project: #{@current_project.inspect}"
+
+    # Check if project exists
+    unless @current_project
+      Rails.logger.error "ERROR: @current_project is nil!"
+      render json: { error: 'project_not_found', message: 'Project not found' }, status: :not_found
+      return
+    end
+
     payload = sanitize_performance_payload(params)
+    Rails.logger.info "Sanitized payload: #{payload.inspect}"
 
     # Validate required fields
     validate_performance_payload!(payload)
@@ -37,6 +63,8 @@ class Api::V1::EventsController < Api::BaseController
     # Process in background
     # Ensure payload is JSON-serializable by converting to hash and stringifying
     serializable_payload = JSON.parse(payload.to_h.to_json)
+    Rails.logger.info "Serializable payload: #{serializable_payload.inspect}"
+    Rails.logger.info "Calling PerformanceIngestJob.perform_async(#{@current_project.id}, payload)"
     PerformanceIngestJob.perform_async(@current_project.id, serializable_payload)
 
     render_created(
@@ -46,6 +74,10 @@ class Api::V1::EventsController < Api::BaseController
       },
       message: 'Performance event queued for processing'
     )
+  rescue => e
+    Rails.logger.error "ERROR in create_performance: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { error: 'processing_error', message: e.message }, status: :internal_server_error
   end
 
   # POST /api/v1/events/batch
@@ -159,7 +191,7 @@ class Api::V1::EventsController < Api::BaseController
 
   def sanitize_performance_payload(params)
     {
-      controller_action: params[:controller_action] || params['controller_action'],
+      controller_action: params[:controller_action] || params['controller_action'] || params[:name] || params['name'],
       job_class: params[:job_class] || params['job_class'],
       request_path: params[:request_path] || params['request_path'],
       request_method: params[:request_method] || params['request_method'],
