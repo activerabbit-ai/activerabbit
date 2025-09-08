@@ -33,7 +33,12 @@
           <div class="w-4 h-4 rounded-full <%= @issue.status == 'open' ? 'bg-red-400' : @issue.status == 'wip' ? 'bg-yellow-400' : 'bg-green-400' %> mt-1"></div>
         </div>
         <div class="ml-3">
-          <h1 class="text-xl font-semibold text-gray-900"><%= @issue.exception_class %></h1>
+          <h1 class="text-xl font-semibold text-gray-900">
+            <%= @issue.exception_class %>
+            <% if @events.first&.context&.dig('error_type') %>
+              <span class="text-sm text-gray-500">(<%= @events.first.context['error_type'] %>)</span>
+            <% end %>
+          </h1>
           <% if @issue.sample_message.present? %>
             <p class="text-gray-600 mt-1"><%= @issue.sample_message %></p>
           <% end %>
@@ -41,6 +46,11 @@
             <span><strong>Project:</strong> <%= @issue.project&.name || 'Unknown' %></span>
             <span><strong>First seen:</strong> <%= time_ago_in_words(@issue.first_seen_at) %> ago</span>
             <span><strong>Last seen:</strong> <%= time_ago_in_words(@issue.last_seen_at) %> ago</span>
+            <% if @events.first&.context&.dig('error', 'severity') %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <%= @events.first.context['error']['severity'] == 'error' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' %>">
+                <%= @events.first.context['error']['severity'].upcase %>
+              </span>
+            <% end %>
           </div>
         </div>
       </div>
@@ -88,7 +98,7 @@
       <% if @issue.status != 'closed' %>
         <%= link_to @project ? project_error_path(@project, @issue) : error_path(@issue),
             data: { method: :delete, confirm: 'Are you sure you want to resolve this error? This will mark it as resolved.' },
-            class: "inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" do %>
+            class: "inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-500" do %>
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
@@ -120,9 +130,18 @@
       </div>
 
       <div class="text-xs text-gray-500 mb-2"><strong>Controller Action:</strong></div>
-      <div class="bg-gray-50 rounded p-3">
+      <div class="bg-gray-50 rounded p-3 mb-4">
         <code class="text-sm text-gray-800"><%= @issue.controller_action %></code>
       </div>
+
+      <% if @events.first&.context&.dig('error', 'backtrace_preview') %>
+        <div class="text-xs text-gray-500 mb-2"><strong>Backtrace Preview:</strong></div>
+        <div class="bg-gray-50 rounded p-3">
+          <% @events.first.context['error']['backtrace_preview'].each do |line| %>
+            <code class="text-sm text-gray-800 block"><%= line %></code>
+          <% end %>
+        </div>
+      <% end %>
     </div>
   </div>
 
@@ -145,9 +164,44 @@
                 </span>
               <% end %>
             </div>
-            <% if event.context.present? && event.context['request_path'] %>
-              <div class="text-xs text-gray-600">
-                <strong>Path:</strong> <%= event.context['request_path'] %>
+
+            <!-- Request Details -->
+            <% if event.context.present? %>
+              <div class="space-y-2">
+                <% if event.context['request_details'] %>
+                  <div class="text-sm">
+                    <span class="font-medium text-gray-700">Request:</span>
+                    <code class="ml-1 text-gray-600"><%= event.context['request_details'] %></code>
+                  </div>
+                <% end %>
+
+                <% if event.context['response_time'] %>
+                  <div class="text-sm">
+                    <span class="font-medium text-gray-700">Response Time:</span>
+                    <span class="ml-1 text-gray-600"><%= event.context['response_time'] %></span>
+                  </div>
+                <% end %>
+
+                <% if event.context['db_activity'] %>
+                  <div class="text-sm">
+                    <span class="font-medium text-gray-700">Database:</span>
+                    <span class="ml-1 text-gray-600"><%= event.context['db_activity'] %></span>
+                  </div>
+                <% end %>
+
+                <% if event.context['routing_info'] %>
+                  <div class="text-sm">
+                    <span class="font-medium text-gray-700">Routing:</span>
+                    <span class="ml-1 text-gray-600"><%= event.context['routing_info'] %></span>
+                  </div>
+                <% end %>
+
+                <% if event.context.dig('error', 'component') %>
+                  <div class="text-sm">
+                    <span class="font-medium text-gray-700">Component:</span>
+                    <span class="ml-1 text-gray-600"><%= event.context['error']['component'] %></span>
+                  </div>
+                <% end %>
               </div>
             <% end %>
           </div>
@@ -160,4 +214,3 @@
     </div>
   </div>
 </div>
-
