@@ -116,14 +116,31 @@
   </div>
 </div>
 
-<!-- Error Details Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <!-- Stack Trace -->
-  <div class="bg-white rounded-lg shadow">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900">Stack Trace</h3>
+<!-- Tabs: Stack Trace | Samples | Graph -->
+<% current_tab = case params[:tab]
+when 'samples' then 'samples'
+when 'graph' then 'graph'
+else 'stack'
+end %>
+
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 pt-4 pb-4 mb-4">
+    <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner" role="tablist" aria-label="Error detail tabs">
+      <%= link_to url_for(params.permit!.to_h.merge(tab: 'stack', event_id: nil)), class: "px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'stack' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'stack') } do %>
+        Stack Trace
+      <% end %>
+      <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
+        Samples
+      <% end %>
+      <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
+        Graph
+      <% end %>
     </div>
-    <div class="p-6">
+  </div>
+
+  <% if current_tab == 'stack' %>
+    <div class="px-6 py-4 border-t border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Stack Trace</h3>
       <div class="text-xs text-gray-500 mb-2"><strong>Top Frame:</strong></div>
       <div class="bg-gray-50 rounded p-3 mb-4">
         <code class="text-sm text-gray-800"><%= @issue.top_frame %></code>
@@ -135,82 +152,222 @@
       </div>
 
       <% if @events.first&.context&.dig('error', 'backtrace_preview') %>
-        <div class="text-xs text-gray-500 mb-2"><strong>Backtrace Preview:</strong></div>
+        <div class="text-xs text-gray-500 mb-2"><strong>Backtrace Preview (important frames):</strong></div>
         <div class="bg-gray-50 rounded p-3">
-          <% @events.first.context['error']['backtrace_preview'].each do |line| %>
-            <code class="text-sm text-gray-800 block"><%= line %></code>
+          <% important = @events.first.context['error']['backtrace_preview'].select { |l| l.include?('/app/') || l.include?('/controllers/') || l.include?('/models/') || l.include?('/services/') }
+             important = @events.first.context['error']['backtrace_preview'].first(5) if important.empty?
+             full_text = important.join("\n")
+             head_text = full_text[0, 500] || ''
+             tail_text = full_text.length > 500 ? full_text[500, full_text.length] : ''
+          %>
+          <pre class="whitespace-pre-wrap"><code class="text-sm text-gray-800"><%= head_text %></code></pre>
+          <% if tail_text.present? %>
+            <details class="mt-2">
+              <summary class="text-xs text-indigo-600 cursor-pointer select-none">More...</summary>
+              <div class="mt-2">
+                <pre class="whitespace-pre-wrap"><code class="text-sm text-gray-800"><%= tail_text %></code></pre>
+              </div>
+            </details>
           <% end %>
         </div>
       <% end %>
     </div>
-  </div>
+  <% elsif current_tab == 'graph' %>
+    <div class="border-t border-gray-200 px-6 py-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Error count over time</h3>
+        <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
+          <% %w[1H 4H 8H 12H 24H 48H 7D 30D].each do |rk| %>
+            <% active = (@graph_range_key || '24H') == rk %>
+            <%= link_to rk, url_for(params.permit!.to_h.merge(tab: 'graph', range: rk)), class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
+          <% end %>
+        </div>
+      </div>
 
-  <!-- Recent Events -->
-  <div class="bg-white rounded-lg shadow">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900">Recent Occurrences</h3>
+      <% if @graph_counts.present? && @graph_has_data %>
+        <% labels = (@graph_labels || []).map { |t| case @graph_range_key; when '1H','4H','8H','12H','24H','48H' then t.strftime('%H:%M'); else t.strftime('%b %d'); end } %>
+        <div class="relative" style="height: 300px;">
+          <canvas data-controller="graph"
+                  data-graph-labels-value='<%= labels.to_json %>'
+                  data-graph-counts-value='<%= @graph_counts.to_json %>'
+                  data-graph-range-value='<%= @graph_range_key %>'></canvas>
+        </div>
+      <% else %>
+        <div class="text-center text-gray-500 py-8">No data for selected range</div>
+      <% end %>
     </div>
-    <div class="divide-y divide-gray-200">
+  <% else %>
+    <!-- Samples Table & Selected Sample Details -->
+    <div class="border-t border-gray-200">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-900">Samples</h3>
+          <div class="text-xs text-gray-500">Click any value to apply a filter</div>
+        </div>
+      </div>
+
       <% if @events.any? %>
-        <% @events.each do |event| %>
-          <div class="p-4">
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-sm text-gray-500">
-                <%= time_ago_in_words(event.occurred_at) %> ago
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+          <!-- Left: Selected sample details -->
+          <div class="lg:col-span-2">
+            <% if @selected_event %>
+              <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-md font-medium text-gray-900">Tags for sample that occurred at</h4>
+                  <div class="text-xs text-gray-500"><%= @selected_event.occurred_at.strftime('%b %-d %Y %H:%M:%S') %></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <div>
+                    <dl class="divide-y divide-gray-200 text-[13px]">
+                      <div class="py-2 grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500">hostname:</dt>
+                        <dd class="mt-1 text-indigo-600 col-span-2 truncate"><%= @selected_event.server_name || '–' %></dd>
+                      </div>
+                      <div class="py-2 grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500">method:</dt>
+                        <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.request_method || '–' %></dd>
+                      </div>
+                      <div class="py-2 grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500">path:</dt>
+                        <dd class="mt-1 text-indigo-600 col-span-2 break-all"><%= @selected_event.request_path || '–' %></dd>
+                      </div>
+                      <div class="py-2 grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500">request_id:</dt>
+                        <dd class="mt-1 text-indigo-600 col-span-2 break-all"><%= @selected_event.request_id || '–' %></dd>
+                      </div>
+                      <div class="py-2 grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500">response_status:</dt>
+                        <dd class="mt-1 text-gray-700 col-span-2"><%= (@selected_event.context && (@selected_event.context['error_status'] || @selected_event.context[:error_status])) || '–' %></dd>
+                      </div>
+                      <div class="py-2 grid grid-cols-3 gap-2">
+                        <dt class="text-gray-500">revision:</dt>
+                        <dd class="mt-1 text-gray-700 col-span-2"><%= @selected_event.release_version || '–' %></dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <!-- Parameters / Session / Environment -->
+                  <div>
+                    <% ctx = @selected_event.context || {} %>
+                    <% req = (ctx['request'] || ctx[:request] || {}) %>
+                    <% routing = (ctx['routing'] || ctx[:routing] || {}) %>
+                    <% params_hash = routing['params'] || routing[:params] || {} %>
+                    <% session_hash = req['session'] || req[:session] || {} %>
+                    <% env_hash = ctx['env'] || ctx[:env] || {} %>
+
+                    <div class="mb-3">
+                      <div class="text-sm font-medium text-gray-900 mb-1">Parameters</div>
+                      <pre class="bg-gray-50 rounded p-3 text-xs overflow-x-auto"><%= JSON.pretty_generate(params_hash) rescue params_hash.inspect %></pre>
+                    </div>
+                    <div class="mb-3">
+                      <div class="text-sm font-medium text-gray-900 mb-1">Session data</div>
+                      <pre class="bg-gray-50 rounded p-3 text-xs overflow-x-auto"><%= JSON.pretty_generate(session_hash) rescue session_hash.inspect %></pre>
+                    </div>
+                    <div class="mb-3">
+                      <div class="text-sm font-medium text-gray-900 mb-1">Environment</div>
+                      <div class="grid grid-cols-1 gap-1 text-xs text-gray-700">
+                        <% if req.present? %>
+                          <% if req['accept'] || req[:accept] %>
+                            <div><span class="text-gray-500">HTTP_ACCEPT:</span> <span class="break-all"><%= req['accept'] || req[:accept] %></span></div>
+                          <% end %>
+                          <% if req['accept_encoding'] || req[:accept_encoding] %>
+                            <div><span class="text-gray-500">HTTP_ACCEPT_ENCODING:</span> <span class="break-all"><%= req['accept_encoding'] || req[:accept_encoding] %></span></div>
+                          <% end %>
+                          <% if req['accept_language'] || req[:accept_language] %>
+                            <div><span class="text-gray-500">HTTP_ACCEPT_LANGUAGE:</span> <span class="break-all"><%= req['accept_language'] || req[:accept_language] %></span></div>
+                          <% end %>
+                          <% if req['path_info'] || req[:path_info] %>
+                            <div><span class="text-gray-500">PATH_INFO:</span> <span class="break-all"><%= req['path_info'] || req[:path_info] %></span></div>
+                          <% end %>
+                          <% if req['request_method'] || req[:request_method] %>
+                            <div><span class="text-gray-500">REQUEST_METHOD:</span> <span class="break-all"><%= req['request_method'] || req[:request_method] %></span></div>
+                          <% end %>
+                          <% if req['request_path'] || req[:request_path] %>
+                            <div><span class="text-gray-500">REQUEST_PATH:</span> <span class="break-all"><%= req['request_path'] || req[:request_path] %></span></div>
+                          <% end %>
+                          <% if req['server_name'] || req[:server_name] %>
+                            <div><span class="text-gray-500">SERVER_NAME:</span> <span class="break-all"><%= req['server_name'] || req[:server_name] %></span></div>
+                          <% end %>
+                          <% if req['server_port'] || req[:server_port] %>
+                            <div><span class="text-gray-500">SERVER_PORT:</span> <span class="break-all"><%= req['server_port'] || req[:server_port] %></span></div>
+                          <% end %>
+                          <% if req['server_protocol'] || req[:server_protocol] %>
+                            <div><span class="text-gray-500">SERVER_PROTOCOL:</span> <span class="break-all"><%= req['server_protocol'] || req[:server_protocol] %></span></div>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <% if @selected_event.formatted_backtrace.any? %>
+                  <div class="mt-4">
+                    <div class="text-sm font-medium text-gray-900 mb-1">Backtrace (important frames)</div>
+                    <div class="bg-gray-50 rounded p-3">
+                      <% imp = @selected_event.formatted_backtrace.select { |l| l.include?('/app/') || l.include?('/controllers/') || l.include?('/models/') || l.include?('/services/') }
+                         imp = @selected_event.formatted_backtrace.first(15) if imp.empty?
+                         full_text = imp.join("\n")
+                         head_text = full_text[0, 500] || ''
+                         tail_text = full_text.length > 500 ? full_text[500, full_text.length] : ''
+                      %>
+                      <pre class="whitespace-pre-wrap"><code class="block text-xs text-gray-800"><%= head_text %></code></pre>
+                      <% if tail_text.present? %>
+                        <details class="mt-2">
+                          <summary class="text-xs text-indigo-600 cursor-pointer select-none">More...</summary>
+                          <div class="mt-2">
+                            <pre class="whitespace-pre-wrap"><code class="block text-xs text-gray-800"><%= tail_text %></code></pre>
+                          </div>
+                        </details>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
               </div>
-              <% if event.user_id_hash.present? %>
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  User: <%= event.user_id_hash[0..7] %>...
-                </span>
-              <% end %>
-            </div>
-
-            <!-- Request Details -->
-            <% if event.context.present? %>
-              <div class="space-y-2">
-                <% if event.context['request_details'] %>
-                  <div class="text-sm">
-                    <span class="font-medium text-gray-700">Request:</span>
-                    <code class="ml-1 text-gray-600"><%= event.context['request_details'] %></code>
-                  </div>
-                <% end %>
-
-                <% if event.context['response_time'] %>
-                  <div class="text-sm">
-                    <span class="font-medium text-gray-700">Response Time:</span>
-                    <span class="ml-1 text-gray-600"><%= event.context['response_time'] %></span>
-                  </div>
-                <% end %>
-
-                <% if event.context['db_activity'] %>
-                  <div class="text-sm">
-                    <span class="font-medium text-gray-700">Database:</span>
-                    <span class="ml-1 text-gray-600"><%= event.context['db_activity'] %></span>
-                  </div>
-                <% end %>
-
-                <% if event.context['routing_info'] %>
-                  <div class="text-sm">
-                    <span class="font-medium text-gray-700">Routing:</span>
-                    <span class="ml-1 text-gray-600"><%= event.context['routing_info'] %></span>
-                  </div>
-                <% end %>
-
-                <% if event.context.dig('error', 'component') %>
-                  <div class="text-sm">
-                    <span class="font-medium text-gray-700">Component:</span>
-                    <span class="ml-1 text-gray-600"><%= event.context['error']['component'] %></span>
-                  </div>
-                <% end %>
-              </div>
+            <% else %>
+              <div class="px-6 py-10 text-center text-gray-500">Select a sample to view details</div>
             <% end %>
           </div>
-        <% end %>
+
+          <!-- Right: Samples list -->
+          <div class="border-l border-gray-200">
+            <div class="px-4 py-2 text-xs text-gray-500">Recent samples</div>
+            <div class="overflow-y-auto max-h-[40rem]">
+              <ul class="divide-y divide-gray-100">
+                <% @events.each do |event| %>
+                  <% selected = (@selected_event && @selected_event.id == event.id) %>
+                  <li class="hover:bg-gray-50 <%= selected ? 'bg-indigo-50' : '' %>">
+                    <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples', event_id: event.id)), class: "block px-4 py-2" do %>
+                      <div class="flex items-center justify-between">
+                        <div class="text-xs font-medium text-gray-900"><%= event.occurred_at.strftime('%b %-d %H:%M') %></div>
+                        <% status = (event.context && (event.context['error_status'] || event.context[:error_status])) %>
+                        <% if status.present? %>
+                          <span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700"><%= status %></span>
+                        <% end %>
+                      </div>
+                      <div class="mt-1 flex items-center space-x-2 text-[11px] text-gray-600">
+                        <% if event.request_method.present? %>
+                          <span class="inline-flex items-center px-1 py-0.5 rounded bg-gray-100 text-gray-700"><%= event.request_method %></span>
+                        <% end %>
+                        <% if event.server_name.present? %>
+                          <span class="truncate"><%= event.server_name %></span>
+                        <% end %>
+                      </div>
+                      <% if event.request_path.present? %>
+                        <div class="mt-1 text-[11px] text-gray-500 truncate"><%= event.request_path %></div>
+                      <% end %>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
       <% else %>
         <div class="p-4 text-center text-gray-500">
-          No recent events found
+          No samples found
         </div>
       <% end %>
     </div>
-  </div>
+  <% end %>
 </div>
