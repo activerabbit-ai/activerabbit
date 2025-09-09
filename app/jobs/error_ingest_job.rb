@@ -43,6 +43,13 @@ class ErrorIngestJob
 
     # Check if this error should trigger an alert
     issue = event.issue
+    # Generate AI summary once for a new issue
+    if issue && issue.ai_summary.blank? && issue.count <= 1
+      ai = AiSummaryService.new(issue: issue, sample_event: event).call
+      if ai[:summary].present?
+        issue.update(ai_summary: ai[:summary], ai_summary_generated_at: Time.current)
+      end
+    end
     if issue && should_alert_for_issue?(issue)
       IssueAlertJob.perform_async(issue.id)
     end

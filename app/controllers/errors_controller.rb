@@ -98,6 +98,25 @@ class ErrorsController < ApplicationController
       @graph_has_data = counts.sum > 0
       @graph_range_key = range_key
     end
+
+    if params[:tab] == 'ai'
+      if @issue.ai_summary.present?
+        @ai_result = { summary: @issue.ai_summary }
+      elsif @issue.ai_summary_generated_at.present?
+        # Already attempted previously and no summary was stored
+        @ai_result = { error: 'no_summary_available', message: 'No AI summary available for this issue.' }
+      else
+        # First-time attempt only
+        result = AiSummaryService.new(issue: @issue, sample_event: @selected_event).call
+        if result[:summary].present?
+          @issue.update(ai_summary: result[:summary], ai_summary_generated_at: Time.current)
+        else
+          # Mark attempt even if empty to avoid repeated calls
+          @issue.update(ai_summary_generated_at: Time.current)
+        end
+        @ai_result = result
+      end
+    end
   end
 
   def update

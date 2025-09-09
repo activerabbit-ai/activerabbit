@@ -116,8 +116,9 @@
   </div>
 </div>
 
-<!-- Tabs: Stack Trace | Samples | Graph -->
+<!-- Tabs: AI summary | Stack Trace | Samples | Graph -->
 <% current_tab = case params[:tab]
+when 'ai' then 'ai'
 when 'samples' then 'samples'
 when 'graph' then 'graph'
 else 'stack'
@@ -125,20 +126,50 @@ end %>
 
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 pt-4 pb-4 mb-4">
-    <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner" role="tablist" aria-label="Error detail tabs">
-      <%= link_to url_for(params.permit!.to_h.merge(tab: 'stack', event_id: nil)), class: "px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'stack' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'stack') } do %>
-        Stack Trace
-      <% end %>
-      <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
-        Samples
-      <% end %>
-      <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
-        Graph
-      <% end %>
+    <div class="flex items-center justify-between">
+      <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner" role="tablist" aria-label="Error detail tabs">
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'stack', event_id: nil)), class: "px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'stack' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'stack') } do %>
+          Stack Trace
+        <% end %>
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
+          Samples
+        <% end %>
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
+          Graph
+        <% end %>
+      </div>
+      <div>
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'ai', event_id: nil)), class: "inline-flex items-center px-4 py-2 rounded-full text-sm font-bold transition #{current_tab == 'ai' ? 'bg-white text-indigo-700 border-2 border-indigo-500 ring-2 ring-indigo-200 shadow' : 'bg-white text-gray-800 border-2 border-indigo-300 hover:border-indigo-400'}" do %>
+          <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <rect x="7" y="7" width="10" height="10" rx="2" stroke-width="2"/>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.121 2.121M19 5l-2.121 2.121M5 19l2.121-2.121M19 19l-2.121-2.121" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            <rect x="11" y="11" width="2" height="2" fill="currentColor" stroke="none"/>
+          </svg>
+          AI summary
+        <% end %>
+      </div>
     </div>
   </div>
 
-  <% if current_tab == 'stack' %>
+  <% if current_tab == 'ai' %>
+    <div class="px-6 py-6 border-t border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900 mb-3">AI explanation</h3>
+      <% if @ai_result && @ai_result[:summary] %>
+        <div class="space-y-4">
+          <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <div data-controller="markdown" data-markdown-content-value="<%= CGI.escapeHTML(@ai_result[:summary]) %>"></div>
+          </div>
+        </div>
+      <% elsif @ai_result && @ai_result[:error] == 'missing_api_key' %>
+        <div class="text-sm text-gray-600">Set <code>OPENAI_API_KEY</code> to enable AI summaries.</div>
+      <% elsif @ai_result && @ai_result[:error] %>
+        <div class="text-sm text-red-600">AI summary failed: <%= @ai_result[:message] %></div>
+      <% else %>
+        <div class="text-sm text-gray-600">Generating summary...</div>
+      <% end %>
+    </div>
+
+  <% elsif current_tab == 'stack' %>
     <div class="px-6 py-4 border-t border-gray-200">
       <h3 class="text-lg font-medium text-gray-900 mb-4">Stack Trace</h3>
       <div class="text-xs text-gray-500 mb-2"><strong>Top Frame:</strong></div>
@@ -172,6 +203,7 @@ end %>
         </div>
       <% end %>
     </div>
+
   <% elsif current_tab == 'graph' %>
     <div class="border-t border-gray-200 px-6 py-6">
       <div class="flex items-center justify-between mb-4">
@@ -196,13 +228,14 @@ end %>
         <div class="text-center text-gray-500 py-8">No data for selected range</div>
       <% end %>
     </div>
+
   <% else %>
     <!-- Samples Table & Selected Sample Details -->
-    <div class="border-t border-gray-200">
-      <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-medium text-gray-900">Samples</h3>
-          <div class="text-xs text-gray-500">Click any value to apply a filter</div>
+    <div class="border-t border-gray-200 px-6 py-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Samples</h3>
+        <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
+          <div class="px-4 py-2 text-xs text-gray-500">Click any value to apply a filter</div>
         </div>
       </div>
 
@@ -211,7 +244,7 @@ end %>
           <!-- Left: Selected sample details -->
           <div class="lg:col-span-2">
             <% if @selected_event %>
-              <div class="px-6 py-4">
+              <div class="px-2 py-2">
                 <div class="flex items-center justify-between">
                   <h4 class="text-md font-medium text-gray-900">Tags for sample that occurred at</h4>
                   <div class="text-xs text-gray-500"><%= @selected_event.occurred_at.strftime('%b %-d %Y %H:%M:%S') %></div>
