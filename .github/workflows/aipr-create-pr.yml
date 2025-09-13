@@ -1,0 +1,51 @@
+name: AI Create PR from Comment
+on:
+  issue_comment:
+    types: [created]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  run:
+    if: contains(github.event.comment.body, 'Create a PR')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.issue.pull_request.head.ref || 'main' }}
+      - uses: actions/create-github-app-token@v1
+        id: app
+        with:
+          app-id: ${{ secrets.AR_GH_APP_ID }}
+          private-key: ${{ secrets.AR_GH_APP_PK }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+      - name: Generate patch with ActiveRabbit
+        env:
+          AR_TOKEN: ${{ secrets.AR_TOKEN }}
+        run: |
+          curl -sS -X POST https://api.activerabbit.ai/fix \
+            -H "Authorization: Bearer $AR_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"issue_url\":\"${{ github.event.issue.html_url }}\"}" \
+          | git apply -p0 --index
+      - name: Commit & push branch
+        run: |
+          branch="ar/fix-${{ github.event.issue.number }}"
+          git checkout -b "$branch"
+          git config user.name "ActiveRabbit Bot"
+          git config user.email "bot@activerabbit.ai"
+          git commit -m "fix: auto patch for #${{ github.event.issue.number }}"
+          git push origin "$branch"
+        env:
+          GIT_ASKPASS: /bin/echo
+          GIT_USERNAME: x-access-token
+          GIT_PASSWORD: ${{ steps.app.outputs.token }}
+      - name: Open PR
+        run: |
+          gh pr create --title "AI fix for #${{ github.event.issue.number }}" \
+            --body "Root cause & changes attached." --base main --head "$branch"
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+
+

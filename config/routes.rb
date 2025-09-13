@@ -6,6 +6,7 @@ Rails.application.routes.draw do
 
   # Onboarding routes for new users
   get 'onboarding/welcome', to: 'onboarding#welcome', as: 'onboarding_welcome'
+  get 'onboarding/connect_github', to: 'onboarding#connect_github', as: 'onboarding_connect_github'
   get 'onboarding/new_project', to: 'onboarding#new_project', as: 'onboarding_new_project'
   post 'onboarding/create_project', to: 'onboarding#create_project', as: 'onboarding_create_project'
   get 'onboarding/install_gem/:project_id', to: 'onboarding#install_gem', as: 'onboarding_install_gem'
@@ -51,6 +52,7 @@ Rails.application.routes.draw do
   get 'projects/:project_id/errors/:id', to: 'errors#show', as: 'project_error'
   patch 'projects/:project_id/errors/:id', to: 'errors#update'
   delete 'projects/:project_id/errors/:id', to: 'errors#destroy'
+  post 'projects/:project_id/errors/:id/create_pr', to: 'errors#create_pr', as: 'project_error_create_pr'
 
   # Projects management (non-admin)
   # Note: projects index page is hidden - dashboard shows all projects instead
@@ -144,6 +146,7 @@ Rails.application.routes.draw do
   get ':project_slug', to: 'dashboard#project_dashboard', as: 'project_dashboard'
   get ':project_slug/errors', to: 'errors#index', as: 'project_slug_errors'
   get ':project_slug/errors/:id', to: 'errors#show', as: 'project_slug_error'
+  post ':project_slug/errors/:id/create_pr', to: 'errors#create_pr', as: 'project_slug_error_create_pr'
   get ':project_slug/performance', to: 'performance#index', as: 'project_slug_performance'
   get ':project_slug/deploys', to: 'deploys#index', as: 'project_slug_deploys'
   get ':project_slug/settings', to: 'project_settings#show', as: 'project_slug_settings'

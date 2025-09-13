@@ -159,6 +159,39 @@ class ErrorsController < ApplicationController
     redirect_to(redirect_path, notice: 'Error resolved successfully.')
   end
 
+  def create_pr
+    project_scope = @current_project || @project
+    @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
+
+    pr_service = GithubPrService.new(project_scope || @issue.project)
+    result = pr_service.create_pr_for_issue(@issue)
+
+    redirect_path = if @current_project
+                      "/#{@current_project.slug}/errors/#{@issue.id}"
+                    elsif @project
+                      project_error_path(@project, @issue)
+                    else
+                      error_path(@issue)
+                    end
+
+    if result[:success]
+      # Persist PR URL for this issue so the UI can show a direct link next time
+      pr_project = project_scope || @issue.project
+      if pr_project
+        settings = pr_project.settings || {}
+        issue_pr_urls = settings['issue_pr_urls'] || {}
+        issue_pr_urls[@issue.id.to_s] = result[:pr_url]
+        settings['issue_pr_urls'] = issue_pr_urls
+        pr_project.update(settings: settings)
+      end
+
+      # Open PR in the new tab by redirecting directly to GitHub
+      redirect_to result[:pr_url], allow_other_host: true
+    else
+      redirect_to redirect_path, alert: (result[:error] || 'Failed to open PR')
+    end
+  end
+
   private
 
   def issue_params

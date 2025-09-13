@@ -65,11 +65,16 @@ class SlackNotificationService
   end
 
   def project_url
-    if Rails.env.development?
-      "http://localhost:3000/projects/#{@project.slug}"
-    else
-      "#{ENV.fetch('APP_HOST', 'https://activerabbit.com')}/projects/#{@project.slug}"
-    end
+    host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch('APP_HOST', 'https://activerabbit.com')
+    "#{host}/#{@project.slug}"
+  end
+
+  def error_url(issue, tab: nil, event_id: nil)
+    q = []
+    q << "tab=#{tab}" if tab
+    q << "event_id=#{event_id}" if event_id
+    query = q.any? ? "?#{q.join('&')}" : ""
+    "#{project_url}/errors/#{issue.id}#{query}"
   end
 
   def build_error_frequency_message(issue, payload)
@@ -91,18 +96,13 @@ class SlackNotificationService
               short: true
             },
             {
-              title: "Issue",
-              value: issue.title.truncate(100),
+              title: "Exception",
+              value: issue.exception_class,
               short: false
             },
             {
               title: "Frequency",
               value: "#{payload['count']} occurrences in #{payload['time_window']} minutes",
-              short: true
-            },
-            {
-              title: "Exception Type",
-              value: issue.exception_type,
               short: true
             },
             {
@@ -114,9 +114,24 @@ class SlackNotificationService
           actions: [
             {
               type: "button",
-              text: "View Issue",
-              url: "#{project_url}/errors/#{issue.id}",
+              text: "Open",
+              url: error_url(issue),
               style: "primary"
+            },
+            {
+              type: "button",
+              text: "Stack",
+              url: error_url(issue, tab: 'stack')
+            },
+            {
+              type: "button",
+              text: "Samples",
+              url: error_url(issue, tab: 'samples')
+            },
+            {
+              type: "button",
+              text: "Graph",
+              url: error_url(issue, tab: 'graph')
             }
           ],
           footer: "ActiveRabbit Error Tracking",
@@ -246,11 +261,11 @@ class SlackNotificationService
 
   def build_new_issue_message(issue)
     {
-      text: "🆕 *New Issue Detected*",
+      text: "🆕 *New Issue: #{issue.exception_class}*",
       attachments: [
         {
           color: "danger",
-          fallback: "New issue detected: #{issue.exception_type}",
+          fallback: "New issue detected: #{issue.exception_class}",
           fields: [
             {
               title: "Project",
@@ -263,18 +278,13 @@ class SlackNotificationService
               short: true
             },
             {
-              title: "Exception Type",
-              value: issue.exception_type,
-              short: true
-            },
-            {
               title: "Status",
               value: issue.status.humanize,
               short: true
             },
             {
-              title: "Error Message",
-              value: issue.message.truncate(200),
+              title: "Exception",
+              value: issue.exception_class,
               short: false
             },
             {
@@ -286,20 +296,34 @@ class SlackNotificationService
               title: "First Seen",
               value: issue.first_seen_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
               short: true
+            },
+            {
+              title: "Occurrences",
+              value: issue.count.to_s,
+              short: true
             }
           ],
           actions: [
             {
               type: "button",
-              text: "Investigate Issue",
-              url: "#{project_url}/errors/#{issue.id}",
+              text: "Open",
+              url: error_url(issue),
               style: "danger"
             },
             {
               type: "button",
-              text: "Mark as WIP",
-              url: "#{project_url}/errors/#{issue.id}/edit",
-              style: "primary"
+              text: "Stack",
+              url: error_url(issue, tab: 'stack')
+            },
+            {
+              type: "button",
+              text: "Samples",
+              url: error_url(issue, tab: 'samples')
+            },
+            {
+              type: "button",
+              text: "Graph",
+              url: error_url(issue, tab: 'graph')
             }
           ],
           footer: "ActiveRabbit Error Tracking",

@@ -43,6 +43,9 @@ gem "rack-attack"
 # HTTP client
 gem "faraday"
 
+# GitHub App JWT
+gem "jwt", "~> 2.8"
+
 # Slack notifications
 gem "slack-notifier"
 

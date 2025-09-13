@@ -9,11 +9,11 @@ class ProjectSettingsController < ApplicationController
   end
 
   def update
-    if update_slack_settings
+    if update_slack_settings && update_github_settings
       if params[:test_slack] == 'true'
         test_slack_notification
       else
-        redirect_to project_settings_path(@project), notice: 'Slack settings updated successfully.'
+        redirect_to project_settings_path(@project), notice: 'Settings updated successfully.'
       end
     else
       render :show, status: :unprocessable_entity
@@ -69,6 +69,38 @@ class ProjectSettingsController < ApplicationController
       @project.settings = @project.settings.merge('slack_notifications_enabled' => false)
     end
 
+    @project.save
+  end
+
+  def update_github_settings
+    gh_params = params.fetch(:project, {}).permit(:github_repo, :github_installation_id, :github_pat, :github_app_id, :github_app_pk, :github_app_pk_file)
+    return true if gh_params.blank?
+
+    settings = @project.settings || {}
+    # Helper to set or clear a setting if the field was present in the form
+    set_or_clear = lambda do |key, param_key|
+      if gh_params.key?(param_key)
+        value = gh_params[param_key]
+        if value.present?
+          settings[key] = value.is_a?(String) ? value.strip : value
+        else
+          settings.delete(key)
+        end
+      end
+    end
+
+    set_or_clear.call('github_repo', :github_repo)
+    set_or_clear.call('github_installation_id', :github_installation_id)
+    set_or_clear.call('github_pat', :github_pat)
+    set_or_clear.call('github_app_id', :github_app_id)
+    # File upload takes precedence over pasted PEM
+    if gh_params[:github_app_pk_file].present?
+      uploaded = gh_params[:github_app_pk_file]
+      settings['github_app_pk'] = uploaded.read
+    else
+      set_or_clear.call('github_app_pk', :github_app_pk)
+    end
+    @project.settings = settings
     @project.save
   end
 

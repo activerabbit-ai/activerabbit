@@ -9,6 +9,20 @@ class OnboardingController < ApplicationController
     @account = current_account
   end
 
+  def connect_github
+    # Placeholder endpoint to handle GitHub App installation callback
+    installation_id = params[:installation_id]
+    project = current_account.projects.first
+    if installation_id.present? && project
+      settings = project.settings || {}
+      settings['github_installation_id'] = installation_id
+      project.update(settings: settings)
+      redirect_to project_settings_path(project), notice: 'GitHub connected. Installation ID saved.'
+    else
+      redirect_to dashboard_path, alert: 'Failed to connect GitHub.'
+    end
+  end
+
   def new_project
     @project = current_user.projects.build
   end

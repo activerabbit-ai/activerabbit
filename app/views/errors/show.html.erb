@@ -95,22 +95,37 @@
     </div>
 
     <div class="flex items-center space-x-2">
-      <% if @issue.status != 'closed' %>
-        <%= link_to @project ? project_error_path(@project, @issue) : error_path(@issue),
-            data: { method: :delete, confirm: 'Are you sure you want to resolve this error? This will mark it as resolved.' },
-            class: "inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-500" do %>
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          Resolve
+      <% connect_required = (@current_project || @project)&.settings&.dig('github_repo').blank? %>
+      <% create_pr_path = if @current_project
+                            project_slug_error_create_pr_path(@current_project.slug, @issue)
+                          elsif @project
+                            project_error_create_pr_path(@project, @issue)
+                          else
+                            nil
+                          end %>
+
+      <% if connect_required %>
+        <% settings_link = if @current_project
+                             project_slug_settings_path(@current_project.slug)
+                           elsif @project
+                             project_settings_path(@project)
+                           else
+                             settings_path
+                           end %>
+        <%= link_to "Connect GitHub", settings_link, class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+      <% elsif create_pr_path %>
+        <%= button_to create_pr_path, method: :post, form: { target: '_blank', data: { turbo: false } }, class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-[#24292e] hover:bg-black cursor-pointer" do %>
+          <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+          Open PR
         <% end %>
-      <% else %>
-        <div class="inline-flex items-center px-3 py-2 text-sm leading-4 font-medium text-green-600">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          This error has been resolved
-        </div>
+
+        <% pr_url = (@current_project || @project)&.settings&.dig('issue_pr_urls', @issue.id.to_s) %>
+        <% if pr_url.present? %>
+          <%= link_to pr_url, target: "_blank", rel: "noopener", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-[#24292e] hover:bg-black cursor-pointer" do %>
+            <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+            Open on GitHub
+          <% end %>
+        <% end %>
       <% end %>
     </div>
   </div>
