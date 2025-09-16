@@ -53,18 +53,47 @@
   </div>
 </div>
 
-<!-- Errors List -->
+<!-- Errors List / Graph Toggle -->
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 py-4 border-b border-gray-200">
     <div class="flex items-center justify-between">
       <h3 class="text-lg font-medium text-gray-900">🐰 Captured Errors</h3>
-      <div class="text-sm text-gray-500">
-        <%= pluralize(@issues.count, 'error') %> shown
+      <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
+        <% list_url = url_for(params.permit!.to_h.except(:tab, :range)) %>
+        <% graph_url = url_for(params.permit!.to_h.merge(tab: 'graph', range: (params[:range] || '7D'))) %>
+        <% list_active = params[:tab] != 'graph' %>
+        <% graph_active = params[:tab] == 'graph' %>
+        <%= link_to 'List', list_url, class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{list_active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
+        <%= link_to 'Graph', graph_url, class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{graph_active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
       </div>
     </div>
   </div>
 
-    <% if @issues.any? %>
+    <% if params[:tab] == 'graph' %>
+      <div class="border-t border-gray-200 px-6 py-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">Error count over time</h3>
+          <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
+            <% %w[1H 4H 8H 12H 24H 48H 7D 30D].each do |rk| %>
+              <% active = (@graph_range_key || '7D') == rk %>
+              <%= link_to rk, url_for(params.permit!.to_h.merge(tab: 'graph', range: rk)), class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
+            <% end %>
+          </div>
+        </div>
+
+        <% if @graph_counts.present? && @graph_has_data %>
+          <% labels = (@graph_labels || []).map { |t| case @graph_range_key; when '1H','4H','8H','12H','24H','48H' then t.strftime('%H:%M'); else t.strftime('%b %d'); end } %>
+          <div class="relative" style="height: 300px;">
+            <canvas data-controller="graph"
+                    data-graph-labels-value='<%= labels.to_json %>'
+                    data-graph-counts-value='<%= @graph_counts.to_json %>'
+                    data-graph-range-value='<%= @graph_range_key %>'></canvas>
+          </div>
+        <% else %>
+          <div class="text-center text-gray-500 py-8">No data for selected range</div>
+        <% end %>
+      </div>
+    <% elsif @issues.any? %>
     <!-- Proper HTML Table -->
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">

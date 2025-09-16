@@ -25,6 +25,51 @@ class ErrorsController < ApplicationController
       @resolved_errors = Issue.closed.count
       @recent_errors = Issue.where('last_seen_at > ?', 1.hour.ago).count
     end
+
+    # Optional: build graph data across all errors
+    if params[:tab] == 'graph'
+      range_key = (params[:range] || '7D').to_s.upcase
+      window_seconds = case range_key
+                       when '1H' then 1.hour
+                       when '4H' then 4.hours
+                       when '8H' then 8.hours
+                       when '12H' then 12.hours
+                       when '24H' then 24.hours
+                       when '48H' then 48.hours
+                       when '7D' then 7.days
+                       when '30D' then 30.days
+                       else 7.days
+                       end
+
+      bucket_seconds = case range_key
+                       when '1H', '4H', '8H' then 5.minutes
+                       when '12H' then 15.minutes
+                       when '24H', '48H' then 1.hour
+                       when '7D', '30D' then 1.day
+                       else 1.day
+                       end
+
+      start_time = Time.current - window_seconds
+      end_time = Time.current
+      bucket_count = ((window_seconds.to_f / bucket_seconds).ceil).clamp(1, 300)
+
+      counts = Array.new(bucket_count, 0)
+      labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
+
+      events_scope = project_scope ? project_scope.events : Event
+      event_times = events_scope.where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time).pluck(:occurred_at)
+      event_times.each do |ts|
+        idx = (((ts - start_time) / bucket_seconds).floor).to_i
+        next if idx.negative? || idx >= bucket_count
+        counts[idx] += 1
+      end
+
+      @graph_labels = labels
+      @graph_counts = counts
+      @graph_max = [counts.max || 0, 1].max
+      @graph_has_data = counts.sum > 0
+      @graph_range_key = range_key
+    end
   end
 
   def show
@@ -55,7 +100,7 @@ class ErrorsController < ApplicationController
 
     # Graph data for counts over time (only build when requested)
     if params[:tab] == 'graph'
-      range_key = (params[:range] || '24H').to_s.upcase
+      range_key = (params[:range] || '7D').to_s.upcase
       window_seconds = case range_key
                        when '1H' then 1.hour
                        when '4H' then 4.hours
