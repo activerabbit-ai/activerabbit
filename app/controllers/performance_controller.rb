@@ -35,15 +35,149 @@ class PerformanceController < ApplicationController
 
       # Calculate project-specific metrics
       recent_rollups = project_scope.perf_rollups.where('timestamp > ?', 24.hours.ago)
-      total_requests = recent_rollups.sum(:request_count)
-      total_errors = recent_rollups.sum(:error_count)
-      avg_response = recent_rollups.average(:avg_duration_ms)
+      raw_events_scope = PerformanceEvent.where(project: project_scope).where('occurred_at > ?', 24.hours.ago)
+      slow_threshold_ms = 1000
 
-      @metrics = {
-        response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
-        throughput: "#{total_requests}/day",
-        error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%"
-      }
+      if recent_rollups.exists?
+        total_requests = recent_rollups.sum(:request_count)
+        total_errors = recent_rollups.sum(:error_count)
+        avg_response = recent_rollups.average(:avg_duration_ms)
+        slow_requests = raw_events_scope.where('duration_ms > ?', slow_threshold_ms).count
+
+        @metrics = {
+          response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
+          throughput: "#{total_requests}/day",
+          error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%",
+          slow_requests: slow_requests
+        }
+      else
+        # Fallback to raw events when rollups are not present
+        total_requests = raw_events_scope.count
+        avg_response = raw_events_scope.average(:duration_ms)
+        slow_requests = raw_events_scope.where('duration_ms > ?', slow_threshold_ms).count
+
+        @metrics = {
+          response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
+          throughput: "#{total_requests}/day",
+          error_rate: total_requests > 0 ? "0.0%" : "0%",
+          slow_requests: slow_requests
+        }
+      end
+
+      # Build list rows: prefer rollups; fallback to raw events if no rollups present
+      @list_rows = []
+      if @rollups.exists?
+        # Summarize by target from rollups
+        @rollups.group_by(&:target).each do |target, rows|
+          total_requests_t = rows.sum(&:request_count)
+          total_errors_t = rows.sum(&:error_count)
+          avg_ms = rows.map(&:avg_duration_ms).compact
+          p95_ms = rows.map(&:p95_duration_ms).compact
+          first_seen = rows.map(&:timestamp).min
+          last_seen = rows.map(&:timestamp).max
+
+          avg_val = avg_ms.any? ? (avg_ms.sum / avg_ms.size.to_f).round(1) : nil
+          p95_val = p95_ms.any? ? (p95_ms.sum / p95_ms.size.to_f).round(1) : nil
+
+          status = if total_errors_t.to_i > 0
+                     'issues'
+                   elsif (avg_val || 0) > 1000 || (p95_val || 0) > 1500
+                     'slow'
+                   else
+                     'healthy'
+                   end
+
+          @list_rows << {
+            action: target,
+            avg_response_time: avg_val ? "#{avg_val}ms" : "N/A",
+            p95_response_time: p95_val ? "#{p95_val}ms" : "N/A",
+            total_requests: total_requests_t,
+            error_count: total_errors_t,
+            status: status,
+            first_seen: first_seen,
+            last_seen: last_seen
+          }
+        end
+      else
+        # Fallback: derive from raw performance events within window
+        window_start = @hours_back.hours.ago
+        events = PerformanceEvent.where(project: project_scope)
+                                 .where('occurred_at > ?', window_start)
+        events.group_by(&:target).each do |target, evts|
+          durations = evts.map(&:duration_ms).compact.sort
+          avg_val = durations.any? ? (durations.sum / durations.size.to_f) : nil
+          p95_val = if durations.any?
+                      idx = (0.95 * (durations.size - 1)).round
+                      durations[idx]
+                    end
+          first_seen = evts.map(&:occurred_at).min
+          last_seen = evts.map(&:occurred_at).max
+
+          status = if (avg_val || 0) > 1000 || (p95_val || 0) > 1500
+                     'slow'
+                   else
+                     'healthy'
+                   end
+
+          @list_rows << {
+            action: target,
+            avg_response_time: avg_val ? "#{avg_val.round(1)}ms" : "N/A",
+            p95_response_time: p95_val ? "#{p95_val.round(1)}ms" : "N/A",
+            total_requests: evts.size,
+            error_count: 0,
+            status: status,
+            first_seen: first_seen,
+            last_seen: last_seen
+          }
+        end
+        @list_rows.sort_by! { |r| -r[:total_requests].to_i }
+      end
+
+      # Optional Graph (counts over time) for Performance Events
+      if params[:tab] == 'graph'
+        range_key = (params[:range] || '7D').to_s.upcase
+        window_seconds = case range_key
+                         when '1H' then 1.hour
+                         when '4H' then 4.hours
+                         when '8H' then 8.hours
+                         when '12H' then 12.hours
+                         when '24H' then 24.hours
+                         when '48H' then 48.hours
+                         when '7D' then 7.days
+                         when '30D' then 30.days
+                         else 7.days
+                         end
+
+        bucket_seconds = case range_key
+                         when '1H', '4H', '8H' then 5.minutes
+                         when '12H' then 15.minutes
+                         when '24H', '48H' then 1.hour
+                         when '7D', '30D' then 1.day
+                         else 1.day
+                         end
+
+        start_time = Time.current - window_seconds
+        end_time = Time.current
+        bucket_count = ((window_seconds.to_f / bucket_seconds).ceil).clamp(1, 300)
+
+        counts = Array.new(bucket_count, 0)
+        labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
+
+        event_times = PerformanceEvent.where(project: project_scope)
+                                      .where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
+                                      .pluck(:occurred_at)
+        event_times.each do |ts|
+          idx = (((ts - start_time) / bucket_seconds).floor).to_i
+          next if idx.negative? || idx >= bucket_count
+          counts[idx] += 1
+        end
+
+        @graph_labels = labels
+        @graph_counts = counts
+        @graph_max = [counts.max || 0, 1].max
+        @graph_has_data = counts.sum > 0
+        @graph_range_key = range_key
+      end
     else
       # Global performance overview
       @projects = current_user.projects.includes(:perf_rollups)
@@ -53,15 +187,28 @@ class PerformanceController < ApplicationController
       total_errors = 0
       response_times = []
 
+      slow_threshold_ms = 1000
+      slow_requests_sum = 0
       @projects.each do |project|
         recent_rollups = project.perf_rollups.where('timestamp > ?', 24.hours.ago)
-        avg_response = recent_rollups.average(:avg_duration_ms)
-        requests = recent_rollups.sum(:request_count)
-        errors = recent_rollups.sum(:error_count)
+        if recent_rollups.exists?
+          avg_response = recent_rollups.average(:avg_duration_ms)
+          requests = recent_rollups.sum(:request_count)
+          errors = recent_rollups.sum(:error_count)
+          p95 = recent_rollups.average(:p95_duration_ms)
+        else
+          raw_events = PerformanceEvent.where(project: project).where('occurred_at > ?', 24.hours.ago)
+          avg_response = raw_events.average(:duration_ms)
+          requests = raw_events.count
+          errors = 0
+          p95 = nil
+        end
+
+        slow_requests_sum += PerformanceEvent.where(project: project).where('occurred_at > ?', 24.hours.ago).where('duration_ms > ?', slow_threshold_ms).count
 
         @global_stats[project.id] = {
           avg_response_time: avg_response&.round(2),
-          p95_response_time: recent_rollups.average(:p95_duration_ms)&.round(2),
+          p95_response_time: p95&.round(2),
           total_requests: requests,
           error_count: errors
         }
@@ -76,79 +223,66 @@ class PerformanceController < ApplicationController
       @metrics = {
         response_time: response_times.any? ? "#{(response_times.sum / response_times.size).round(1)}ms" : "N/A",
         throughput: "#{total_requests}/day",
-        error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%"
+        error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%",
+        slow_requests: slow_requests_sum
       }
+
+      if params[:tab] == 'graph'
+        range_key = (params[:range] || '7D').to_s.upcase
+        window_seconds = case range_key
+                         when '1H' then 1.hour
+                         when '4H' then 4.hours
+                         when '8H' then 8.hours
+                         when '12H' then 12.hours
+                         when '24H' then 24.hours
+                         when '48H' then 48.hours
+                         when '7D' then 7.days
+                         when '30D' then 30.days
+                         else 7.days
+                         end
+
+        bucket_seconds = case range_key
+                         when '1H', '4H', '8H' then 5.minutes
+                         when '12H' then 15.minutes
+                         when '24H', '48H' then 1.hour
+                         when '7D', '30D' then 1.day
+                         else 1.day
+                         end
+
+        start_time = Time.current - window_seconds
+        end_time = Time.current
+        bucket_count = ((window_seconds.to_f / bucket_seconds).ceil).clamp(1, 300)
+
+        counts = Array.new(bucket_count, 0)
+        labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
+
+        event_times = PerformanceEvent.where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
+                                      .pluck(:occurred_at)
+        event_times.each do |ts|
+          idx = (((ts - start_time) / bucket_seconds).floor).to_i
+          next if idx.negative? || idx >= bucket_count
+          counts[idx] += 1
+        end
+
+        @graph_labels = labels
+        @graph_counts = counts
+        @graph_max = [counts.max || 0, 1].max
+        @graph_has_data = counts.sum > 0
+        @graph_range_key = range_key
+      end
     end
   end
 
   def action_detail
     @target = params[:target]
+    @current_tab = case params[:tab]
+                   when 'samples' then 'samples'
+                   when 'graph' then 'graph'
+                   when 'ai' then 'ai'
+                   else 'summary'
+                   end
 
-    # Mock performance data for demonstration
-    mock_performance_details = {
-      "HomeController#index" => {
-        total_requests: 1247,
-        total_errors: 3,
-        avg_response_time: 245.0,
-        p50_response_time: 180.0,
-        p95_response_time: 890.0,
-        p99_response_time: 1200.0,
-        min_response_time: 45.0,
-        max_response_time: 1500.0
-      },
-      "UsersController#show" => {
-        total_requests: 892,
-        total_errors: 0,
-        avg_response_time: 156.0,
-        p50_response_time: 120.0,
-        p95_response_time: 432.0,
-        p99_response_time: 650.0,
-        min_response_time: 30.0,
-        max_response_time: 800.0
-      },
-      "TestController#performance_test" => {
-        total_requests: 45,
-        total_errors: 2,
-        avg_response_time: 175.0,
-        p50_response_time: 150.0,
-        p95_response_time: 350.0,
-        p99_response_time: 400.0,
-        min_response_time: 80.0,
-        max_response_time: 450.0
-      }
-    }
-
-    # Check if we have mock data for this target
-    if mock_performance_details[@target]
-      details = mock_performance_details[@target]
-      @total_requests = details[:total_requests]
-      @total_errors = details[:total_errors]
-      @avg_response_time = details[:avg_response_time]
-      @p50_response_time = details[:p50_response_time]
-      @p95_response_time = details[:p95_response_time]
-      @p99_response_time = details[:p99_response_time]
-      @min_response_time = details[:min_response_time]
-      @max_response_time = details[:max_response_time]
-      @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
-
-      # Mock chart data and rollups for the table
-      @hourly_data = {}
-      @daily_data = {}
-
-      # Create mock rollups for the performance history table
-      @rollups = []
-      (1..10).each do |i|
-        @rollups << OpenStruct.new(
-          id: i,
-          timestamp: i.days.ago + rand(24).hours,
-          avg_duration_ms: details[:avg_response_time] + rand(-50..50),
-          p95_duration_ms: details[:p95_response_time] + rand(-100..100),
-          request_count: rand(20..200),
-          error_count: rand(0..5)
-        )
-      end
-      @rollups.sort_by!(&:timestamp)
-    else
+    # Real data only
       # Try to find real rollups for this specific target
       project_scope = @current_project || @project
       @rollups = project_scope.perf_rollups
@@ -157,117 +291,169 @@ class PerformanceController < ApplicationController
                          .order(:timestamp)
 
       if @rollups.empty?
-        redirect_path = if @current_project
-                          "/#{@current_project.slug}/performance"
-                        else
-                          project_performance_path(@project)
-                        end
-        redirect_to redirect_path, alert: "No performance data found for #{@target}"
-        return
+        # Fallback: derive summary from raw events for this target (last 7 days)
+        raw_events = PerformanceEvent.where(project: project_scope, target: @target)
+                                     .where('occurred_at > ?', 7.days.ago)
+        durations = raw_events.pluck(:duration_ms).compact.sort
+
+        @total_requests = raw_events.count
+        @total_errors = 0
+        @avg_response_time = durations.any? ? (durations.sum / durations.size.to_f) : nil
+        @p50_response_time = if durations.any?; durations[(0.50 * (durations.size - 1)).round]; end
+        @p95_response_time = if durations.any?; durations[(0.95 * (durations.size - 1)).round]; end
+        @p99_response_time = if durations.any?; durations[(0.99 * (durations.size - 1)).round]; end
+        @min_response_time = durations.first
+        @max_response_time = durations.last
+        @error_rate = 0
+
+        @hourly_data = {}
+        @daily_data = {}
+
+        # Build synthetic daily "rollups" for the Performance History table from raw events
+        occurred_and_duration = PerformanceEvent.where(project: project_scope, target: @target)
+                                                .where('occurred_at > ?', 7.days.ago)
+                                                .pluck(:occurred_at, :duration_ms)
+        grouped = occurred_and_duration.group_by { |(ts, _)| ts.beginning_of_day }
+        synthetic = []
+        grouped.each do |day_ts, pairs|
+          ds = pairs.map { |(_, d)| d.to_f }.compact.sort
+          next if ds.empty?
+          avg = ds.sum / ds.size.to_f
+          p95 = ds[(0.95 * (ds.size - 1)).round]
+          synthetic << OpenStruct.new(
+            id: synthetic.size + 1,
+            timestamp: day_ts,
+            avg_duration_ms: avg,
+            p95_duration_ms: p95,
+            request_count: ds.size,
+            error_count: 0
+          )
+        end
+        @rollups = synthetic.sort_by(&:timestamp)
+      else
+        # Calculate detailed metrics from rollups
+        @total_requests = @rollups.sum(:request_count)
+        @total_errors = @rollups.sum(:error_count)
+        @avg_response_time = @rollups.average(:avg_duration_ms)
+        @p50_response_time = @rollups.average(:p50_duration_ms)
+        @p95_response_time = @rollups.average(:p95_duration_ms)
+        @p99_response_time = @rollups.average(:p99_duration_ms)
+        @min_response_time = @rollups.minimum(:min_duration_ms)
+        @max_response_time = @rollups.maximum(:max_duration_ms)
+        @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
+
+        # Group by timeframe for charts
+        @hourly_data = @rollups.where('timestamp > ?', 24.hours.ago)
+                               .group_by { |r| r.timestamp.beginning_of_hour }
+
+        @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
       end
 
-      # Calculate detailed metrics from real data
-      @total_requests = @rollups.sum(:request_count)
-      @total_errors = @rollups.sum(:error_count)
-      @avg_response_time = @rollups.average(:avg_duration_ms)
-      @p50_response_time = @rollups.average(:p50_duration_ms)
-      @p95_response_time = @rollups.average(:p95_duration_ms)
-      @p99_response_time = @rollups.average(:p99_duration_ms)
-      @min_response_time = @rollups.minimum(:min_duration_ms)
-      @max_response_time = @rollups.maximum(:max_duration_ms)
-      @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
 
-      # Group by timeframe for charts
-      @hourly_data = @rollups.where('timestamp > ?', 24.hours.ago)
-                             .group_by { |r| r.timestamp.beginning_of_hour }
+    # Common: recent samples for this action
+    project_scope = @current_project || @project
+    @events = PerformanceEvent.where(project: project_scope, target: @target)
+                              .where('occurred_at > ?', 7.days.ago)
+                              .order(occurred_at: :desc)
+                              .limit(200)
+    if params[:event_id].present?
+      @selected_event = @events.find { |e| e.id.to_s == params[:event_id].to_s }
+    end
+    @selected_event ||= @events.first
 
-      @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
+    # Graph data for this action
+    if @current_tab == 'graph'
+      range_key = (params[:range] || '24H').to_s.upcase
+      window_seconds = case range_key
+                       when '1H' then 1.hour
+                       when '4H' then 4.hours
+                       when '8H' then 8.hours
+                       when '12H' then 12.hours
+                       when '24H' then 24.hours
+                       when '48H' then 48.hours
+                       when '7D' then 7.days
+                       when '30D' then 30.days
+                       else 24.hours
+                       end
+
+      bucket_seconds = case range_key
+                       when '1H', '4H', '8H' then 5.minutes
+                       when '12H' then 15.minutes
+                       when '24H', '48H' then 1.hour
+                       when '7D', '30D' then 1.day
+                       else 1.hour
+                       end
+
+      start_time = Time.current - window_seconds
+      end_time = Time.current
+      bucket_count = ((window_seconds.to_f / bucket_seconds).ceil).clamp(1, 300)
+
+      counts = Array.new(bucket_count, 0)
+      labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
+
+      event_times = PerformanceEvent.where(project: project_scope, target: @target)
+                                    .where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
+                                    .pluck(:occurred_at)
+      event_times.each do |ts|
+        idx = (((ts - start_time) / bucket_seconds).floor).to_i
+        next if idx.negative? || idx >= bucket_count
+        counts[idx] += 1
+      end
+
+      @graph_labels = labels
+      @graph_counts = counts
+      @graph_max = [counts.max || 0, 1].max
+      @graph_has_data = counts.sum > 0
+      @graph_range_key = range_key
+    end
+
+    # AI summary generation on demand
+    if @current_tab == 'ai'
+      stats = {
+        total_requests: @total_requests,
+        total_errors: @total_errors,
+        error_rate: @error_rate,
+        avg_ms: (@avg_response_time&.round(1)),
+        p95_ms: (@p95_response_time&.round(1))
+      }
+      sample = @selected_event || @events.first
+      @ai_result = AiPerformanceSummaryService.new(target: @target, stats: stats, sample_event: sample).call
     end
   end
 
     # Show a specific performance issue by numeric id
   def show
-    # Map numeric ID to mock performance issues (same as in index view)
-    mock_performance_issues = [
-      { action: "HomeController#index" },
-      { action: "UsersController#show" },
-      { action: "TestController#performance_test" }
-    ]
+    project_scope = @current_project || @project
+    hours = (params[:hours_back] || 24).to_i
+    window_start = hours.hours.ago
 
-    issue_index = params[:id].to_i - 1
-    if issue_index >= 0 && issue_index < mock_performance_issues.length
-      @target = mock_performance_issues[issue_index][:action]
-      @performance_id = params[:id]
+    # Order actions by recent volume (last hours), descending
+    action_counts = PerformanceEvent.where(project: project_scope)
+                                    .where('occurred_at > ?', window_start)
+                                    .group(:target)
+                                    .count
+    ordered_targets = action_counts.sort_by { |_, c| -c }.map(&:first)
 
-      # Use the same logic as action_detail but don't redirect
-      # Mock performance data for demonstration
-      mock_performance_details = {
-        "HomeController#index" => {
-          total_requests: 1247,
-          total_errors: 3,
-          avg_response_time: 245.0,
-          p50_response_time: 180.0,
-          p95_response_time: 890.0,
-          p99_response_time: 1200.0,
-          min_response_time: 45.0,
-          max_response_time: 1500.0
-        },
-        "UsersController#show" => {
-          total_requests: 892,
-          total_errors: 0,
-          avg_response_time: 156.0,
-          p50_response_time: 120.0,
-          p95_response_time: 432.0,
-          p99_response_time: 650.0,
-          min_response_time: 30.0,
-          max_response_time: 800.0
-        },
-        "TestController#performance_test" => {
-          total_requests: 45,
-          total_errors: 2,
-          avg_response_time: 175.0,
-          p50_response_time: 150.0,
-          p95_response_time: 350.0,
-          p99_response_time: 400.0,
-          min_response_time: 80.0,
-          max_response_time: 450.0
-        }
-      }
-
-      details = mock_performance_details[@target]
-      @total_requests = details[:total_requests]
-      @total_errors = details[:total_errors]
-      @avg_response_time = details[:avg_response_time]
-      @p50_response_time = details[:p50_response_time]
-      @p95_response_time = details[:p95_response_time]
-      @p99_response_time = details[:p99_response_time]
-      @min_response_time = details[:min_response_time]
-      @max_response_time = details[:max_response_time]
-      @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
-
-      # Mock chart data and rollups for the table
-      @hourly_data = {}
-      @daily_data = {}
-
-      # Create mock rollups for the performance history table
-      @rollups = []
-      (1..10).each do |i|
-        @rollups << OpenStruct.new(
-          id: i,
-          timestamp: i.days.ago + rand(24).hours,
-          avg_duration_ms: details[:avg_response_time] + rand(-50..50),
-          p95_duration_ms: details[:p95_response_time] + rand(-100..100),
-          request_count: rand(20..200),
-          error_count: rand(0..5)
-        )
-      end
-      @rollups.sort_by!(&:timestamp)
-
-      # Render the action_detail view
-      render :action_detail
-    else
-      redirect_to project_performance_path(@project), alert: "Performance issue not found"
+    idx = params[:id].to_i - 1
+    if idx < 0 || idx >= ordered_targets.length
+      redirect_path = if @current_project
+                        "/#{@current_project.slug}/performance"
+                      elsif @project
+                        project_performance_path(@project)
+                      else
+                        performance_path
+                      end
+      redirect_to redirect_path, alert: "Performance issue not found"
+      return
     end
+
+    @target = ordered_targets[idx]
+    @performance_id = params[:id]
+
+    # Populate details using action_detail logic, then render the same template
+    params[:target] = @target
+    action_detail
+    render :action_detail
   end
 
   def sql_fingerprints
@@ -294,6 +480,45 @@ class PerformanceController < ApplicationController
                              .where("payload->>'sql_queries' IS NOT NULL")
                              .where('created_at > ?', 7.days.ago)
                              .limit(50)
+  end
+
+  def create_pr
+    project_scope = @current_project || @project
+    target = params[:target]
+
+    pr_service = GithubPrService.new(project_scope)
+    # Build a pseudo-issue for performance with minimal attributes used by service body
+    issue_like = OpenStruct.new(
+      id: "perf-#{target.gsub(/[^a-zA-Z0-9_-]/, '-')}",
+      exception_class: "Performance: #{target}",
+      ai_summary: "Auto-detected performance regression for #{target}."
+    )
+
+    result = pr_service.create_pr_for_issue(issue_like)
+
+    redirect_path = if @current_project
+                      performance_action_detail_path(target: target)
+                    elsif @project
+                      project_performance_action_detail_path(@project, target: target)
+                    else
+                      performance_action_detail_path(target: target)
+                    end
+
+    if result[:success]
+      # Persist PR URL for this performance target to show a direct link next time
+      pr_project = project_scope
+      if pr_project
+        settings = pr_project.settings || {}
+        perf_pr_urls = settings['perf_pr_urls'] || {}
+        perf_pr_urls[target.to_s] = result[:pr_url]
+        settings['perf_pr_urls'] = perf_pr_urls
+        pr_project.update(settings: settings)
+      end
+
+      redirect_to result[:pr_url], allow_other_host: true
+    else
+      redirect_to redirect_path, alert: (result[:error] || 'Failed to open PR')
+    end
   end
 
   def create_n_plus_one_pr

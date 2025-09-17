@@ -4,7 +4,8 @@ class PerformanceIngestJob
   sidekiq_options queue: :default, retry: 3
 
   def perform(project_id, payload, batch_id = nil)
-    project = Project.find(project_id)
+    # Project is multi-tenant; fetch it without tenant, then set tenant for the rest
+    project = ActsAsTenant.without_tenant { Project.find(project_id) }
 
     # Set tenant context for ActsAsTenant
     ActsAsTenant.with_tenant(project.account) do
@@ -26,7 +27,10 @@ class PerformanceIngestJob
         sql_queries: payload[:sql_queries]
       )
 
+      # Persist N+1 detection inside context so it's available on the event
       payload[:n_plus_one_detected] = n_plus_one_incidents.any?
+      payload[:context] ||= {}
+      payload[:context][:n_plus_one_detected] = payload[:n_plus_one_detected]
 
       # Track individual SQL queries
       payload[:sql_queries].each do |query_data|
@@ -72,7 +76,8 @@ class PerformanceIngestJob
     # 3. Unusual spike in response time compared to recent average
 
     return true if event.duration_ms > 5000 # 5 seconds
-    return true if event.n_plus_one_detected?
+    ctx = event.context || {}
+    return true if (ctx.is_a?(Hash) && (ctx['n_plus_one_detected'] || ctx[:n_plus_one_detected]))
 
     # Check for performance spike
     recent_avg = calculate_recent_average_duration(event)
@@ -84,17 +89,17 @@ class PerformanceIngestJob
   end
 
   def calculate_recent_average_duration(event)
-    return nil unless event.controller_action
+    return nil unless event.target.present?
 
-    # Get average duration for this controller action in the last hour
-    recent_events = Event.performance
-                         .where(project: event.project)
-                         .where(controller_action: event.controller_action)
-                         .where('occurred_at > ?', 1.hour.ago)
-                         .where.not(duration_ms: nil)
-                         .limit(100) # Sample size limit
+    # Average duration for this target (controller#action or job class) in the last hour
+    recent_events = PerformanceEvent
+                      .where(project: event.project)
+                      .where(target: event.target)
+                      .where('occurred_at > ?', 1.hour.ago)
+                      .where.not(duration_ms: nil)
+                      .limit(100)
 
-    return nil if recent_events.count < 5 # Need at least 5 samples
+    return nil if recent_events.count < 5
 
     recent_events.average(:duration_ms)
   end

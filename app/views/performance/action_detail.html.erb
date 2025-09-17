@@ -6,7 +6,14 @@
 <nav class="flex mb-6" aria-label="Breadcrumb">
   <ol class="flex items-center space-x-4">
     <li>
-      <%= link_to project_performance_path(@project), class: "text-gray-500 hover:text-gray-700" do %>
+      <% perf_index_link = if @current_project
+                             project_slug_performance_path(@current_project.slug)
+                           elsif @project
+                             project_performance_path(@project)
+                           else
+                             performance_path
+                           end %>
+      <%= link_to perf_index_link, class: "text-gray-500 hover:text-gray-700" do %>
         Performance
       <% end %>
     </li>
@@ -25,26 +32,279 @@
   </ol>
 </nav>
 
-<!-- Header -->
-<div class="mb-8">
-  <h1 class="text-2xl font-bold text-gray-900 mb-2">
-    <span class="inline-flex items-center">
-      <% if @performance_id %>
-        🚀 Performance Issue #<%= @performance_id %>
-      <% else %>
-        🚀 <%= @target %>
-      <% end %>
-    </span>
-  </h1>
-  <p class="text-gray-600">
-    <% if @performance_id %>
-      Detailed performance metrics for <%= @target %>
-    <% else %>
-      Detailed performance metrics for this controller action
-    <% end %>
-  </p>
+<!-- Header removed per request -->
+
+<% current_tab = @current_tab || 'summary' %>
+
+<div class="bg-white rounded-lg shadow mb-6">
+  <div class="px-6 pt-4 pb-4">
+    <div class="flex items-center justify-between">
+      <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner" role="tablist" aria-label="Performance detail tabs">
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'summary', event_id: nil)), class: "px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'summary' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'summary') } do %>
+          Summary
+        <% end %>
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
+          Samples
+        <% end %>
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
+          Graph
+        <% end %>
+      </div>
+      <div class="flex items-center space-x-2">
+        <%= link_to url_for(params.permit!.to_h.merge(tab: 'ai', event_id: nil)), class: "inline-flex items-center px-4 py-2 rounded-full text-sm font-bold transition #{current_tab == 'ai' ? 'bg-white text-indigo-700 border-2 border-indigo-500 ring-2 ring-indigo-200 shadow' : 'bg-white text-gray-800 border-2 border-indigo-300 hover:border-indigo-400'}" do %>
+          AI summary
+        <% end %>
+        <% create_pr_path = if @current_project
+                              performance_create_pr_path(target: @target)
+                            elsif @project
+                              project_performance_action_create_pr_path(@project, target: @target)
+                            else
+                              performance_create_pr_path(target: @target)
+                            end %>
+        <%= button_to create_pr_path, method: :post, form: { target: '_blank', data: { turbo: false } }, class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-[#24292e] hover:bg-black" do %>
+          <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+          Open PR
+        <% end %>
+      </div>
+    </div>
+  </div>
 </div>
 
+<% if current_tab == 'ai' %>
+  <div class="bg-white rounded-lg shadow px-6 py-6">
+    <h3 class="text-lg font-medium text-gray-900 mb-3">AI explanation</h3>
+    <% if defined?(@ai_result) && @ai_result && @ai_result[:summary] %>
+      <div class="space-y-4">
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+          <div data-controller="markdown" data-markdown-content-value="<%= CGI.escapeHTML(@ai_result[:summary]) %>"></div>
+        </div>
+      </div>
+    <% elsif defined?(@ai_result) && @ai_result && @ai_result[:error] == 'missing_api_key' %>
+      <div class="text-sm text-gray-600">Set <code>OPENAI_API_KEY</code> to enable AI summaries.</div>
+    <% elsif defined?(@ai_result) && @ai_result && @ai_result[:error] %>
+      <div class="text-sm text-red-600">AI summary failed: <%= @ai_result[:message] %></div>
+    <% else %>
+      <div class="text-sm text-gray-600">Generating summary...</div>
+    <% end %>
+  </div>
+
+<% elsif current_tab == 'graph' %>
+  <div class="bg-white rounded-lg shadow border-t border-gray-200 px-6 py-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-900">Request count over time</h3>
+      <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
+        <% %w[1H 4H 8H 12H 24H 48H 7D 30D].each do |rk| %>
+          <% active = (@graph_range_key || '24H') == rk %>
+          <%= link_to rk, url_for(params.permit!.to_h.merge(tab: 'graph', range: rk)), class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @graph_counts.present? && @graph_has_data %>
+      <% labels = (@graph_labels || []).map { |t| case @graph_range_key; when '1H','4H','8H','12H','24H','48H' then t.strftime('%H:%M'); else t.strftime('%b %d'); end } %>
+      <div class="relative" style="height: 300px;">
+        <canvas data-controller="graph"
+                data-graph-labels-value='<%= labels.to_json %>'
+                data-graph-counts-value='<%= @graph_counts.to_json %>'
+                data-graph-range-value='<%= @graph_range_key %>'></canvas>
+      </div>
+    <% else %>
+      <div class="text-center text-gray-500 py-8">No data for selected range</div>
+    <% end %>
+  </div>
+
+<% elsif current_tab == 'samples' %>
+  <div class="bg-white rounded-lg shadow border-t border-gray-200 px-6 py-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-900">Samples</h3>
+      <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
+        <div class="px-4 py-2 text-xs text-gray-500">Click any value to open</div>
+      </div>
+    </div>
+
+    <% if @events.any? %>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+        <!-- Left: Selected sample details -->
+        <div class="lg:col-span-2 px-2 py-2">
+          <% if @selected_event %>
+            <div class="flex items-center justify-between">
+              <h4 class="text-md font-medium text-gray-900">Sample at</h4>
+              <div class="text-xs text-gray-500"><%= @selected_event.occurred_at.strftime('%b %-d %Y %H:%M:%S') %></div>
+            </div>
+
+            <% ctx = @selected_event.context || {} %>
+            <div class="space-y-6 mt-4">
+              <div class="bg-white border border-gray-100 rounded-lg p-4">
+                <!-- Sample header & badges -->
+                <div class="mb-4">
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-semibold text-gray-900 flex items-center">
+                      <span class="inline-flex items-center px-2 py-1 rounded bg-indigo-50 text-indigo-700 mr-2">Sample at</span>
+                      <span class="text-gray-700"><%= @selected_event.occurred_at.strftime('%b %d %Y %H:%M:%S') %></span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700">duration <%= (@selected_event.duration_ms || 0).round(1) %> ms</span>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700">db <%= (@selected_event.db_duration_ms || 0).round(1) %> ms</span>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700">view <%= (@selected_event.view_duration_ms || 0).round(1) %> ms</span>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700">alloc <%= @selected_event.allocations || 0 %></span>
+                      <% if @selected_event.sql_queries_count.present? %>
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-pink-50 text-pink-700">SQL <%= @selected_event.sql_queries_count %></span>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sample breakdown: Durations -->
+                <div class="mb-2">
+                  <div class="text-sm font-medium text-gray-900 mb-1">Sample breakdown</div>
+                  <% total_ms = (@selected_event.duration_ms || 0).to_f
+                     db_ms = (@selected_event.db_duration_ms || 0).to_f
+                     view_ms = (@selected_event.view_duration_ms || 0).to_f
+                     other_ms = [total_ms - db_ms - view_ms, 0].max
+                     breakdown = [
+                       { name: 'active_record', ms: db_ms, color: 'bg-emerald-500' },
+                       { name: 'action_view', ms: view_ms, color: 'bg-indigo-500' },
+                       { name: 'other', ms: other_ms, color: 'bg-gray-400' }
+                     ]
+                  %>
+                  <div class="space-y-2">
+                    <% breakdown.each do |b| %>
+                      <% pct = total_ms > 0 ? ((b[:ms] / total_ms) * 100).round(1) : 0 %>
+                      <div class="flex items-center justify-between text-xs text-gray-700">
+                        <div class="font-medium capitalize"><%= b[:name].to_s.gsub('_',' ') %></div>
+                        <div class="text-gray-500"><%= b[:ms].round(1) %> ms • <%= pct %>%</div>
+                      </div>
+                      <div class="w-full h-2 bg-gray-100 rounded overflow-hidden">
+                        <div class="h-2 <%= b[:color] %>" style="width: <%= pct %>%"></div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+
+                <!-- Allocations + SQL -->
+                <div class="mt-4">
+                  <div class="text-sm font-medium text-gray-900 mb-2">Allocations</div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700">Total <%= @selected_event.allocations || 0 %></span>
+                    <% if @selected_event.sql_queries_count.present? %>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-pink-50 text-pink-700">SQL <%= @selected_event.sql_queries_count %></span>
+                    <% end %>
+                    <% if @selected_event.request_method.present? %>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700"><%= @selected_event.request_method %></span>
+                    <% end %>
+                    <% if @selected_event.server_name.present? %>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700"><%= @selected_event.server_name %></span>
+                    <% end %>
+                  </div>
+                </div>
+
+                <dl class="text-[13px] bg-gray-50 border border-gray-200 rounded-md p-3">
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">duration_ms:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.duration_ms || '–' %></dd>
+                  </div>
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">db_ms:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.db_duration_ms || '–' %></dd>
+                  </div>
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">view_ms:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.view_duration_ms || '–' %></dd>
+                  </div>
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">allocations:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.allocations || '–' %></dd>
+                  </div>
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">sql_queries:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.sql_queries_count || '–' %></dd>
+                  </div>
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">method:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2"><%= @selected_event.request_method || '–' %></dd>
+                  </div>
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">path:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2 break-all"><%= @selected_event.request_path || '–' %></dd>
+                  </div>
+                  <div class="py-2 grid grid-cols-3 gap-2">
+                    <dt class="text-gray-500">server:</dt>
+                    <dd class="mt-1 text-indigo-600 col-span-2 break-all"><%= @selected_event.server_name || '–' %></dd>
+                  </div>
+                </dl>
+              </div>
+
+              <!-- Timeline (if present in context) full-width -->
+              <% timeline = (ctx['timeline'] || ctx[:timeline] || []) %>
+              <% if timeline.is_a?(Array) && timeline.any? %>
+                <div class="bg-white border border-gray-100 rounded-lg p-4">
+                  <div class="mb-3">
+                    <div class="text-sm font-medium text-gray-900 mb-1">Timeline</div>
+                    <% # determine max for scaling %>
+                    <% max_span_ms = timeline.map { |e| (e['duration_ms'] || e[:duration_ms] || 0).to_f }.max || 0 %>
+                    <div class="space-y-2">
+                      <% timeline.each do |e| %>
+                        <% name = e['name'] || e[:name] || 'event' %>
+                        <% dms = (e['duration_ms'] || e[:duration_ms] || 0).to_f %>
+                        <% allocs = e['allocations'] || e[:allocations] %>
+                        <% pctw = max_span_ms > 0 ? ((dms / max_span_ms) * 100).round(1) : 0 %>
+                        <div class="text-xs text-gray-700 flex items-center justify-between">
+                          <div class="truncate pr-2"><%= name %></div>
+                          <div class="text-gray-500"><%= dms.round(1) %> ms<%= allocs ? " • #{allocs} alloc" : '' %></div>
+                        </div>
+                        <div class="w-full h-2 bg-gray-100 rounded overflow-hidden">
+                          <div class="h-2 bg-blue-500" style="width: <%= pctw %>%"></div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+            <!-- Full-width Context -->
+            <div class="mt-6">
+              <div class="text-sm font-medium text-gray-900 mb-2">Context</div>
+              <pre class="bg-gray-50 rounded p-4 text-sm overflow-x-auto"><%= JSON.pretty_generate(ctx) rescue ctx.inspect %></pre>
+            </div>
+          <% else %>
+            <div class="px-2 py-10 text-center text-gray-500">Select a sample to view details</div>
+          <% end %>
+        </div>
+
+        <!-- Right: Samples list -->
+        <div class="border-l border-gray-200">
+          <div class="px-4 py-2 text-xs text-gray-500">Recent samples</div>
+          <div class="overflow-y-auto max-h-[40rem]">
+            <ul class="divide-y divide-gray-100">
+              <% @events.each do |event| %>
+                <% selected = (@selected_event && @selected_event.id == event.id) %>
+                <li class="hover:bg-gray-50 <%= selected ? 'bg-indigo-50' : '' %>">
+                  <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples', event_id: event.id)), class: "block px-4 py-2" do %>
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs font-medium text-gray-900"><%= event.occurred_at.strftime('%b %-d %H:%M') %></div>
+                      <div class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700"><%= (event.duration_ms || 0).round(1) %>ms</div>
+                    </div>
+                    <div class="mt-1 flex items-center space-x-2 text-[11px] text-gray-600">
+                      <% if event.request_method.present? %>
+                        <span class="inline-flex items-center px-1 py-0.5 rounded bg-gray-100 text-gray-700"><%= event.request_method %></span>
+                      <% end %>
+                      <% if event.request_path.present? %>
+                        <span class="truncate"><%= event.request_path %></span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <div class="px-6 py-10 text-center text-gray-500">No samples yet</div>
+    <% end %>
+  </div>
+
+<% else %>
 <!-- Key Metrics -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
   <div class="bg-white rounded-lg shadow p-6">
@@ -227,3 +487,4 @@
     </table>
   </div>
 </div>
+<% end %>
