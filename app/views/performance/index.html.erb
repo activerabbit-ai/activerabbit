@@ -133,11 +133,11 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <% @list_rows.each do |perf_issue| %>
             <% row_link = if @current_project
-                            project_slug_performance_issue_path(@current_project.slug, id: (@list_rows.index(perf_issue) + 1))
+                            project_slug_performance_action_detail_path(@current_project.slug, target: perf_issue[:action])
                           elsif @project
-                            project_performance_issue_path(@project, id: (@list_rows.index(perf_issue) + 1))
+                            project_performance_action_detail_path(@project, target: perf_issue[:action])
                           else
-                            performance_issue_path(id: (@list_rows.index(perf_issue) + 1))
+                            performance_action_detail_path(target: perf_issue[:action])
                           end %>
             <tr class="hover:bg-gray-50 transition-colors">
               <td class="px-6 py-4">

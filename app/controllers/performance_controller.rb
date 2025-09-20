@@ -13,7 +13,15 @@ class PerformanceController < ApplicationController
     if project_scope
       # Single project performance view
       @timeframe = params[:timeframe] || 'hour'
-      @hours_back = (params[:hours_back] || 24).to_i
+      # Adaptive default window so the page shows data by default
+      requested_hours = (params[:hours_back] || 24).to_i
+      @hours_back = requested_hours
+      unless PerformanceEvent.where(project: project_scope).where('occurred_at > ?', @hours_back.hours.ago).exists?
+        @hours_back = [@hours_back, 168].max # 7 days
+      end
+      unless PerformanceEvent.where(project: project_scope).where('occurred_at > ?', @hours_back.hours.ago).exists?
+        @hours_back = [@hours_back, 720].max # 30 days
+      end
 
       @rollups = project_scope.perf_rollups
                          .where(timeframe: @timeframe)
@@ -34,14 +42,14 @@ class PerformanceController < ApplicationController
                               .limit(20)
 
       # Calculate project-specific metrics
-      recent_rollups = project_scope.perf_rollups.where('timestamp > ?', 24.hours.ago)
-      raw_events_scope = PerformanceEvent.where(project: project_scope).where('occurred_at > ?', 24.hours.ago)
+      recent_rollups = project_scope.perf_rollups.where('timestamp > ?', @hours_back.hours.ago)
+      raw_events_scope = PerformanceEvent.where(project: project_scope).where('occurred_at > ?', @hours_back.hours.ago)
       slow_threshold_ms = 1000
 
       if recent_rollups.exists?
-        total_requests = recent_rollups.sum(:request_count)
-        total_errors = recent_rollups.sum(:error_count)
-        avg_response = recent_rollups.average(:avg_duration_ms)
+      total_requests = recent_rollups.sum(:request_count)
+      total_errors = recent_rollups.sum(:error_count)
+      avg_response = recent_rollups.average(:avg_duration_ms)
         slow_requests = raw_events_scope.where('duration_ms > ?', slow_threshold_ms).count
 
         @metrics = {
@@ -56,9 +64,9 @@ class PerformanceController < ApplicationController
         avg_response = raw_events_scope.average(:duration_ms)
         slow_requests = raw_events_scope.where('duration_ms > ?', slow_threshold_ms).count
 
-        @metrics = {
-          response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
-          throughput: "#{total_requests}/day",
+      @metrics = {
+        response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
+        throughput: "#{total_requests}/day",
           error_rate: total_requests > 0 ? "0.0%" : "0%",
           slow_requests: slow_requests
         }
@@ -192,9 +200,9 @@ class PerformanceController < ApplicationController
       @projects.each do |project|
         recent_rollups = project.perf_rollups.where('timestamp > ?', 24.hours.ago)
         if recent_rollups.exists?
-          avg_response = recent_rollups.average(:avg_duration_ms)
-          requests = recent_rollups.sum(:request_count)
-          errors = recent_rollups.sum(:error_count)
+        avg_response = recent_rollups.average(:avg_duration_ms)
+        requests = recent_rollups.sum(:request_count)
+        errors = recent_rollups.sum(:error_count)
           p95 = recent_rollups.average(:p95_duration_ms)
         else
           raw_events = PerformanceEvent.where(project: project).where('occurred_at > ?', 24.hours.ago)
@@ -332,21 +340,21 @@ class PerformanceController < ApplicationController
         @rollups = synthetic.sort_by(&:timestamp)
       else
         # Calculate detailed metrics from rollups
-        @total_requests = @rollups.sum(:request_count)
-        @total_errors = @rollups.sum(:error_count)
-        @avg_response_time = @rollups.average(:avg_duration_ms)
-        @p50_response_time = @rollups.average(:p50_duration_ms)
-        @p95_response_time = @rollups.average(:p95_duration_ms)
-        @p99_response_time = @rollups.average(:p99_duration_ms)
-        @min_response_time = @rollups.minimum(:min_duration_ms)
-        @max_response_time = @rollups.maximum(:max_duration_ms)
-        @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
+      @total_requests = @rollups.sum(:request_count)
+      @total_errors = @rollups.sum(:error_count)
+      @avg_response_time = @rollups.average(:avg_duration_ms)
+      @p50_response_time = @rollups.average(:p50_duration_ms)
+      @p95_response_time = @rollups.average(:p95_duration_ms)
+      @p99_response_time = @rollups.average(:p99_duration_ms)
+      @min_response_time = @rollups.minimum(:min_duration_ms)
+      @max_response_time = @rollups.maximum(:max_duration_ms)
+      @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
 
-        # Group by timeframe for charts
-        @hourly_data = @rollups.where('timestamp > ?', 24.hours.ago)
-                               .group_by { |r| r.timestamp.beginning_of_hour }
+      # Group by timeframe for charts
+      @hourly_data = @rollups.where('timestamp > ?', 24.hours.ago)
+                             .group_by { |r| r.timestamp.beginning_of_hour }
 
-        @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
+      @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
       end
 
 
@@ -363,7 +371,7 @@ class PerformanceController < ApplicationController
 
     # Graph data for this action
     if @current_tab == 'graph'
-      range_key = (params[:range] || '24H').to_s.upcase
+      range_key = (params[:range] || '7D').to_s.upcase
       window_seconds = case range_key
                        when '1H' then 1.hour
                        when '4H' then 4.hours
@@ -391,13 +399,19 @@ class PerformanceController < ApplicationController
       counts = Array.new(bucket_count, 0)
       labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
 
-      event_times = PerformanceEvent.where(project: project_scope, target: @target)
-                                    .where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
-                                    .pluck(:occurred_at)
-      event_times.each do |ts|
+      events = PerformanceEvent.where(project: project_scope, target: @target)
+                               .where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
+                               .pluck(:occurred_at, :duration_ms)
+      sum_per_bucket = Array.new(bucket_count, 0.0)
+      count_per_bucket = Array.new(bucket_count, 0)
+      events.each do |ts, dur|
         idx = (((ts - start_time) / bucket_seconds).floor).to_i
         next if idx.negative? || idx >= bucket_count
         counts[idx] += 1
+        if dur
+          sum_per_bucket[idx] += dur.to_f
+          count_per_bucket[idx] += 1
+        end
       end
 
       @graph_labels = labels
@@ -405,6 +419,9 @@ class PerformanceController < ApplicationController
       @graph_max = [counts.max || 0, 1].max
       @graph_has_data = counts.sum > 0
       @graph_range_key = range_key
+
+      # Additional series: average response time per bucket (ms)
+      @graph_avg_ms = sum_per_bucket.each_with_index.map { |s, i| count_per_bucket[i] > 0 ? (s / count_per_bucket[i]).round(1) : 0 }
     end
 
     # AI summary generation on demand

@@ -5,7 +5,9 @@ export default class extends Controller {
   static values = {
     labels: Array,
     counts: Array,
-    range: String
+    range: String,
+    secondarySeries: Array,
+    secondarySeriesLabel: String
   }
 
   connect() {
@@ -13,7 +15,7 @@ export default class extends Controller {
     const data = {
       labels: this.labelsValue,
       datasets: [{
-        label: `Errors (${this.rangeValue})`,
+        label: `Events (${this.rangeValue})`,
         data: this.countsValue,
         backgroundColor: 'rgba(99, 102, 241, 0.7)',
         borderColor: 'rgba(99, 102, 241, 1)',
@@ -21,7 +23,23 @@ export default class extends Controller {
         borderRadius: 3,
         barPercentage: 0.95,
         categoryPercentage: 0.95,
+        yAxisID: 'y',
       }]
+    }
+
+    // Optional secondary line series (e.g., Avg ms)
+    if (this.hasSecondarySeriesValue && Array.isArray(this.secondarySeriesValue) && this.secondarySeriesValue.length) {
+      data.datasets.push({
+        type: 'line',
+        label: this.secondarySeriesLabelValue || 'Avg',
+        data: this.secondarySeriesValue,
+        borderColor: 'rgba(16, 185, 129, 1)',
+        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        borderWidth: 2,
+        tension: 0.3,
+        yAxisID: 'y1',
+        pointRadius: 0,
+      })
     }
     const options = {
       responsive: true,
@@ -31,7 +49,10 @@ export default class extends Controller {
         tooltip: {
           callbacks: {
             title: (items) => items[0]?.label || '',
-            label: (item) => `Count: ${item.parsed.y}`
+            label: (item) => {
+              const dsLabel = item.dataset.label || 'Value'
+              return `${dsLabel}: ${item.parsed.y}`
+            }
           }
         }
       },
@@ -44,6 +65,12 @@ export default class extends Controller {
           beginAtZero: true,
           ticks: { color: '#6b7280', stepSize: Math.max(1, Math.ceil(Math.max(...this.countsValue) / 4)) },
           grid: { color: '#f3f4f6' }
+        },
+        y1: {
+          position: 'right',
+          beginAtZero: true,
+          ticks: { color: '#10b981' },
+          grid: { drawOnChartArea: false }
         }
       }
     }

@@ -102,10 +102,12 @@
 
     <% if @graph_counts.present? && @graph_has_data %>
       <% labels = (@graph_labels || []).map { |t| case @graph_range_key; when '1H','4H','8H','12H','24H','48H' then t.strftime('%H:%M'); else t.strftime('%b %d'); end } %>
-      <div class="relative" style="height: 300px;">
+      <div class="relative" style="height: 320px;">
         <canvas data-controller="graph"
                 data-graph-labels-value='<%= labels.to_json %>'
                 data-graph-counts-value='<%= @graph_counts.to_json %>'
+                data-graph-secondary-series-label-value='Avg ms'
+                data-graph-secondary-series-value='<%= (@graph_avg_ms || []).to_json %>'
                 data-graph-range-value='<%= @graph_range_key %>'></canvas>
       </div>
     <% else %>
@@ -266,7 +268,7 @@
               <div class="text-sm font-medium text-gray-900 mb-2">Context</div>
               <pre class="bg-gray-50 rounded p-4 text-sm overflow-x-auto"><%= JSON.pretty_generate(ctx) rescue ctx.inspect %></pre>
             </div>
-          <% else %>
+      <% else %>
             <div class="px-2 py-10 text-center text-gray-500">Select a sample to view details</div>
           <% end %>
         </div>
@@ -294,7 +296,7 @@
                     </div>
                   <% end %>
                 </li>
-              <% end %>
+      <% end %>
             </ul>
           </div>
         </div>
@@ -302,7 +304,7 @@
     <% else %>
       <div class="px-6 py-10 text-center text-gray-500">No samples yet</div>
     <% end %>
-  </div>
+</div>
 
 <% else %>
 <!-- Key Metrics -->
