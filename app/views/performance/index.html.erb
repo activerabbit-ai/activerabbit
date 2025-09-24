@@ -82,7 +82,7 @@
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-medium text-gray-900">Requests over time</h3>
         <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
-          <% %w[1H 4H 8H 12H 24H 48H 7D 30D].each do |rk| %>
+          <% %w[1H 4H 8H 12H 24H 48H 7D 30D ALL].each do |rk| %>
             <% active = (@graph_range_key || '7D') == rk %>
             <%= link_to rk, url_for(params.permit!.to_h.merge(tab: 'graph', range: rk)), class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
           <% end %>
