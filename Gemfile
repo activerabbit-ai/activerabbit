@@ -30,6 +30,8 @@ gem "kaminari"
 
 # Billing & subscriptions
 gem "pay", "~> 8.0"
+# Administrate from GitHub (Rails 8 compatibility)
+gem "administrate", github: "thoughtbot/administrate"
 
 # Multi-tenancy
 gem "acts_as_tenant"

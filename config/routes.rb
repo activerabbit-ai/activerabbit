@@ -159,4 +159,25 @@ Rails.application.routes.draw do
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # Administrate Admin
+  namespace :admin do
+    resources :accounts
+    resources :ai_requests
+    resources :alert_notifications
+    resources :alert_rules
+    resources :api_tokens
+    resources :daily_event_counts
+    resources :events
+    resources :healthchecks
+    resources :issues
+    resources :perf_rollups
+    resources :performance_events
+    resources :projects
+    resources :releases
+    resources :sql_fingerprints
+    resources :users
+    resources :webhook_events
+
+    root to: "accounts#index"
+  end
 end

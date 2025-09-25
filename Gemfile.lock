@@ -1,3 +1,13 @@
+GIT
+  remote: https://github.com/thoughtbot/administrate.git
+  revision: 05722d53a0139bea0d175822ba47a78b9a24145e
+  specs:
+    administrate (1.0.0.beta3)
+      actionpack (>= 6.0, < 9.0)
+      actionview (>= 6.0, < 9.0)
+      activerecord (>= 6.0, < 9.0)
+      kaminari (~> 1.2.2)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -438,6 +448,7 @@ DEPENDENCIES
   HDRHistogram
   activerabbit-ai
   acts_as_tenant
+  administrate!
   bootsnap
   brakeman
   climate_control
