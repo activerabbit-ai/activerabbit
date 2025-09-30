@@ -9,6 +9,7 @@ class User < ApplicationRecord
 
   # Multi-tenancy: User belongs to Account (required)
   belongs_to :account
+  delegate :active_subscription_record, :active_subscription?, to: :account
 
   # ActiveRabbit relationships (scoped to account through acts_as_tenant)
   has_many :projects, dependent: :destroy

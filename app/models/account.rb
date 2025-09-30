@@ -16,13 +16,20 @@ class Account < ApplicationRecord
     trial_ends_at.present? && Time.current < trial_ends_at
   end
 
-  def active_subscription?
-    # Account is entitled if any user under it has an active subscription
+  def active_subscription_record
+    return @_active_subscription_record if defined?(@_active_subscription_record)
+
     user_ids_relation = users.select(:id)
-    Pay::Subscription.joins(:customer)
-                     .where(status: 'active')
-                     .where(pay_customers: { owner_type: 'User', owner_id: user_ids_relation })
-                     .exists?
+    @_active_subscription_record = Pay::Subscription
+                                    .joins(:customer)
+                                    .where(status: 'active')
+                                    .where(pay_customers: { owner_type: 'User', owner_id: user_ids_relation })
+                                    .order(updated_at: :desc)
+                                    .first
+  end
+
+  def active_subscription?
+    active_subscription_record.present?
   end
 
   def event_quota_value
