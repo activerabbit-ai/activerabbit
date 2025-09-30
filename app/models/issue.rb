@@ -18,6 +18,10 @@ class Issue < ApplicationRecord
   scope :recent, -> { order(last_seen_at: :desc) }
   scope :by_frequency, -> { order(count: :desc) }
 
+  def github_pr_url
+    read_attribute(:github_pr_url).presence || project&.settings&.dig('issue_pr_urls', id.to_s)
+  end
+
   def self.find_or_create_by_fingerprint(project:, exception_class:, top_frame:, controller_action:, sample_message: nil)
     # Create fingerprint from exception class + top frame + controller action
     fingerprint = generate_fingerprint(exception_class, top_frame, controller_action)

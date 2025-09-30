@@ -30,10 +30,15 @@ class DashboardController < ApplicationController
     # Stats for each project
     @project_stats = {}
     @projects.each do |project|
+      issue_pr_urls = project.settings&.dig('issue_pr_urls') || {}
+      perf_pr_urls = project.settings&.dig('perf_pr_urls') || {}
+
       @project_stats[project.id] = {
         issues_count: project.issues.open.count,
         events_today: project.events.where('occurred_at > ?', 24.hours.ago).count,
-        health_status: project.health_status
+        health_status: project.health_status,
+        issue_pr_urls: issue_pr_urls,
+        perf_pr_urls: perf_pr_urls
       }
     end
   end

@@ -6,6 +6,7 @@ class Project < ApplicationRecord
   has_many :issues, dependent: :destroy
   has_many :events, dependent: :destroy
   has_many :perf_rollups, dependent: :destroy
+  has_many :performance_summaries, dependent: :destroy
   has_many :sql_fingerprints, dependent: :destroy
   has_many :releases, dependent: :destroy
   has_many :api_tokens, dependent: :destroy

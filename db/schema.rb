@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_24_093500) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -330,6 +330,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_093500) do
     t.index ["target"], name: "index_performance_events_on_target"
   end
 
+  create_table "performance_summaries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.string "target", null: false
+    t.text "summary"
+    t.datetime "generated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_performance_summaries_on_account_id"
+    t.index ["project_id", "target"], name: "index_performance_summaries_on_project_id_and_target", unique: true
+    t.index ["project_id"], name: "index_performance_summaries_on_project_id"
+  end
+
   create_table "projects", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "name", null: false
@@ -450,6 +463,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_093500) do
   add_foreign_key "performance_events", "accounts"
   add_foreign_key "performance_events", "projects"
   add_foreign_key "performance_events", "releases"
+  add_foreign_key "performance_summaries", "accounts"
+  add_foreign_key "performance_summaries", "projects"
   add_foreign_key "projects", "accounts"
   add_foreign_key "projects", "users"
   add_foreign_key "releases", "accounts"

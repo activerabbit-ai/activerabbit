@@ -95,16 +95,17 @@ class PerformanceController < ApplicationController
                      "healthy"
           end
 
-          @list_rows << {
-            action: target,
-            avg_response_time: avg_val ? "#{avg_val}ms" : "N/A",
-            p95_response_time: p95_val ? "#{p95_val}ms" : "N/A",
-            total_requests: total_requests_t,
-            error_count: total_errors_t,
-            status: status,
-            first_seen: first_seen,
-            last_seen: last_seen
-          }
+        @list_rows << {
+          action: target,
+          avg_response_time: avg_val ? "#{avg_val}ms" : "N/A",
+          p95_response_time: p95_val ? "#{p95_val}ms" : "N/A",
+          total_requests: total_requests_t,
+          error_count: total_errors_t,
+          status: status,
+          first_seen: first_seen,
+          last_seen: last_seen,
+          github_pr_url: project_scope.settings&.dig('perf_pr_urls', target.to_s)
+        }
         end
       else
         # Fallback: derive from raw performance events within window
@@ -127,16 +128,17 @@ class PerformanceController < ApplicationController
                      "healthy"
           end
 
-          @list_rows << {
-            action: target,
-            avg_response_time: avg_val ? "#{avg_val.round(1)}ms" : "N/A",
-            p95_response_time: p95_val ? "#{p95_val.round(1)}ms" : "N/A",
-            total_requests: evts.size,
-            error_count: 0,
-            status: status,
-            first_seen: first_seen,
-            last_seen: last_seen
-          }
+        @list_rows << {
+          action: target,
+          avg_response_time: avg_val ? "#{avg_val.round(1)}ms" : "N/A",
+          p95_response_time: p95_val ? "#{p95_val.round(1)}ms" : "N/A",
+          total_requests: evts.size,
+          error_count: 0,
+          status: status,
+          first_seen: first_seen,
+          last_seen: last_seen,
+          github_pr_url: project_scope.settings&.dig('perf_pr_urls', target.to_s)
+        }
         end
         @list_rows.sort_by! { |r| -r[:total_requests].to_i }
       end
@@ -516,12 +518,10 @@ class PerformanceController < ApplicationController
 
     # AI summary generation on demand
     if @current_tab == "ai"
-      cache_key = ["perf-ai-summary", project_scope&.id || "global", @target].join(":")
-      cached_summary = Rails.cache.read(cache_key)
-
-      if cached_summary.present?
-        @performance_summary = cached_summary
-        @ai_result = { summary: cached_summary }
+      summary_record = PerformanceSummary.find_by(project: project_scope, target: @target)
+      if summary_record&.summary.present?
+        @performance_summary = summary_record.summary
+        @ai_result = { summary: @performance_summary }
         return
       end
 
@@ -538,7 +538,12 @@ class PerformanceController < ApplicationController
       if result[:summary].present?
         @performance_summary = result[:summary]
         @ai_result = result
-        Rails.cache.write(cache_key, result[:summary], expires_in: 12.hours)
+        PerformanceSummary.find_or_initialize_by(project: project_scope, target: @target).tap do |record|
+          record.account = project_scope.account
+          record.summary = result[:summary]
+          record.generated_at = Time.current
+          record.save!
+        end
       else
         @ai_result = result
       end
