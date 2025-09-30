@@ -4,7 +4,7 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable, :trackable
 
-  # Pay gem integration
+  # Billing handled per User (one Stripe customer per user)
   pay_customer
 
   # Multi-tenancy: User belongs to Account (required)
@@ -31,7 +31,12 @@ class User < ApplicationRecord
 
     # Create account before user validation/creation
     self.account = Account.create!(
-      name: "#{email.split('@').first.humanize}'s Account"
+      name: "#{email.split('@').first.humanize}'s Account",
+      trial_ends_at: Rails.configuration.x.trial_days.days.from_now,
+      current_plan: "team",
+      billing_interval: "month",
+      event_quota: 100_000,
+      events_used_in_period: 0
     )
   end
 end

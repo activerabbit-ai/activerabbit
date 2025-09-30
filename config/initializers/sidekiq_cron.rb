@@ -1,5 +1,5 @@
-require 'sidekiq'
-require 'sidekiq-cron'
+require "sidekiq"
+require "sidekiq-cron"
 
 # Configure recurring jobs for performance rollups
 # Temporarily disabled until PerformanceEvent data is available
@@ -15,3 +15,24 @@ require 'sidekiq-cron'
 #     'args' => ['hour']
 #   }
 # }) if defined?(Sidekiq::Cron)
+
+if defined?(Sidekiq::Cron)
+  jobs = {
+    "report_usage_daily" => {
+      "cron" => "0 1 * * *",
+      "class" => "ReportUsageDailyLoader"
+    }
+  }
+
+  Sidekiq::Cron::Job.load_from_hash(jobs)
+end
+
+# Loader job to enqueue per-account usage reporting
+class ReportUsageDailyLoader
+  include Sidekiq::Worker
+  def perform
+    Account.find_each do |account|
+      ReportUsageJob.perform_later(account_id: account.id)
+    end
+  end
+end

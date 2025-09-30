@@ -1,0 +1,28 @@
+<% if defined?(current_user) && current_user && current_user.account %>
+  <% account = current_user.account %>
+  <% suppress_once = session[:suppress_billing_banner] == true %>
+  <% needs_subscription = !account.on_trial? && !account.active_subscription? && !suppress_once %>
+  <% if needs_subscription %>
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mx-6 mt-4 rounded">
+      <div class="flex items-start justify-between">
+        <div class="flex items-start">
+          <svg class="h-5 w-5 text-yellow-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="ml-3 text-sm text-yellow-800">
+            Your trial ended. Please choose a plan to continue.
+          </p>
+        </div>
+        <div>
+          <%= link_to "Choose a plan", pricing_path,
+                class: "inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  <% if suppress_once %>
+    <% session.delete(:suppress_billing_banner) %>
+  <% end %>
+<% end %>
+
+

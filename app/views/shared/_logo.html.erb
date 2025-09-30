@@ -1,0 +1,12 @@
+<% logo_url = ENV["LOGO_IMAGE_URL"].presence || "https://www.activerabbit.ai/assets/ChatGPT%20Image%20Sep%2010_%202025_%2009_48_40%20PM_1757566191473-pPlRmeAb.png" %>
+<% variant = (local_assigns[:variant] || 'default').to_s %>
+<% if variant == 'admin' %>
+  <div class="h-10 w-10 mr-2 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer" style="background-color: rgb(96, 114, 213);">
+    <%= image_tag logo_url, alt: "ActiveRabbit Logo", class: "h-8 w-8 transition-all duration-300", style: "filter: hue-rotate(0deg) saturate(1) brightness(1);" %>
+  </div>
+<% else %>
+  <div class="h-10 w-10 mr-2 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer" style="background-color: rgb(96, 114, 213);">
+    <%= image_tag logo_url, alt: "ActiveRabbit Logo", class: "h-8 w-8 transition-all duration-300", style: "filter: hue-rotate(0deg) saturate(1) brightness(1);" %>
+  </div>
+<% end %>
+

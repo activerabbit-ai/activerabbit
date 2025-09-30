@@ -1,0 +1,16 @@
+<%# Reusable brand link (logo + wordmark)
+  locals:
+    - href: target URL (default: root_path)
+    - size: logo size (default: 40)
+    - text_class: CSS classes for wordmark (default: 'text-2xl font-bold')
+%>
+<%= link_to (local_assigns[:href] || root_path), class: "flex items-center space-x-2" do %>
+  <div class="rounded-lg p-1.5">
+    <%= render "shared/logo", size: (local_assigns[:size] || 40), variant: (local_assigns[:variant] || 'default') %>
+  </div>
+  <% variant = (local_assigns[:variant] || 'default').to_s %>
+  <% color_class = variant == 'admin' ? 'text-white' : 'text-indigo-600' %>
+  <span class="<%= [ (local_assigns[:text_class] || 'font-bold'), color_class ].join(' ') %>">ActiveRabbit</span>
+<% end %>
+
+

@@ -21,35 +21,7 @@
       <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <!-- Logo -->
         <div class="flex justify-center">
-          <%= link_to root_path, class: "flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-colors" do %>
-            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <!-- Rabbit ears -->
-                <ellipse cx="8" cy="4" rx="1.5" ry="3" transform="rotate(-20 8 4)"/>
-                <ellipse cx="16" cy="4" rx="1.5" ry="3" transform="rotate(20 16 4)"/>
-                <!-- Inner ears -->
-                <ellipse cx="8.2" cy="4.5" rx="0.7" ry="1.8" fill="#e0e7ff" transform="rotate(-20 8.2 4.5)"/>
-                <ellipse cx="15.8" cy="4.5" rx="0.7" ry="1.8" fill="#e0e7ff" transform="rotate(20 15.8 4.5)"/>
-                <!-- Head -->
-                <circle cx="12" cy="12" r="6"/>
-                <!-- Eyes -->
-                <circle cx="10" cy="10" r="1" fill="#1e293b"/>
-                <circle cx="14" cy="10" r="1" fill="#1e293b"/>
-                <!-- Eye shine -->
-                <circle cx="10.3" cy="9.7" r="0.3" fill="white"/>
-                <circle cx="14.3" cy="9.7" r="0.3" fill="white"/>
-                <!-- Nose -->
-                <path d="M12 13 L11.5 14 L12.5 14 Z" fill="#f59e0b"/>
-                <!-- Mouth -->
-                <path d="M12 14.5 Q10.5 15.5 9.5 14.5" stroke="#1e293b" stroke-width="0.5" fill="none" stroke-linecap="round"/>
-                <path d="M12 14.5 Q13.5 15.5 14.5 14.5" stroke="#1e293b" stroke-width="0.5" fill="none" stroke-linecap="round"/>
-                <!-- Cheeks -->
-                <circle cx="8.5" cy="13" r="0.8" fill="#fecaca" opacity="0.6"/>
-                <circle cx="15.5" cy="13" r="0.8" fill="#fecaca" opacity="0.6"/>
-              </svg>
-            </div>
-            <span class="text-2xl font-bold">ActiveRabbit</span>
-          <% end %>
+          <%= render "shared/brand", href: root_path, size: 40, text_class: "text-2xl font-bold" %>
         </div>
 
         <!-- Page Title -->

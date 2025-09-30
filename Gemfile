@@ -30,6 +30,8 @@ gem "kaminari"
 
 # Billing & subscriptions
 gem "pay", "~> 8.0"
+gem "stripe", "~> 13.0"
+
 # Administrate from GitHub (Rails 8 compatibility)
 gem "administrate", github: "thoughtbot/administrate"
 
@@ -96,4 +98,6 @@ gem "activerabbit-ai"
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
+  gem "bullet", "~> 7.2", require: false
+  gem "rack-mini-profiler", "~> 3.3"
 end

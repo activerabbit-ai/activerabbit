@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_09_000000) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_24_093500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -20,7 +20,29 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_09_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "settings", default: {}
+    t.string "current_plan", default: "developer", null: false
+    t.string "billing_interval", default: "month", null: false
+    t.boolean "ai_mode_enabled", default: false, null: false
+    t.datetime "trial_ends_at"
+    t.datetime "event_usage_period_start"
+    t.datetime "event_usage_period_end"
+    t.integer "event_quota", default: 50000, null: false
+    t.integer "events_used_in_period", default: 0, null: false
+    t.string "overage_subscription_item_id"
+    t.string "ai_overage_subscription_item_id"
     t.index ["name"], name: "index_accounts_on_name"
+  end
+
+  create_table "ai_requests", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.string "subscription_id"
+    t.string "request_type"
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "occurred_at"], name: "index_ai_requests_on_account_id_and_occurred_at"
+    t.index ["user_id"], name: "index_ai_requests_on_user_id"
   end
 
   create_table "alert_notifications", force: :cascade do |t|
@@ -79,6 +101,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_09_000000) do
     t.index ["project_id", "active"], name: "index_api_tokens_on_project_id_and_active"
     t.index ["project_id"], name: "index_api_tokens_on_project_id"
     t.index ["token"], name: "index_api_tokens_on_token", unique: true
+  end
+
+  create_table "daily_event_counts", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.date "day", null: false
+    t.integer "count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "day"], name: "index_daily_event_counts_on_account_id_and_day", unique: true
+    t.index ["account_id"], name: "index_daily_event_counts_on_account_id"
   end
 
   create_table "events", force: :cascade do |t|
@@ -189,8 +221,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_09_000000) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "type"
     t.index ["owner_type", "owner_id", "deleted_at"], name: "customer_owner_processor_index"
     t.index ["processor", "processor_id"], name: "index_pay_customers_on_processor_and_processor_id"
+    t.index ["type"], name: "index_pay_customers_on_type"
   end
 
   create_table "pay_payment_methods", force: :cascade do |t|
@@ -383,6 +417,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_09_000000) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  create_table "webhook_events", force: :cascade do |t|
+    t.string "provider", null: false
+    t.string "event_id", null: false
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "event_id"], name: "idx_webhook_events_unique", unique: true
+  end
+
   add_foreign_key "alert_notifications", "accounts"
   add_foreign_key "alert_notifications", "alert_rules"
   add_foreign_key "alert_notifications", "projects"
@@ -390,6 +433,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_09_000000) do
   add_foreign_key "alert_rules", "projects"
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
+  add_foreign_key "daily_event_counts", "accounts"
   add_foreign_key "events", "accounts"
   add_foreign_key "events", "issues"
   add_foreign_key "events", "projects"

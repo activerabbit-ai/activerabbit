@@ -31,6 +31,16 @@
       <p class="alert"><%= alert %></p>
     <% end %>
 
+    <div class="fixed top-4 right-4 z-10 flex gap-2">
+      <% if user_signed_in? %>
+        <%= button_to 'Subscribe', checkouts_path, params: { plan: 'developer', interval: 'month', ai: false }, method: :post, class: 'btn btn-primary' %>
+        <% allowlist = ENV.fetch('ADMIN_EMAIL_ALLOWLIST', '').split(',').map(&:strip).reject(&:blank?) %>
+        <% if allowlist.include?(current_user&.email) %>
+          <%= link_to 'Admin', admin_root_path, class: 'btn' %>
+        <% end %>
+      <% end %>
+    </div>
+
     <%= yield %>
   </body>
 </html>

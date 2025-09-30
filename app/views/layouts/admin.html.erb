@@ -22,17 +22,14 @@
   </head>
 
   <body class="bg-gray-50">
-    <div class="min-h-screen flex">
+    <div class="h-screen flex overflow-hidden">
       <!-- Sidebar -->
-      <div class="bg-gray-900 text-white w-64 min-h-screen p-4">
+      <div class="fixed inset-y-0 left-0 bg-gray-900 text-white w-64 p-4 flex flex-col">
         <div class="flex items-center mb-6">
-          <div class="bg-indigo-600 rounded-lg p-2 mr-3">
-            <span class="text-white text-xl">🐰</span>
-          </div>
-          <span class="text-xl font-bold">ActiveRabbit</span>
+          <%= render "shared/brand", href: root_path, size: 28, text_class: "text-xl font-bold", variant: 'admin' %>
         </div>
 
-        <nav class="space-y-2">
+        <nav class="space-y-2 flex-1 overflow-y-auto pr-1">
                     <%
             # Determine base paths based on current project or user's selected project for menu
             menu_project = (defined?(@current_project) && @current_project) ? @current_project : selected_project_for_menu
@@ -105,6 +102,8 @@
 
           <div class="border-t border-gray-700 my-4"></div>
 
+
+
           <% base_settings_path = defined?(@current_project) && @current_project ? "/#{@current_project.slug}/settings" : settings_path %>
           <%= link_to base_settings_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_settings_path)}" do %>
@@ -115,10 +114,27 @@
             Settings
           <% end %>
         </nav>
+
+        <!-- Persistent Subscription Promo Box at bottom of sidebar -->
+        <div class="mt-auto p-4 rounded-lg bg-indigo-50 border border-indigo-100">
+          <h4 class="text-sm font-semibold text-indigo-900">Unlock more with a Subscription</h4>
+          <p class="text-xs text-indigo-800 mt-1">Higher quotas, AI suggestions, advanced alerts.</p>
+          <% days_left = nil %>
+          <% if current_account&.trial_ends_at && current_account.trial_ends_at > Time.current %>
+            <% days_left = (current_account.trial_ends_at.to_date - Date.current).to_i %>
+          <% end %>
+          <% btn_text = if current_page?(pricing_path)
+                          (@current_plan_label || "Current plan")
+                        else
+                          days_left.present? ? "Subscription - #{days_left} #{'day'.pluralize(days_left)} left" : "Subscription"
+                        end %>
+          <%= link_to btn_text, pricing_path,
+              class: "mt-2 inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 cursor-pointer" %>
+        </div>
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col ml-64 overflow-y-auto">
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm border-b border-gray-200">
           <div class="flex items-center justify-between px-6 py-4">
@@ -194,6 +210,10 @@
                 </svg>
                 <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
               </button>
+
+              <!-- Subscription CTA -->
+              <%= link_to "Subscription", pricing_path,
+                  class: "px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700" %>
 
               <!-- User Avatar and Menu -->
               <div class="relative" data-controller="dropdown">
@@ -272,6 +292,8 @@
             </div>
           </div>
         <% end %>
+
+        <%= render 'shared/billing_banner' %>
 
         <!-- Page Content -->
         <main class="flex-1 p-6">

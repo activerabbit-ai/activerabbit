@@ -13,6 +13,8 @@ class ApplicationController < ActionController::Base
 
   # Onboarding: Redirect users without projects to onboarding
   before_action :check_onboarding_needed
+  # Subscription welcome and banner suppression
+  before_action :handle_subscription_welcome
 
   helper_method :current_project, :current_account, :selected_project_for_menu
 
@@ -100,6 +102,19 @@ class ApplicationController < ActionController::Base
     rescue ActsAsTenant::Errors::NoTenantSet
       # If tenant isn't set, redirect to onboarding
       redirect_to onboarding_welcome_path
+    end
+  end
+
+  def handle_subscription_welcome
+    return unless user_signed_in?
+    return unless params[:subscribed] == '1'
+    plan = params[:plan].presence || current_account&.current_plan
+    interval = params[:interval].presence || current_account&.billing_interval
+    if plan && !session[:subscription_welcome_shown]
+      flash[:notice] = "Welcome! You’re on the #{plan.titleize} plan#{interval ? " (#{interval})" : ""}."
+      session[:subscription_welcome_shown] = true
+      # Hide banner once after subscribe
+      session[:suppress_billing_banner] = true
     end
   end
 

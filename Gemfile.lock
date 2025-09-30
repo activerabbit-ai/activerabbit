@@ -103,6 +103,9 @@ GEM
     brakeman (7.1.0)
       racc
     builder (3.3.0)
+    bullet (7.2.0)
+      activesupport (>= 3.0.0)
+      uniform_notifier (~> 1.11)
     climate_control (1.2.0)
     concurrent-ruby (1.3.5)
     connection_pool (2.5.3)
@@ -269,6 +272,8 @@ GEM
     rack (3.2.0)
     rack-attack (6.7.0)
       rack (>= 1.0, < 4)
+    rack-mini-profiler (3.3.1)
+      rack (>= 1.2.0)
     rack-session (2.1.1)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
@@ -391,6 +396,7 @@ GEM
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.1.7)
+    stripe (13.0.0)
     tailwindcss-rails (4.3.0)
       railties (>= 7.0.0)
       tailwindcss-ruby (~> 4.0)
@@ -417,6 +423,7 @@ GEM
     unicode-display_width (3.1.5)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
+    uniform_notifier (1.18.0)
     uri (1.0.3)
     useragent (0.16.11)
     warden (1.2.9)
@@ -451,6 +458,7 @@ DEPENDENCIES
   administrate!
   bootsnap
   brakeman
+  bullet (~> 7.2)
   climate_control
   debug
   devise
@@ -467,6 +475,7 @@ DEPENDENCIES
   propshaft
   puma (>= 5.0)
   rack-attack
+  rack-mini-profiler (~> 3.3)
   rails (~> 8.0.2)
   redis (>= 4.0.1)
   rspec-rails (~> 6.0)
@@ -476,6 +485,7 @@ DEPENDENCIES
   sidekiq-cron
   slack-notifier
   stimulus-rails
+  stripe (~> 13.0)
   tailwindcss-rails
   thruster
   turbo-rails
