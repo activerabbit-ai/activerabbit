@@ -13,7 +13,8 @@ class DashboardController < ApplicationController
       total_issues: Issue.count, # Automatically scoped by acts_as_tenant
       open_issues: Issue.open.count,
       total_events: Event.count, # Automatically scoped by acts_as_tenant
-      recent_events: Event.where('occurred_at > ?', 24.hours.ago).count,
+      events_today: Event.where('occurred_at > ?', 24.hours.ago).count,
+      events_last_30_days: Event.where('occurred_at > ?', 30.days.ago).count,
       account_users: account_users.count,
       active_users: account_users.where('current_sign_in_at > ?', 7.days.ago).count
     }
@@ -31,7 +32,7 @@ class DashboardController < ApplicationController
     @projects.each do |project|
       @project_stats[project.id] = {
         issues_count: project.issues.open.count,
-        events_today: project.events.where('created_at > ?', 24.hours.ago).count,
+        events_today: project.events.where('occurred_at > ?', 24.hours.ago).count,
         health_status: project.health_status
       }
     end

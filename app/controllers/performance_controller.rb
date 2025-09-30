@@ -516,6 +516,15 @@ class PerformanceController < ApplicationController
 
     # AI summary generation on demand
     if @current_tab == "ai"
+      cache_key = ["perf-ai-summary", project_scope&.id || "global", @target].join(":")
+      cached_summary = Rails.cache.read(cache_key)
+
+      if cached_summary.present?
+        @performance_summary = cached_summary
+        @ai_result = { summary: cached_summary }
+        return
+      end
+
       stats = {
         total_requests: @total_requests,
         total_errors: @total_errors,
@@ -524,7 +533,15 @@ class PerformanceController < ApplicationController
         p95_ms: (@p95_response_time&.round(1))
       }
       sample = @selected_event || @events.first
-      @ai_result = AiPerformanceSummaryService.new(target: @target, stats: stats, sample_event: sample).call
+      result = AiPerformanceSummaryService.new(target: @target, stats: stats, sample_event: sample).call
+
+      if result[:summary].present?
+        @performance_summary = result[:summary]
+        @ai_result = result
+        Rails.cache.write(cache_key, result[:summary], expires_in: 12.hours)
+      else
+        @ai_result = result
+      end
     end
   end
 
