@@ -16,7 +16,7 @@ require "sidekiq-cron"
 #   }
 # }) if defined?(Sidekiq::Cron)
 
-if defined?(Sidekiq::Cron)
+if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present?
   jobs = {
     "report_usage_daily" => {
       "cron" => "0 1 * * *",
