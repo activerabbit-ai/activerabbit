@@ -3,13 +3,15 @@
 <% end %>
 
 <% if @account&.active_subscription? %>
-  <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+  <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6 mx-auto" style="width: 70%">
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-lg font-semibold text-indigo-900">Current Plan: <%= @account.current_plan&.titleize %></h2>
-        <p class="text-sm text-indigo-700">
-          <%= number_with_delimiter(@account.event_quota - @account.events_used_in_period) %> events remaining on your <%= @account.current_plan&.titleize %> plan
-        </p>
+        <% if @events_remaining && @event_quota %>
+          <p class="text-sm text-indigo-700">
+            <%= number_with_delimiter(@events_remaining) %> events remaining on your <%= @account.current_plan&.titleize %> plan
+          </p>
+        <% end %>
         <% if @next_payment_date %>
           <p class="text-sm text-indigo-700">
             Next payment on <%= @next_payment_date %>
@@ -47,9 +49,6 @@
               params: { plan: "developer", interval: "month", ai: false },
               data: { turbo: false }, method: :post,
               class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
-        <%= button_to (@account&.ai_mode_enabled ? "AI Add-on active" : "Add AI (+$10)"), checkouts_path,
-              params: { plan: "developer", interval: "month", ai: true },
-              data: { turbo: false }, method: :post, class: "mt-2 w-full bg-indigo-50 text-indigo-700 py-2 rounded-md hover:bg-indigo-100 transition-colors cursor-pointer" %>
       </div>
     </div>
 
@@ -72,42 +71,28 @@
               params: { plan: "team", interval: "month", ai: false },
               data: { turbo: false }, method: :post,
               class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
-        <%= button_to (@account&.ai_mode_enabled ? "AI Add-on active" : "Add AI (+$10)"), checkouts_path,
-              params: { plan: "team", interval: "month", ai: true },
-              data: { turbo: false }, method: :post, class: "mt-2 w-full bg-indigo-50 text-indigo-700 py-2 rounded-md hover:bg-indigo-100 transition-colors cursor-pointer" %>
       </div>
     </div>
 
-    <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
-      <h3 class="text-xl font-semibold">Enterprise</h3>
-      <div class="mt-2">
-        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$900</span>
-        <span class="text-sm text-gray-500">/mo</span>
-        <span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">$9,000/yr</span>
+      <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
+        <h3 class="text-xl font-semibold">Enterprise</h3>
+        <div class="mt-2">
+          <span class="text-3xl font-extrabold tracking-tight text-gray-900">$900</span>
+          <span class="text-sm text-gray-500">/mo</span>
+          <span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">$9,000/yr</span>
+        </div>
+        <ul class="mt-4 space-y-2 text-sm text-gray-700">
+          <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Custom quotas & SLAs</span></li>
+          <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Priority support</span></li>
+          <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Security reviews & SSO</span></li>
+        </ul>
+        <div class="mt-auto pt-4">
+          <%= button_to (@account&.current_plan == 'enterprise' ? "Current plan: Enterprise" : "Talk to sales"),
+                "mailto:sales@activerabbit.ai",
+                method: :get, data: { turbo: false },
+                class: "w-full bg-gray-900 text-white py-2 rounded-md hover:bg-gray-800" %>
+        </div>
       </div>
-      <ul class="mt-4 space-y-2 text-sm text-gray-700">
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Custom quotas & SLAs</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Priority support</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Security reviews & SSO</span></li>
-      </ul>
-      <div class="mt-auto pt-4">
-        <%= button_to (@account&.current_plan == 'enterprise' ? "Current plan: Enterprise" : "Talk to sales"),
-              "mailto:sales@activerabbit.ai",
-              method: :get, data: { turbo: false },
-              class: "w-full bg-gray-900 text-white py-2 rounded-md hover:bg-gray-800" %>
-      </div>
-    </div>
-  </div>
-
-  <div class="bg-white border rounded-xl p-6 shadow-sm mt-6 transition-all duration-200 hover:shadow-xl">
-    <h3 class="text-xl font-semibold">AI Add‑On</h3>
-    <p class="text-gray-600 mb-2">+$10/mo includes 500 AI requests</p>
-    <p class="text-gray-600 mb-4">Overage: $10 per additional 1,000 requests</p>
-    <% if @account %>
-      <%= button_to (@account&.ai_mode_enabled ? "AI Add-on active" : "Enable AI (+$10/mo)"), checkouts_path,
-            params: { plan: @account.current_plan || "developer", interval: @account.billing_interval || "month", ai: true },
-            data: { turbo: false }, method: :post, class: "bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 cursor-pointer" %>
-    <% end %>
   </div>
 
   <%= render "shared/upgrade_modal", account: @account if @account %>

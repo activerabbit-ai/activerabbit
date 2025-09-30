@@ -6,6 +6,12 @@ class PricingController < ApplicationController
     @account = current_user.account
     @current_plan_label = "Current plan"
 
+    if @account
+      @event_quota = (@account.event_quota.presence || @account.event_quota_value || 0).to_i
+      @events_used = @account.events_used_in_billing_period
+      @events_remaining = [@event_quota - @events_used, 0].max
+    end
+
     if (pay_sub = @account&.active_subscription_record)
       @subscription = pay_sub
       @current_plan_label = "Current plan" if @subscription

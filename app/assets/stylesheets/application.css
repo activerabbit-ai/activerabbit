@@ -12,3 +12,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  button,
+  [type="button"],
+  [type="submit"],
+  [type="reset"],
+  .btn {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [type="button"][disabled],
+  [type="submit"][disabled],
+  [type="reset"][disabled],
+  .btn.disabled,
+  .btn[aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
