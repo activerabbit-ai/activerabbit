@@ -2,6 +2,32 @@
   Install ActiveRabbit Gem
 <% end %>
 
+<% non_rails_stack = @project.respond_to?(:tech_stack) && @project.tech_stack.present? && @project.tech_stack != 'rails' %>
+
+<% if non_rails_stack %>
+  <div class="max-w-3xl mx-auto mt-12">
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 shadow-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0 mr-4">
+          <span class="text-yellow-500 text-3xl leading-none">⚠️</span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-yellow-900 mb-2">Stack support coming soon</h1>
+          <p class="text-sm text-yellow-800 mb-3">
+            ActiveRabbit fully supports Ruby on Rails today. We are working on native support for <strong><%= @project.tech_stack.to_s.titleize %></strong>.
+          </p>
+          <p class="text-sm text-yellow-800 mb-3">
+            We will email <strong><%= current_user.email %></strong> as soon as <%= @project.tech_stack.to_s.titleize %> support is ready.
+          </p>
+          <p class="text-sm text-yellow-800">
+            Want early access or to share requirements? Contact us at
+            <a href="mailto:support@activerabbit.ai" class="underline text-yellow-900">support@activerabbit.ai</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+<% else %>
 <!-- Page Header -->
 <div class="mb-8">
   <div>
@@ -253,3 +279,5 @@ function copyToClipboard(elementId) {
   });
 }
 </script>
+
+<% end %>

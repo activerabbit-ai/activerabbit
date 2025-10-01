@@ -69,7 +69,7 @@ class OnboardingController < ApplicationController
   private
 
   def project_params
-    params.require(:project).permit(:name, :url, :description)
+    params.require(:project).permit(:name, :url, :description, :tech_stack)
   end
 
   def redirect_if_has_projects

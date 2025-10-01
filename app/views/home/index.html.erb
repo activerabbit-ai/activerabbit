@@ -10,7 +10,9 @@
           <%= link_to "Admin", admin_root_path, class: "text-indigo-600 hover:text-indigo-500" %>
           <%= link_to "Settings", edit_user_registration_path, class: "text-indigo-600 hover:text-indigo-500" %>
           <%= link_to "Sidekiq", "/sidekiq", class: "text-indigo-600 hover:text-indigo-500", target: "_blank" %>
-          <%= link_to "Sign out", destroy_user_session_path, method: :delete, class: "bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium" %>
+          <%= link_to "Sign out", destroy_user_session_path,
+              data: { turbo_method: :delete },
+              class: "bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium" %>
         <% else %>
           <%= link_to "Sign in", new_user_session_path, class: "text-indigo-600 hover:text-indigo-500" %>
           <%= link_to "Sign up", new_user_registration_path, class: "bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium" %>

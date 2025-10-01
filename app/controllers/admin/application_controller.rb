@@ -13,7 +13,7 @@ module Admin
 
     def authorize_admin!
       allowlist = ENV.fetch("ADMIN_EMAIL_ALLOWLIST", "").split(",").map(&:strip).reject(&:blank?)
-      return if allowlist.empty? && current_user&.admin?
+      return if allowlist.empty? # no restrictions configured
       return if allowlist.include?(current_user&.email)
       redirect_to root_path, alert: "Not authorized"
     end
