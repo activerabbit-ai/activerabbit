@@ -16,7 +16,7 @@ require "sidekiq-cron"
 #   }
 # }) if defined?(Sidekiq::Cron)
 
-if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present?
+if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::Boolean.new.cast(ENV["DISABLE_SIDEKIQ_CRON"])
   jobs = {
     "report_usage_daily" => {
       "cron" => "0 1 * * *",
@@ -24,7 +24,11 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present?
     }
   }
 
-  Sidekiq::Cron::Job.load_from_hash(jobs)
+  begin
+    Sidekiq::Cron::Job.load_from_hash(jobs)
+  rescue RedisClient::BaseError => e
+    Rails.logger.warn("[Sidekiq::Cron] Skipping job load: #{e.class}: #{e.message}")
+  end
 end
 
 # Loader job to enqueue per-account usage reporting

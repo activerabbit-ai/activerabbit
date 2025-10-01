@@ -150,22 +150,6 @@ Rails.application.routes.draw do
   # Simple test endpoint to debug deployment health check issues
   get "health_test" => "test_monitoring#health_test"
 
-  # Slug-based project routes (e.g., /remotely/errors, /remotely/performance)
-  # These must come after other specific routes to avoid conflicts
-  get ":project_slug", to: "dashboard#project_dashboard", as: "project_dashboard"
-  get ":project_slug/errors", to: "errors#index", as: "project_slug_errors"
-  get ":project_slug/errors/:id", to: "errors#show", as: "project_slug_error"
-  post ":project_slug/errors/:id/create_pr", to: "errors#create_pr", as: "project_slug_error_create_pr"
-  get ":project_slug/performance", to: "performance#index", as: "project_slug_performance"
-  get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"
-  get ":project_slug/performance/actions/:target", to: "performance#action_detail", as: "project_slug_performance_action_detail"
-  get ":project_slug/deploys", to: "deploys#index", as: "project_slug_deploys"
-  get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
-
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
-
   # Administrate Admin
   namespace :admin do
     resources :accounts
@@ -187,4 +171,20 @@ Rails.application.routes.draw do
 
     root to: "accounts#index"
   end
+
+  # Slug-based project routes (e.g., /remotely/errors, /remotely/performance)
+  # These must come after other specific routes to avoid conflicts
+  get ":project_slug", to: "dashboard#project_dashboard", as: "project_dashboard"
+  get ":project_slug/errors", to: "errors#index", as: "project_slug_errors"
+  get ":project_slug/errors/:id", to: "errors#show", as: "project_slug_error"
+  post ":project_slug/errors/:id/create_pr", to: "errors#create_pr", as: "project_slug_error_create_pr"
+  get ":project_slug/performance", to: "performance#index", as: "project_slug_performance"
+  get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"
+  get ":project_slug/performance/actions/:target", to: "performance#action_detail", as: "project_slug_performance_action_detail"
+  get ":project_slug/deploys", to: "deploys#index", as: "project_slug_deploys"
+  get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
+
+  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
+  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
+  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 end
