@@ -396,7 +396,7 @@ GEM
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.1.7)
-    stripe (13.0.0)
+    stripe (17.0.1)
     tailwindcss-rails (4.3.0)
       railties (>= 7.0.0)
       tailwindcss-ruby (~> 4.0)
@@ -485,7 +485,7 @@ DEPENDENCIES
   sidekiq-cron
   slack-notifier
   stimulus-rails
-  stripe (~> 13.0)
+  stripe (~> 17.0)
   tailwindcss-rails
   thruster
   turbo-rails
