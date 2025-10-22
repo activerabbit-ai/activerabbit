@@ -1,6 +1,6 @@
 class Api::V1::EventsController < Api::BaseController
 
-    # POST /api/v1/events/errors
+  # POST /api/v1/events/errors
   def create_error
     Rails.logger.info "=== DEBUG: create_error called ==="
     Rails.logger.info "Raw params: #{params.inspect}"
