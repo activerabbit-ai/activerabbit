@@ -2,7 +2,7 @@
 
 ## Your Server Details
 - **Server**: active-rabbit-ubuntu-4gb
-- **IP**: 5.78.134.55
+- **IP**: YOUR_SERVER_IP (configure in deploy.yml)
 - **Reverse DNS**: static.55.134.78.5.clients.your-server.de
 
 ## Pre-Deployment Checklist
@@ -81,9 +81,9 @@ bin/kamal app exec "bin/rails console"
 
 ## Access Your Application
 
-- **Without Domain**: http://5.78.134.55
+- **Without Domain**: http://YOUR_SERVER_IP
 - **With Domain**: https://yourdomain.com (if configured)
-- **Sidekiq Dashboard**: http://5.78.134.55/sidekiq
+- **Sidekiq Dashboard**: http://YOUR_SERVER_IP/sidekiq
 
 ## Useful Commands
 
@@ -112,7 +112,7 @@ bin/kamal accessory details redis
 ### Can't Connect to Server
 ```bash
 # Test SSH connection
-ssh root@5.78.134.55
+ssh root@YOUR_SERVER_IP
 ```
 
 ### Database Issues
@@ -132,7 +132,7 @@ bin/kamal accessory logs redis
 
 ## Next Steps After Deployment
 
-1. **Test the application** at http://5.78.134.55
+1. **Test the application** at http://YOUR_SERVER_IP
 2. **Configure your domain** (if you have one)
 3. **Set up monitoring** and alerts
 4. **Configure backups** for your database
@@ -140,7 +140,7 @@ bin/kamal accessory logs redis
 
 ## Security Notes
 
-- Your server is accessible at 5.78.134.55
+- Your server is accessible at YOUR_SERVER_IP
 - Kamal will automatically configure firewall rules
 - Use strong passwords for all services
 - Consider setting up SSH key authentication

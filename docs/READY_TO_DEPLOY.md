@@ -3,8 +3,8 @@
 ## Your Configuration Summary
 
 ### 🖥️ Server Details
-- **Hetzner Server**: 5.78.134.55 (active-rabbit-ubuntu-4gb)
-- **Database**: Ubicloud PostgreSQL (configured)
+- **Hetzner Server**: YOUR_SERVER_IP (configure in deploy.yml)
+- **Database**: Ubicloud PostgreSQL (configure in .kamal/secrets)
 - **Background Jobs**: Redis + Sidekiq (no Solid Queue)
 
 ### 📋 What's Configured
@@ -13,8 +13,8 @@
 ✅ **Caching**: Redis (not solid_cache_store)
 ✅ **Jobs**: Sidekiq (not solid_queue)
 ✅ **Deployment**: Kamal with Docker
-✅ **Server IP**: 5.78.134.55
-✅ **Rails Secrets**: Master key and SECRET_KEY_BASE set
+✅ **Server IP**: Configure in `config/deploy.yml`
+✅ **Rails Secrets**: Master key and SECRET_KEY_BASE (configure in .kamal/secrets)
 
 ## 🚀 Deploy Commands
 
@@ -54,15 +54,15 @@ bin/kamal app exec "bin/rails db:migrate"
 
 ## 🌐 Access Your App
 
-- **URL**: http://5.78.134.55
-- **Sidekiq Dashboard**: http://5.78.134.55/sidekiq
+- **URL**: http://YOUR_SERVER_IP
+- **Sidekiq Dashboard**: http://YOUR_SERVER_IP/sidekiq
 
 ## Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Hetzner       │    │   Ubicloud       │    │   Your App      │
-│   5.78.134.55   │    │   PostgreSQL     │    │   (Local Dev)   │
+│  YOUR_SERVER_IP │    │   PostgreSQL     │    │   (Local Dev)   │
 │                 │    │                  │    │                 │
 │ ┌─────────────┐ │    │ ┌──────────────┐ │    │ ┌─────────────┐ │
 │ │ Rails App   │ │◄──►│ │  Database    │ │    │ │   Kamal     │ │
@@ -83,7 +83,7 @@ bin/kamal app exec "bin/rails db:migrate"
 
 ## Next Steps After Deploy
 
-1. **Test the app** at http://5.78.134.55
+1. **Test the app** at http://YOUR_SERVER_IP
 2. **Check Sidekiq** is processing jobs
 3. **Set up a domain** (optional) for SSL
 4. **Configure monitoring** and alerts

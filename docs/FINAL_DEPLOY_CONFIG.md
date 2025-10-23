@@ -3,24 +3,26 @@
 ## ✅ Complete Setup Summary
 
 ### 🖥️ Infrastructure
-- **Hetzner Server**: `5.78.134.55` (active-rabbit-ubuntu-4gb)
-- **Database**: Ubicloud PostgreSQL (fully configured)
+- **Hetzner Server**: `YOUR_SERVER_IP` (configure in deploy.yml)
+- **Database**: Ubicloud PostgreSQL (configure in .kamal/secrets)
 - **Background Jobs**: Redis + Sidekiq (no Solid Queue)
 - **Deployment**: Kamal + Docker
 
 ### 🗄️ Database Configuration
-**Ubicloud PostgreSQL** - All parameters configured:
+**Ubicloud PostgreSQL** - Configure in `.kamal/secrets`:
 
 ```bash
-DATABASE_URL=postgresql://postgres:hZarJT-Sa38ECZ03OZAS@activerabbit.pg2bcqzmm0a61nmm23trcpk9ck.postgres.ubicloud.com:5432/postgres
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@your-postgres-host.ubicloud.com:5432/postgres
 
 # Individual parameters (for tools that need them):
-PGHOST=activerabbit.pg2bcqzmm0a61nmm23trcpk9ck.postgres.ubicloud.com
+PGHOST=your-postgres-host.ubicloud.com
 PGPORT=5432
 PGUSER=postgres
-PGPASSWORD=hZarJT-Sa38ECZ03OZAS
+PGPASSWORD=YOUR_PASSWORD
 PGDATABASE=postgres
 ```
+
+**⚠️ IMPORTANT**: Never commit actual credentials to version control. Store them securely in `.kamal/secrets` which is gitignored.
 
 ### 🔧 What's Ready
 
@@ -77,22 +79,22 @@ bin/kamal app exec "bin/rails runner 'puts ActiveRecord::Base.connection.execute
 
 ## 🌐 Access Your Application
 
-- **Main App**: http://5.78.134.55
-- **Sidekiq Dashboard**: http://5.78.134.55/sidekiq
+- **Main App**: http://YOUR_SERVER_IP
+- **Sidekiq Dashboard**: http://YOUR_SERVER_IP/sidekiq
 
 ## 🏗️ Architecture Overview
 
 ```
 ┌─────────────────────────────────┐    ┌──────────────────────────────┐
 │        Hetzner Cloud            │    │        Ubicloud              │
-│        5.78.134.55              │    │                              │
+│        YOUR_SERVER_IP           │    │                              │
 │                                 │    │                              │
 │  ┌─────────────────────────────┐│    │  ┌─────────────────────────┐ │
 │  │      Rails Web App          ││◄──►│  │     PostgreSQL          │ │
 │  │      (Docker Container)     ││    │  │     Database            │ │
 │  │                             ││    │  │                         │ │
-│  │  • Serves HTTP requests     ││    │  │  Host: activerabbit.    │ │
-│  │  • Handles user sessions    ││    │  │    pg2bcqzmm0a61nmm...  │ │
+│  │  • Serves HTTP requests     ││    │  │  Host: your-postgres-   │ │
+│  │  • Handles user sessions    ││    │  │    host.ubicloud.com    │ │
 │  │  • Processes web traffic    ││    │  │  Port: 5432             │ │
 │  └─────────────────────────────┘│    │  │  User: postgres         │ │
 │                                 │    │  │  DB: postgres           │ │

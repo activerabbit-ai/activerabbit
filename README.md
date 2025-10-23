@@ -391,8 +391,20 @@ bundle exec rspec spec/models/user_spec.rb
 COVERAGE=true bundle exec rspec
 ```
 
-## 📚 Additional Resources
+## 📚 Documentation
 
+### Platform Documentation
+- **[Error Coverage Guide](docs/ERROR_COVERAGE.md)** - Complete list of 20+ error types ActiveRabbit can track
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+- [Setup Summary](docs/SETUP_SUMMARY.md)
+- [How to Error Tracking](docs/HOW_TO_ERROR_TRACKING.md)
+- [Slack Integration](docs/SLACK_INTEGRATION.md)
+- [Account Slack Notifications](docs/ACCOUNT_SLACK_NOTIFICATIONS.md)
+
+### Test Application
+- [Test Rails 8 App](../test_rails8_app/README_TESTING.md) - Verify all error types are captured
+
+### External Resources
 - [Rails Guides](https://guides.rubyonrails.org/)
 - [Devise Documentation](https://github.com/heartcombo/devise)
 - [Pay Gem Documentation](https://github.com/pay-rails/pay)
