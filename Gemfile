@@ -29,7 +29,7 @@ gem "redis", ">= 4.0.1"
 gem "kaminari"
 
 # Billing & subscriptions
-gem "pay", "~> 8.0"
+gem "pay", "~> 11.2"
 gem "stripe", "~> 13.0"
 
 # Administrate from GitHub (Rails 8 compatibility)
