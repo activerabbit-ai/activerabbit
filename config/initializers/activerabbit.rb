@@ -1,8 +1,6 @@
-# ActiveRabbit self-monitoring configuration
-# This allows the ActiveRabbit app to monitor itself
-
-# Only configure in production and staging environments
-if Rails.env.production? || Rails.env.staging?
+# ActiveRabbit self-monitoring configuration (disabled by default).
+# Enable only if ACTIVERABBIT_SELF_MONITOR=1 is set.
+if ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && (Rails.env.production? || Rails.env.staging?)
   # We'll need to create a self-monitoring project and get its API token
   # For now, let's set up the basic configuration structure
 
@@ -23,6 +21,15 @@ if Rails.env.production? || Rails.env.staging?
             config.enable_performance_monitoring = true
             config.enable_n_plus_one_detection = true
             config.enable_pii_scrubbing = true
+
+            # Drop exceptions from alert jobs to avoid feedback loops
+            config.before_send_exception = proc do |ex|
+              ctx = ex[:context] || ex['context'] || {}
+              job_ctx = ctx[:sidekiq] || ctx['sidekiq'] || ctx[:job] || ctx['job'] || {}
+              job_class = job_ctx[:job_class] || job_ctx['job_class'] || job_ctx[:worker_class] || job_ctx['worker_class']
+              next nil if job_class.to_s =~ /IssueAlertJob|PerformanceAlertJob|ErrorIngestJob/
+              ex
+            end
           end
 
           Rails.logger.info "ActiveRabbit self-monitoring initialized for project #{ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID']}"
@@ -34,7 +41,7 @@ if Rails.env.production? || Rails.env.staging?
       end
     end
   end
-elsif Rails.env.development?
+elsif ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && Rails.env.development?
   # For development, we can set up self-monitoring if desired
   Rails.application.configure do
     config.after_initialize do
@@ -53,6 +60,15 @@ elsif Rails.env.development?
             config.enable_performance_monitoring = true
             config.enable_n_plus_one_detection = true
             config.enable_pii_scrubbing = true
+
+            # Drop exceptions from alert jobs to avoid feedback loops
+            config.before_send_exception = proc do |ex|
+              ctx = ex[:context] || ex['context'] || {}
+              job_ctx = ctx[:sidekiq] || ctx['sidekiq'] || ctx[:job] || ctx['job'] || {}
+              job_class = job_ctx[:job_class] || job_ctx['job_class'] || job_ctx[:worker_class] || job_ctx['worker_class']
+              next nil if job_class.to_s =~ /IssueAlertJob|PerformanceAlertJob|ErrorIngestJob/
+              ex
+            end
           end
 
           Rails.logger.info "ActiveRabbit self-monitoring initialized in development"

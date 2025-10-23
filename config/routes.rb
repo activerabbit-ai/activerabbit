@@ -119,6 +119,8 @@ Rails.application.routes.draw do
       post "events/errors", to: "events#create_error"
       post "events/performance", to: "events#create_performance"
       post "events/batch", to: "events#create_batch"
+      # Fallback for clients posting to generic events endpoint
+      post "events", to: "events#create_error"
 
       # Connection test endpoint
       post "test/connection", to: "events#test_connection"

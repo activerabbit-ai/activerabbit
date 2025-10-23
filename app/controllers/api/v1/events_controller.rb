@@ -17,8 +17,10 @@ class Api::V1::EventsController < Api::BaseController
     payload = sanitize_error_payload(params)
     Rails.logger.info "Sanitized payload: #{payload.inspect}"
 
-    # Validate required fields
-    validate_error_payload!(payload)
+    # Validate required fields; return 422 on failure
+    unless validate_error_payload!(payload)
+      return
+    end
 
     # Process in background for better performance
     # Ensure payload is JSON-serializable by converting to hash and stringifying
@@ -108,8 +110,10 @@ class Api::V1::EventsController < Api::BaseController
     processed_count = 0
 
     events.each do |event_data|
+      next if event_data.nil?
       # Extract the actual payload from the data field first
       actual_data = event_data[:data] || event_data['data'] || event_data
+      next if actual_data.nil?
 
       # Event type can be at top level or inside the data
       event_type = event_data[:event_type] || event_data['event_type'] ||
