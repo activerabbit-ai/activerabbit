@@ -93,7 +93,11 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-gray-900"><%= project.name %></h3>
+              <% dot_class = stats[:issues_count].to_i > 0 ? 'bg-green-500' : 'bg-gray-300' %>
+              <div class="flex items-center space-x-2">
+                <h3 class="text-lg font-semibold text-gray-900"><%= project.name %></h3>
+                <span class="inline-block w-2 h-2 rounded-full <%= dot_class %>"></span>
+              </div>
               <div class="flex items-center space-x-2 text-sm text-gray-500">
                 <span><%= project.environment %></span>
                 <span>•</span>
@@ -102,17 +106,21 @@
             </div>
           </div>
 
-          <!-- Health Status -->
+          <!-- Health Status + Edit button -->
           <% health_color = case stats[:health_status]
                            when 'healthy' then 'text-green-600'
                            when 'warning' then 'text-yellow-600'
                            when 'critical' then 'text-red-600'
                            else 'text-gray-400'
                            end %>
-          <div class="<%= health_color %>">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <circle cx="10" cy="10" r="8"/>
-            </svg>
+          <div class="flex items-center space-x-2">
+            <div class="<%= health_color %>">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="8"/>
+              </svg>
+            </div>
+            <%= link_to "Edit Project", project_settings_path(project),
+                class: "bg-gray-100 text-gray-700 py-1 px-2 rounded-md text-xs hover:bg-gray-200 transition-colors" %>
           </div>
         </div>
 
@@ -157,17 +165,10 @@
 
         <!-- Actions -->
         <div class="space-y-2">
-          <!-- Primary Actions Row -->
-          <div class="flex space-x-2">
-            <%= link_to "View", project_dashboard_path(project.slug),
-                class: "bg-indigo-600 text-white py-2 px-3 rounded-md text-sm hover:bg-indigo-700 transition-colors" %>
-            <%= link_to "Edit Project", project_slug_settings_path(project.slug),
-                class: "bg-gray-100 text-gray-700 py-2 px-3 rounded-md text-sm hover:bg-gray-200 transition-colors" %>
-          </div>
 
                     <!-- Quick Access Links Row -->
           <div class="flex space-x-2">
-            <%= link_to "/#{project.slug}/errors",
+            <%= link_to project_errors_path(project),
                 class: "flex-1 bg-red-50 text-red-700 text-center py-2 px-3 rounded-md text-sm hover:bg-red-100 transition-colors border border-red-200" do %>
               <div class="flex items-center justify-center">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,7 +178,7 @@
               </div>
             <% end %>
 
-            <%= link_to "/#{project.slug}/performance",
+            <%= link_to project_performance_path(project),
                 class: "flex-1 bg-blue-50 text-blue-700 text-center py-2 px-3 rounded-md text-sm hover:bg-blue-100 transition-colors border border-blue-200" do %>
               <div class="flex items-center justify-center">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

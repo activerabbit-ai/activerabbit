@@ -23,9 +23,16 @@ class DashboardController < ApplicationController
     @recent_events = Event.recent.limit(10)
     @recent_projects = account_projects.order(created_at: :desc).limit(3)
 
-    # Projects data for the projects grid (same as projects index)
-    @projects = current_account.projects.includes(:api_tokens, :issues, :events, :user)
+    # Projects data for the projects grid (avoid preloading heavy associations)
+    @projects = current_account.projects.includes(:api_tokens, :user)
                                .order(:name)
+
+    # Precompute stats per project to avoid N+1 COUNT queries
+    project_ids = @projects.map(&:id)
+    issues_counts_by_project = Issue.open.where(project_id: project_ids).group(:project_id).count
+    events_today_by_project = Event.where(project_id: project_ids)
+                                   .where('occurred_at > ?', 24.hours.ago)
+                                   .group(:project_id).count
 
     # Stats for each project
     @project_stats = {}
@@ -34,8 +41,8 @@ class DashboardController < ApplicationController
       perf_pr_urls = project.settings&.dig('perf_pr_urls') || {}
 
       @project_stats[project.id] = {
-        issues_count: project.issues.open.count,
-        events_today: project.events.where('occurred_at > ?', 24.hours.ago).count,
+        issues_count: issues_counts_by_project[project.id].to_i,
+        events_today: events_today_by_project[project.id].to_i,
         health_status: project.health_status,
         issue_pr_urls: issue_pr_urls,
         perf_pr_urls: perf_pr_urls
