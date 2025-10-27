@@ -194,21 +194,31 @@ class Api::V1::EventsController < Api::BaseController
   end
 
   def sanitize_performance_payload(params)
+    md = params[:metadata] || params['metadata'] || {}
+
+    # Derive controller_action from metadata if not explicitly provided
+    ctrl_action = params[:controller_action] || params['controller_action']
+    if ctrl_action.blank?
+      c = md[:controller] || md['controller']
+      a = md[:action] || md['action']
+      ctrl_action = "#{c}##{a}" if c && a
+    end
+
     {
-      controller_action: params[:controller_action] || params['controller_action'] || params[:name] || params['name'],
+      controller_action: ctrl_action || params[:name] || params['name'],
       job_class: params[:job_class] || params['job_class'],
-      request_path: params[:request_path] || params['request_path'],
-      request_method: params[:request_method] || params['request_method'],
+      request_path: params[:request_path] || params['request_path'] || md[:path] || md['path'],
+      request_method: params[:request_method] || params['request_method'] || md[:method] || md['method'],
       duration_ms: parse_float(params[:duration_ms] || params['duration_ms']),
-      db_duration_ms: parse_float(params[:db_duration_ms] || params['db_duration_ms']),
-      view_duration_ms: parse_float(params[:view_duration_ms] || params['view_duration_ms']),
-      allocations: parse_int(params[:allocations] || params['allocations']),
+      db_duration_ms: parse_float(params[:db_duration_ms] || params['db_duration_ms'] || md[:db_runtime] || md['db_runtime']),
+      view_duration_ms: parse_float(params[:view_duration_ms] || params['view_duration_ms'] || md[:view_runtime] || md['view_runtime']),
+      allocations: parse_int(params[:allocations] || params['allocations'] || md[:allocations] || md['allocations']),
       sql_queries_count: parse_int(params[:sql_queries_count] || params['sql_queries_count']),
       user_id: params[:user_id] || params['user_id'],
       environment: params[:environment] || params['environment'] || 'production',
       release_version: params[:release_version] || params['release_version'],
       occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at']),
-      context: params[:context] || params['context'] || {},
+      context: (params[:context] || params['context'] || {}).presence || md, # fallback to metadata for visibility
       server_name: params[:server_name] || params['server_name'],
       request_id: params[:request_id] || params['request_id']
     }
