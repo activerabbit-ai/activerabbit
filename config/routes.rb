@@ -32,7 +32,7 @@ Rails.application.routes.draw do
   # Top-level Performance routes (no /admin or /projects/:id required)
   get "performance", to: "performance#index", as: "performance"
   get "performance/:id", to: "performance#show", as: "performance_issue"
-  get "performance/actions/:target", to: "performance#action_detail", as: "performance_action_detail"
+  get "performance/actions/:target", to: "performance#action_detail", as: "performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
   post "performance/actions/:target/create_pr", to: "performance#create_pr", as: "performance_create_pr"
   get "performance/sql_fingerprints", to: "performance#sql_fingerprints", as: "performance_sql_fingerprints"
   get "performance/sql_fingerprints/:id", to: "performance#sql_fingerprint", as: "performance_sql_fingerprint"
@@ -41,7 +41,7 @@ Rails.application.routes.draw do
   # Project-scoped Performance routes at top-level (no /admin)
   get "projects/:project_id/performance", to: "performance#index", as: "project_performance"
   get "projects/:project_id/performance/:id", to: "performance#show", as: "project_performance_issue"
-  get "projects/:project_id/performance/actions/:target", to: "performance#action_detail", as: "project_performance_action_detail"
+  get "projects/:project_id/performance/actions/:target", to: "performance#action_detail", as: "project_performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
   post "projects/:project_id/performance/actions/:target/create_pr", to: "performance#create_pr", as: "project_performance_action_create_pr"
   get "projects/:project_id/performance/sql_fingerprints", to: "performance#sql_fingerprints", as: "project_performance_sql_fingerprints"
   get "projects/:project_id/performance/sql_fingerprints/:id", to: "performance#sql_fingerprint", as: "project_performance_sql_fingerprint"
@@ -182,7 +182,7 @@ Rails.application.routes.draw do
   post ":project_slug/errors/:id/create_pr", to: "errors#create_pr", as: "project_slug_error_create_pr"
   get ":project_slug/performance", to: "performance#index", as: "project_slug_performance"
   get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"
-  get ":project_slug/performance/actions/:target", to: "performance#action_detail", as: "project_slug_performance_action_detail"
+  get ":project_slug/performance/actions/:target", to: "performance#action_detail", as: "project_slug_performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
   get ":project_slug/deploys", to: "deploys#index", as: "project_slug_deploys"
   get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
 

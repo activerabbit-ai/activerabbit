@@ -576,13 +576,35 @@ class PerformanceController < ApplicationController
       return
     end
 
-    @target = ordered_targets[idx]
-    @performance_id = params[:id]
+    target = ordered_targets[idx]
 
-    # Populate details using action_detail logic, then render the same template
-    params[:target] = @target
-    action_detail
-    render :action_detail
+    # Redirect to canonical slug-based URL for action details, preserving context params
+    redirect_path = if @current_project
+                      project_slug_performance_action_detail_path(
+                        @current_project.slug,
+                        target: target,
+                        tab: params[:tab],
+                        range: params[:range],
+                        event_id: params[:event_id]
+                      )
+                    elsif @project
+                      project_performance_action_detail_path(
+                        @project,
+                        target: target,
+                        tab: params[:tab],
+                        range: params[:range],
+                        event_id: params[:event_id]
+                      )
+                    else
+                      performance_action_detail_path(
+                        target: target,
+                        tab: params[:tab],
+                        range: params[:range],
+                        event_id: params[:event_id]
+                      )
+                    end
+
+    redirect_to redirect_path and return
   end
 
   def sql_fingerprints
