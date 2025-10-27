@@ -35,6 +35,8 @@
 
 # Ignore Kamal secrets
 /.kamal/secrets
+/.kamal/secrets.example
+/.kamal/*
 
 /app/assets/builds/*
 !/app/assets/builds/.keep

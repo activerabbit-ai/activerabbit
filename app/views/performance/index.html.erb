@@ -123,6 +123,9 @@
               Status
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              First Seen
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Last Seen
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -197,10 +200,18 @@
               </td>
               <td class="px-6 py-4">
                 <div class="text-sm text-gray-900">
+                  <%= time_ago_in_words(perf_issue[:first_seen]) %> ago
+                </div>
+                <div class="text-xs text-gray-500">
+                  <%= perf_issue[:first_seen].strftime("%b %d, %Y") %>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">
                   <%= time_ago_in_words(perf_issue[:last_seen]) %> ago
                 </div>
                 <div class="text-xs text-gray-500">
-                  First seen: <%= time_ago_in_words(perf_issue[:first_seen]) %> ago
+                  <%= perf_issue[:last_seen].strftime("%b %d, %Y") %>
                 </div>
               </td>
               <td class="px-6 py-4">
