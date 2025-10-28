@@ -98,10 +98,9 @@
                 <h3 class="text-lg font-semibold text-gray-900"><%= project.name %></h3>
                 <span class="inline-block w-2 h-2 rounded-full <%= dot_class %>"></span>
               </div>
-              <div class="flex items-center space-x-2 text-sm text-gray-500">
-                <span><%= project.environment %></span>
-                <span>•</span>
-                <span>by <%= project.user.email %></span>
+              <div class="text-sm text-gray-500">
+                <div><%= project.environment %></div>
+                <div>by <%= project.user.email %></div>
               </div>
             </div>
           </div>
