@@ -97,7 +97,11 @@ Rails.application.routes.draw do
   get "projects/:project_id/logs", to: "logs#index", as: "project_logs"
   get "projects/:project_id/deploys", to: "deploys#index", as: "project_deploys"
 
-  # Sidekiq Web UI (protect this in production)
+  # Sidekiq Web UI with Basic Auth (hardcoded for now)
+  Sidekiq::Web.use Rack::Auth::Basic do |u, p|
+    ActiveSupport::SecurityUtils.secure_compare(u.to_s, "active") &
+    ActiveSupport::SecurityUtils.secure_compare(p.to_s, "rabbit")
+  end
   mount Sidekiq::Web => "/sidekiq"
 
   # Pay gem routes for webhooks
