@@ -54,7 +54,6 @@ class AccountDashboard < Administrate::BaseDashboard
     ai_overage_subscription_item_id
     api_tokens
     billing_interval
-    charges
     current_plan
     event_quota
     event_usage_period_end
@@ -62,11 +61,8 @@ class AccountDashboard < Administrate::BaseDashboard
     events_used_in_period
     name
     overage_subscription_item_id
-    pay_customers
-    payment_processor
     projects
     settings
-    subscriptions
     trial_ends_at
     users
     created_at
@@ -82,7 +78,6 @@ class AccountDashboard < Administrate::BaseDashboard
     ai_overage_subscription_item_id
     api_tokens
     billing_interval
-    charges
     current_plan
     event_quota
     event_usage_period_end
@@ -90,11 +85,8 @@ class AccountDashboard < Administrate::BaseDashboard
     events_used_in_period
     name
     overage_subscription_item_id
-    pay_customers
-    payment_processor
     projects
     settings
-    subscriptions
     trial_ends_at
     users
   ].freeze

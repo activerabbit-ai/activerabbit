@@ -41,9 +41,9 @@ class ProjectDashboard < Administrate::BaseDashboard
   # Feel free to add, remove, or rearrange items.
   COLLECTION_ATTRIBUTES = %i[
     id
+    name
+    created_at
     account
-    active
-    alert_notifications
   ].freeze
 
   # SHOW_PAGE_ATTRIBUTES

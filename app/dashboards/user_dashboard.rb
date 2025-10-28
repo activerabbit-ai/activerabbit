@@ -36,9 +36,9 @@ class UserDashboard < Administrate::BaseDashboard
   # Feel free to add, remove, or rearrange items.
   COLLECTION_ATTRIBUTES = %i[
     id
+    email
+    created_at
     account
-    charges
-    current_sign_in_at
   ].freeze
 
   # SHOW_PAGE_ATTRIBUTES
