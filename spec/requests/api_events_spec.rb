@@ -45,6 +45,26 @@ RSpec.describe 'API::V1::Events', type: :request do
       post '/api/v1/events/performance', params: body, headers: headers
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    it 'accepts controller/action details from metadata' do
+      body = {
+        name: 'controller.action',
+        duration_ms: 87.5,
+        metadata: {
+          controller: 'HomeController',
+          action: 'index',
+          method: 'GET',
+          path: '/home',
+          db_runtime: 12.3,
+          view_runtime: 4.2
+        }
+      }.to_json
+
+      post '/api/v1/events/performance', params: body, headers: headers
+      expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+      expect(json['status']).to eq('created')
+    end
   end
 
   describe 'POST /api/v1/events/batch' do

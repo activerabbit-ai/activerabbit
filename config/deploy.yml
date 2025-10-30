@@ -40,6 +40,9 @@ env:
     - SECRET_KEY_BASE
     - STRIPE_SECRET_KEY
     - STRIPE_SIGNING_SECRET
+    - STRIPE_PUBLIC_KEY
+    - STRIPE_PRICE_DEV_MONTHLY
+    - STRIPE_PRICE_TEAM_MONTHLY
     - SMTP_PASSWORD
     - ACTIVERABBIT_DATABASE_PASSWORD
     - PGHOST
@@ -61,8 +64,7 @@ env:
     # Sidekiq configuration
     SIDEKIQ_CONCURRENCY: 10
 
-    # Public keys (non-sensitive)
-    STRIPE_PUBLIC_KEY: pk_live_your_stripe_public_key
+    # Email configuration
     MAILER_FROM_EMAIL: noreply@your-domain.com
     ALERT_FROM_EMAIL: alerts@your-domain.com
     SMTP_HOST: smtp.your-provider.com

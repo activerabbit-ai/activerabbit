@@ -16,7 +16,7 @@ require "sidekiq-cron"
 #   }
 # }) if defined?(Sidekiq::Cron)
 
-if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::Boolean.new.cast(ENV["DISABLE_SIDEKIQ_CRON"])
+if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::Boolean.new.cast(ENV["DISABLE_SIDEKIQ_CRON"]) && !Rails.env.test?
   jobs = {
     "report_usage_daily" => {
       "cron" => "0 1 * * *",
