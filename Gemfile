@@ -26,7 +26,7 @@ gem 'sidekiq-cron'
 gem 'redis', '>= 4.0.1'
 
 # Pagination
-gem 'kaminari'
+gem "pagy", "~> 9.0"
 
 # Billing & subscriptions
 gem 'pay', '~> 8.0'

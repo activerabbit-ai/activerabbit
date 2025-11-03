@@ -2,6 +2,9 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   # allow_browser versions: :modern  # Temporarily disabled for deployment testing
 
+  # Include Pagy backend for pagination
+  include Pagy::Backend
+
   # Devise authentication - skip for Devise controllers (sign up, sign in, etc.)
   before_action :authenticate_user!, unless: :devise_controller?
 

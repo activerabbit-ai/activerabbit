@@ -1,4 +1,7 @@
 module ApplicationHelper
+  # Include Pagy frontend for pagination
+  include Pagy::Frontend
+
   # Toggle this logic to decide when to show the sidebar
   def show_sidebar?
     # Show sidebar on admin/dashboard pages

@@ -143,6 +143,9 @@ class PerformanceController < ApplicationController
         @list_rows.sort_by! { |r| -r[:total_requests].to_i }
       end
 
+      # Paginate list_rows (array pagination)
+      @pagy, @list_rows = pagy_array(@list_rows, limit: 50)
+
       # Optional Graph (counts over time) for Performance Events
       if params[:tab] == 'graph'
         range_key = (params[:range] || '7D').to_s.upcase
@@ -609,19 +612,19 @@ class PerformanceController < ApplicationController
 
   def sql_fingerprints
     project_scope = @current_project || @project
-    @sql_fingerprints = project_scope.sql_fingerprints.includes(:project)
+    scope = project_scope.sql_fingerprints.includes(:project)
 
     # Filtering
     case params[:filter]
-    when 'slow'
-      @sql_fingerprints = @sql_fingerprints.slow
-    when 'frequent'
-      @sql_fingerprints = @sql_fingerprints.frequent
-    when 'n_plus_one'
-      @sql_fingerprints = @sql_fingerprints.n_plus_one_candidates
+    when "slow"
+      scope = scope.slow
+    when "frequent"
+      scope = scope.frequent
+    when "n_plus_one"
+      scope = scope.n_plus_one_candidates
     end
 
-    @sql_fingerprints = @sql_fingerprints.page(params[:page]).per(25)
+    @pagy, @sql_fingerprints = pagy(scope, limit: 25)
   end
 
   def sql_fingerprint
