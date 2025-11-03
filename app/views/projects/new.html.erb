@@ -149,17 +149,28 @@
             ] %>
 
                         <% tech_stacks.each do |stack| %>
-                            <label class="tech-stack-option relative flex cursor-pointer rounded-xl bg-white p-6 shadow-md border border-gray-100 focus:outline-none hover:shadow-lg hover:scale-105 transition-all duration-200">
-                <%= form.radio_button :tech_stack, stack[:value],
-                    class: "sr-only",
-                    data: { action: "change->tech-stack#select" } %>
-                <div class="flex flex-col items-center text-center w-full relative z-10">
-                  <span class="text-3xl mb-3 filter drop-shadow-sm"><%= stack[:icon] %></span>
-                  <span class="text-sm font-semibold text-gray-700 leading-tight"><%= stack[:name] %></span>
+              <% is_rails = stack[:value] == 'rails' %>
+              <% if is_rails %>
+                <label class="tech-stack-option relative flex cursor-pointer rounded-xl bg-white p-6 shadow-md border border-gray-100 focus:outline-none hover:shadow-lg hover:scale-105 transition-all duration-200">
+                  <%= form.radio_button :tech_stack, stack[:value],
+                      class: "sr-only",
+                      data: { action: "change->tech-stack#select" } %>
+                  <div class="flex flex-col items-center text-center w-full relative z-10">
+                    <span class="text-3xl mb-3 filter drop-shadow-sm"><%= stack[:icon] %></span>
+                    <span class="text-sm font-semibold text-gray-700 leading-tight"><%= stack[:name] %></span>
+                  </div>
+                  <div class="tech-stack-indicator absolute -inset-px rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 pointer-events-none transition-opacity duration-200"></div>
+                  <div class="tech-stack-overlay absolute inset-0 rounded-xl pointer-events-none"></div>
+                </label>
+              <% else %>
+                <div class="tech-stack-option relative flex rounded-xl bg-gray-100 p-6 shadow-md border border-gray-200 opacity-50 cursor-not-allowed">
+                  <div class="flex flex-col items-center text-center w-full relative z-10">
+                    <span class="text-3xl mb-3 filter grayscale"><%= stack[:icon] %></span>
+                    <span class="text-sm font-semibold text-gray-400 leading-tight"><%= stack[:name] %></span>
+                    <span class="text-xs text-gray-400 mt-1">Coming Soon</span>
+                  </div>
                 </div>
-                <div class="tech-stack-indicator absolute -inset-px rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 pointer-events-none transition-opacity duration-200"></div>
-                <div class="tech-stack-overlay absolute inset-0 rounded-xl pointer-events-none"></div>
-              </label>
+              <% end %>
             <% end %>
           </div>
           <p class="mt-2 text-xs text-gray-500">Select the primary technology stack for this project</p>
