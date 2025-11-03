@@ -1,15 +1,14 @@
 class Api::V1::EventsController < Api::BaseController
-
   # POST /api/v1/events/errors
   def create_error
-    Rails.logger.info "=== DEBUG: create_error called ==="
+    Rails.logger.info '=== DEBUG: create_error called ==='
     Rails.logger.info "Raw params: #{params.inspect}"
     Rails.logger.info "Current project: #{@current_project.inspect}"
     Rails.logger.info "Current API token: #{@current_api_token.inspect}"
 
     # Check if project exists
     unless @current_project
-      Rails.logger.error "ERROR: @current_project is nil!"
+      Rails.logger.error 'ERROR: @current_project is nil!'
       render json: { error: 'project_not_found', message: 'Project not found' }, status: :not_found
       return
     end
@@ -44,14 +43,13 @@ class Api::V1::EventsController < Api::BaseController
 
   # POST /api/v1/events/performance
   def create_performance
-
-    Rails.logger.info "=== DEBUG: create_performance called ==="
+    Rails.logger.info '=== DEBUG: create_performance called ==='
     Rails.logger.info "Raw params: #{params.inspect}"
     Rails.logger.info "Current project: #{@current_project.inspect}"
 
     # Check if project exists
     unless @current_project
-      Rails.logger.error "ERROR: @current_project is nil!"
+      Rails.logger.error 'ERROR: @current_project is nil!'
       render json: { error: 'project_not_found', message: 'Project not found' }, status: :not_found
       return
     end
@@ -84,7 +82,7 @@ class Api::V1::EventsController < Api::BaseController
 
   # POST /api/v1/events/batch
   def create_batch
-    Rails.logger.info "=== DEBUG: create_batch called ==="
+    Rails.logger.info '=== DEBUG: create_batch called ==='
     Rails.logger.info "Raw params: #{params.inspect}"
 
     events = params[:events] || []
@@ -129,13 +127,13 @@ class Api::V1::EventsController < Api::BaseController
         Rails.logger.info "Error payload after sanitization: #{payload.inspect}"
 
         if valid_error_payload?(payload)
-          Rails.logger.info "Payload is valid, queuing job"
+          Rails.logger.info 'Payload is valid, queuing job'
           serializable_payload = JSON.parse(payload.to_h.to_json)
           Rails.logger.info "Calling ErrorIngestJob.perform_async(#{@current_project.id}, payload, #{batch_id})"
           ErrorIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
           processed_count += 1
         else
-          Rails.logger.info "Payload validation failed, skipping"
+          Rails.logger.info 'Payload validation failed, skipping'
         end
       when 'performance'
         payload = sanitize_performance_payload(actual_data)
@@ -301,7 +299,7 @@ class Api::V1::EventsController < Api::BaseController
     elsif controller
       controller
     else
-      "unknown"
+      'unknown'
     end
   end
 

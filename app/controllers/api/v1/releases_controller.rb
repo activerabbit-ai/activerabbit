@@ -1,5 +1,4 @@
 class Api::V1::ReleasesController < Api::BaseController
-
   # POST /api/v1/releases
   def create
     payload = sanitize_release_payload(params)

@@ -17,7 +17,7 @@ class UsageReporter
       subscription_item: sub_item,
       quantity: units,
       timestamp: Time.current.to_i,
-      action: "set"
+      action: 'set'
     )
   end
 end

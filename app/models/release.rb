@@ -108,7 +108,7 @@ class Release < ApplicationRecord
     high_severity = regression_data.count { |r| r['severity'] == 'high' }
 
     "#{total_regressions} performance regression#{'s' if total_regressions != 1} detected" +
-    (high_severity > 0 ? " (#{high_severity} high severity)" : "")
+    (high_severity > 0 ? " (#{high_severity} high severity)" : '')
   end
 
   private

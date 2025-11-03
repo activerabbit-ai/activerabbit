@@ -11,7 +11,6 @@ class IssueAlertJob
     end
 
     ActsAsTenant.with_tenant(issue.project.account) do
-
       # Check if this is a new issue
       if issue.count == 1
         # New issue alert

@@ -23,9 +23,9 @@ class ApplicationController < ActionController::Base
   # Use auth layout for Devise controllers
   def layout_by_resource
     if devise_controller?
-      "auth"
+      'auth'
     else
-      "application"
+      'application'
     end
   end
 
@@ -72,7 +72,7 @@ class ApplicationController < ActionController::Base
 
       # If project not found or doesn't belong to current account, redirect to dashboard
       unless @current_project
-        redirect_to dashboard_path, alert: "Project not found or access denied."
+        redirect_to dashboard_path, alert: 'Project not found or access denied.'
         return
       end
 

@@ -1,4 +1,4 @@
-require "administrate/base_dashboard"
+require 'administrate/base_dashboard'
 
 class SqlFingerprintDashboard < Administrate::BaseDashboard
   # ATTRIBUTE_TYPES
@@ -22,7 +22,7 @@ class SqlFingerprintDashboard < Administrate::BaseDashboard
     total_count: Field::Number,
     total_duration_ms: Field::Number.with_options(decimals: 2),
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

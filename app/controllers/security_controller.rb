@@ -6,7 +6,7 @@ class SecurityController < ApplicationController
 
   def index
     # Account-scoped security events (mock data for now)
-    account_name = current_account&.name || "Unknown Account"
+    account_name = current_account&.name || 'Unknown Account'
 
     @security_events = [
       { type: 'api_access', account: account_name, ip: '192.168.1.100', count: 25, blocked: false, time: 1.hour.ago },

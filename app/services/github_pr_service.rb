@@ -63,7 +63,7 @@ class GithubPrService
     return { success: false, error: 'Base branch not found' } unless head_sha
 
     branch = "ar/fix-issue-#{issue.id}-#{Time.now.to_i}"
-    Rails.logger.info "[GitHub API] Creating branch #{branch} from sha=#{head_sha[0,7]}"
+    Rails.logger.info "[GitHub API] Creating branch #{branch} from sha=#{head_sha[0, 7]}"
     ref_resp = github_post("/repos/#{owner}/#{repo}/git/refs", token, {
       ref: "refs/heads/#{branch}",
       sha: head_sha
@@ -99,13 +99,13 @@ class GithubPrService
 
   def build_pr_body(issue)
     lines = []
-    lines << "### Root Cause Analysis"
-    lines << (issue.ai_summary.presence || "Automated RCA will be added.")
+    lines << '### Root Cause Analysis'
+    lines << (issue.ai_summary.presence || 'Automated RCA will be added.')
     lines << "\n### Reproduction"
     sample = issue.sample_message.present? ? issue.sample_message : 'See stack trace in app.'
     lines << sample
     lines << "\n### Tests"
-    lines << "- [ ] Add/verify tests reproducing the error and the fix"
+    lines << '- [ ] Add/verify tests reproducing the error and the fix'
     lines.join("\n\n")
   end
 
@@ -229,7 +229,7 @@ class GithubPrService
       return { error: ref_update[:error] }
     end
 
-    Rails.logger.info "[GitHub API] Added placeholder commit #{new_commit_sha[0,7]} to #{branch}"
+    Rails.logger.info "[GitHub API] Added placeholder commit #{new_commit_sha[0, 7]} to #{branch}"
     true
   end
 
@@ -252,7 +252,7 @@ class GithubPrService
       if query.match?(/SELECT.*FROM.*WHERE.*id = \?/i)
         suggestions << {
           type: 'batch_loading',
-          suggestion: "Consider using `preload` or `includes` to batch load associations",
+          suggestion: 'Consider using `preload` or `includes` to batch load associations',
           code_example: "# Use eager loading to reduce database queries:\n# Model.includes(:association).where(...)"
         }
       end
@@ -262,7 +262,7 @@ class GithubPrService
     if sql_fingerprint.avg_duration_ms > 100
       suggestions << {
         type: 'indexing',
-        suggestion: "Consider adding database indexes to improve query performance",
+        suggestion: 'Consider adding database indexes to improve query performance',
         code_example: "# Add migration:\n# add_index :table_name, :column_name"
       }
     end

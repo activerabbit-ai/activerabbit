@@ -15,5 +15,3 @@ begin
 rescue LoadError, StandardError
   # Bullet not available or incompatible; skip configuration
 end
-
-

@@ -1,0 +1,617 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "9a133ce9cba326c6087c02efbf501186ee11f7d85ac2b99ba0b12d2191307dc2",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/action_detail.html.erb",
+      "line": 43,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "action_detail",
+          "line": 521,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/action_detail",
+            "file": "app/views/performance/action_detail.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/action_detail"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "9a133ce9cba326c6087c02efbf501186ee11f7d85ac2b99ba0b12d2191307dc2",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/action_detail.html.erb",
+      "line": 46,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "action_detail",
+          "line": 521,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/action_detail",
+            "file": "app/views/performance/action_detail.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/action_detail"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "9a133ce9cba326c6087c02efbf501186ee11f7d85ac2b99ba0b12d2191307dc2",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/action_detail.html.erb",
+      "line": 49,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "action_detail",
+          "line": 521,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/action_detail",
+            "file": "app/views/performance/action_detail.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/action_detail"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "9a133ce9cba326c6087c02efbf501186ee11f7d85ac2b99ba0b12d2191307dc2",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/action_detail.html.erb",
+      "line": 54,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "action_detail",
+          "line": 521,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/action_detail",
+            "file": "app/views/performance/action_detail.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/action_detail"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "9a133ce9cba326c6087c02efbf501186ee11f7d85ac2b99ba0b12d2191307dc2",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/action_detail.html.erb",
+      "line": 98,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "action_detail",
+          "line": 521,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/action_detail",
+            "file": "app/views/performance/action_detail.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/action_detail"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "9a133ce9cba326c6087c02efbf501186ee11f7d85ac2b99ba0b12d2191307dc2",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/action_detail.html.erb",
+      "line": 284,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "action_detail",
+          "line": 521,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/action_detail",
+            "file": "app/views/performance/action_detail.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/action_detail"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "bead125076577d189ffd9b8002b6de8c8bb979a78c6d25cbae0ea804a6a05e93",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/index.html.erb",
+      "line": 70,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "index",
+          "line": 14,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/index",
+            "file": "app/views/performance/index.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/index"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "bead125076577d189ffd9b8002b6de8c8bb979a78c6d25cbae0ea804a6a05e93",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/index.html.erb",
+      "line": 71,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "index",
+          "line": 14,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/index",
+            "file": "app/views/performance/index.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/index"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "bead125076577d189ffd9b8002b6de8c8bb979a78c6d25cbae0ea804a6a05e93",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/performance/index.html.erb",
+      "line": 87,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "PerformanceController",
+          "method": "index",
+          "line": 14,
+          "file": "app/controllers/performance_controller.rb",
+          "rendered": {
+            "name": "performance/index",
+            "file": "app/views/performance/index.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "performance/index"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "e6cf22c2b335ef1c28cf52262cc2a3e2008f087b68c86627852ba0d41d925179",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/show.html.erb",
+      "line": 146,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "show",
+          "line": 148,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/show",
+            "file": "app/views/errors/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/show"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "e6cf22c2b335ef1c28cf52262cc2a3e2008f087b68c86627852ba0d41d925179",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/show.html.erb",
+      "line": 149,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "show",
+          "line": 148,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/show",
+            "file": "app/views/errors/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/show"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "e6cf22c2b335ef1c28cf52262cc2a3e2008f087b68c86627852ba0d41d925179",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/show.html.erb",
+      "line": 152,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "show",
+          "line": 148,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/show",
+            "file": "app/views/errors/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/show"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "e6cf22c2b335ef1c28cf52262cc2a3e2008f087b68c86627852ba0d41d925179",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/show.html.erb",
+      "line": 157,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "show",
+          "line": 148,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/show",
+            "file": "app/views/errors/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/show"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "e6cf22c2b335ef1c28cf52262cc2a3e2008f087b68c86627852ba0d41d925179",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/show.html.erb",
+      "line": 229,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "show",
+          "line": 148,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/show",
+            "file": "app/views/errors/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/show"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "e6cf22c2b335ef1c28cf52262cc2a3e2008f087b68c86627852ba0d41d925179",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/show.html.erb",
+      "line": 388,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "show",
+          "line": 148,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/show",
+            "file": "app/views/errors/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/show"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "fdf4752f43f4710a27f67281678232c3e42dcb2cf05864f1a12485f0e178b5c1",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/index.html.erb",
+      "line": 62,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "index",
+          "line": 31,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/index",
+            "file": "app/views/errors/index.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/index"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "fdf4752f43f4710a27f67281678232c3e42dcb2cf05864f1a12485f0e178b5c1",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/index.html.erb",
+      "line": 63,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "index",
+          "line": 31,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/index",
+            "file": "app/views/errors/index.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/index"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "fdf4752f43f4710a27f67281678232c3e42dcb2cf05864f1a12485f0e178b5c1",
+      "check_name": "MassAssignment",
+      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
+      "file": "app/views/errors/index.html.erb",
+      "line": 79,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.permit!",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "ErrorsController",
+          "method": "index",
+          "line": 31,
+          "file": "app/controllers/errors_controller.rb",
+          "rendered": {
+            "name": "errors/index",
+            "file": "app/views/errors/index.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "errors/index"
+      },
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    }
+  ],
+  "brakeman_version": "7.1.0"
+}

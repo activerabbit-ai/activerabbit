@@ -1,4 +1,4 @@
-require "active_support/core_ext/integer/time"
+require 'active_support/core_ext/integer/time'
 
 Rails.application.configure do
   # Bullet guard for AR 8
@@ -35,10 +35,10 @@ Rails.application.configure do
 
   # Enable/disable Action Controller caching. By default Action Controller caching is disabled.
   # Run rails dev:cache to toggle Action Controller caching.
-  if Rails.root.join("tmp/caching-dev.txt").exist?
+  if Rails.root.join('tmp/caching-dev.txt').exist?
     config.action_controller.perform_caching = true
     config.action_controller.enable_fragment_cache_logging = true
-    config.public_file_server.headers = { "cache-control" => "public, max-age=#{2.days.to_i}" }
+    config.public_file_server.headers = { 'cache-control' => "public, max-age=#{2.days.to_i}" }
   else
     config.action_controller.perform_caching = false
   end
@@ -56,7 +56,7 @@ Rails.application.configure do
   config.action_mailer.perform_caching = false
 
   # Set localhost to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
+  config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
@@ -89,10 +89,10 @@ Rails.application.configure do
   # config.generators.apply_rubocop_autocorrect_after_generate!
   config.action_dispatch.show_exceptions = true
   # Allow Docker container communication
-  config.hosts << "web"
-  config.hosts << "web:3000"
-  config.hosts << "localhost"
-  config.hosts << "127.0.0.1"
-  config.hosts << "host.docker.internal"
-  config.hosts << "host.docker.internal:3000"
+  config.hosts << 'web'
+  config.hosts << 'web:3000'
+  config.hosts << 'localhost'
+  config.hosts << '127.0.0.1'
+  config.hosts << 'host.docker.internal'
+  config.hosts << 'host.docker.internal:3000'
 end

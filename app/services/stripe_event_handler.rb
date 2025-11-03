@@ -1,20 +1,20 @@
 class StripeEventHandler
   def initialize(event:)
     @event = event
-    @type = event["type"]
-    @data = event["data"]["object"]
+    @type = event['type']
+    @data = event['data']['object']
   end
 
   def call
     case @type
-    when "checkout.session.completed" then handle_checkout_completed
-    when "customer.subscription.created", "customer.subscription.updated" then sync_subscription
-    when "customer.subscription.deleted" then handle_subscription_deleted
-    when "invoice.upcoming" then handle_invoice_upcoming
-    when "invoice.finalized" then :noop
-    when "invoice.payment_succeeded" then handle_payment_succeeded
-    when "invoice.payment_failed" then handle_payment_failed
-    when "customer.subscription.trial_will_end" then handle_trial_will_end
+    when 'checkout.session.completed' then handle_checkout_completed
+    when 'customer.subscription.created', 'customer.subscription.updated' then sync_subscription
+    when 'customer.subscription.deleted' then handle_subscription_deleted
+    when 'invoice.upcoming' then handle_invoice_upcoming
+    when 'invoice.finalized' then :noop
+    when 'invoice.payment_succeeded' then handle_payment_succeeded
+    when 'invoice.payment_failed' then handle_payment_failed
+    when 'customer.subscription.trial_will_end' then handle_trial_will_end
     else
       :noop
     end
@@ -26,9 +26,9 @@ class StripeEventHandler
     customer_id = if @data.respond_to?(:customer)
       @data.customer
     else
-      @data["customer"]
+      @data['customer']
     end
-    pay_customer = Pay::Customer.find_by(processor: "stripe", processor_id: customer_id)
+    pay_customer = Pay::Customer.find_by(processor: 'stripe', processor_id: customer_id)
     owner = pay_customer&.owner
     case owner
     when User
@@ -56,8 +56,8 @@ class StripeEventHandler
     items = (sub.respond_to?(:items) && sub.items.respond_to?(:data)) ? sub.items.data : []
     base_item = items.find { |i| base_plan_price_ids.include?(i.price&.id) }
     ai_item   = items.find { |i| ai_price_ids.include?(i.price&.id) }
-    overage_item = items.find { |i| i.price&.id == ENV["STRIPE_PRICE_OVERAGE_METERED"] }
-    ai_overage_item = items.find { |i| i.price&.id == ENV["STRIPE_PRICE_AI_OVERAGE_METERED"] }
+    overage_item = items.find { |i| i.price&.id == ENV['STRIPE_PRICE_OVERAGE_METERED'] }
+    ai_overage_item = items.find { |i| i.price&.id == ENV['STRIPE_PRICE_AI_OVERAGE_METERED'] }
 
     plan, interval = plan_interval_from_price(base_item&.price&.id)
 
@@ -74,9 +74,9 @@ class StripeEventHandler
     )
 
     # Ensure Pay subscription record exists/updated so UI can detect active status
-    if (pay_customer = Pay::Customer.find_by(processor: "stripe", processor_id: sub.customer))
+    if (pay_customer = Pay::Customer.find_by(processor: 'stripe', processor_id: sub.customer))
       pay_sub = Pay::Subscription.find_or_initialize_by(customer_id: pay_customer.id, processor_id: sub.id)
-      pay_sub.name = pay_sub.name.presence || "default"
+      pay_sub.name = pay_sub.name.presence || 'default'
       pay_sub.processor_plan = base_item&.price&.id || pay_sub.processor_plan
       quantity = items.first&.quantity || 1
       pay_sub.quantity = quantity
@@ -94,9 +94,9 @@ class StripeEventHandler
       account.update!(ai_mode_enabled: false)
     end
     # Mark Pay subscription as canceled
-    if (sub_id = @data["id"]).present?
+    if (sub_id = @data['id']).present?
       if (pay_sub = Pay::Subscription.find_by(processor_id: sub_id))
-        pay_sub.update!(status: "canceled", ends_at: Time.current)
+        pay_sub.update!(status: 'canceled', ends_at: Time.current)
       end
     end
   end
@@ -104,15 +104,15 @@ class StripeEventHandler
   def handle_invoice_upcoming
     account = account_from_customer
     return unless account
-    OverageCalculator.new(account:).attach_overage_invoice_item!(stripe_invoice: @data, customer_id: @data["customer"])
+    OverageCalculator.new(account:).attach_overage_invoice_item!(stripe_invoice: @data, customer_id: @data['customer'])
   end
 
   def handle_payment_succeeded
     account = account_from_customer
     return unless account
     settings = account.settings || {}
-    if settings["past_due"]
-      settings.delete("past_due")
+    if settings['past_due']
+      settings.delete('past_due')
       account.update(settings: settings)
     end
 
@@ -120,7 +120,7 @@ class StripeEventHandler
     subscription_id = if @data.respond_to?(:subscription)
       @data.subscription
     else
-      @data["subscription"] || @data.dig("parent", "subscription_details", "subscription")
+      @data['subscription'] || @data.dig('parent', 'subscription_details', 'subscription')
     end
     return unless subscription_id
 
@@ -140,9 +140,9 @@ class StripeEventHandler
     return unless account
     # Mark past_due flag for feature restriction
     settings = account.settings || {}
-    settings["past_due"] = true
+    settings['past_due'] = true
     account.update(settings: settings)
-    DunningFollowupJob.perform_later(account_id: account.id, invoice_id: @data["id"])
+    DunningFollowupJob.perform_later(account_id: account.id, invoice_id: @data['id'])
   end
 
   def handle_trial_will_end
@@ -153,33 +153,33 @@ class StripeEventHandler
 
   def base_plan_price_ids
     [
-      ENV["STRIPE_PRICE_DEV_MONTHLY"], ENV["STRIPE_PRICE_DEV_ANNUAL"],
-      ENV["STRIPE_PRICE_TEAM_MONTHLY"], ENV["STRIPE_PRICE_TEAM_ANNUAL"],
-      ENV["STRIPE_PRICE_ENT_MONTHLY"], ENV["STRIPE_PRICE_ENT_ANNUAL"]
+      ENV['STRIPE_PRICE_DEV_MONTHLY'], ENV['STRIPE_PRICE_DEV_ANNUAL'],
+      ENV['STRIPE_PRICE_TEAM_MONTHLY'], ENV['STRIPE_PRICE_TEAM_ANNUAL'],
+      ENV['STRIPE_PRICE_ENT_MONTHLY'], ENV['STRIPE_PRICE_ENT_ANNUAL']
     ].compact
   end
 
   def ai_price_ids
-    [ ENV["STRIPE_PRICE_AI_MONTHLY"], ENV["STRIPE_PRICE_AI_ANNUAL"] ].compact
+    [ENV['STRIPE_PRICE_AI_MONTHLY'], ENV['STRIPE_PRICE_AI_ANNUAL']].compact
   end
 
   def plan_interval_from_price(price_id)
     case price_id
-    when ENV["STRIPE_PRICE_DEV_MONTHLY"] then [ "developer", "month" ]
-    when ENV["STRIPE_PRICE_DEV_ANNUAL"] then [ "developer", "year" ]
-    when ENV["STRIPE_PRICE_TEAM_MONTHLY"] then [ "team", "month" ]
-    when ENV["STRIPE_PRICE_TEAM_ANNUAL"] then [ "team", "year" ]
-    when ENV["STRIPE_PRICE_ENT_MONTHLY"] then [ "enterprise", "month" ]
-    when ENV["STRIPE_PRICE_ENT_ANNUAL"] then [ "enterprise", "year" ]
-    else [ nil, nil ]
+    when ENV['STRIPE_PRICE_DEV_MONTHLY'] then ['developer', 'month']
+    when ENV['STRIPE_PRICE_DEV_ANNUAL'] then ['developer', 'year']
+    when ENV['STRIPE_PRICE_TEAM_MONTHLY'] then ['team', 'month']
+    when ENV['STRIPE_PRICE_TEAM_ANNUAL'] then ['team', 'year']
+    when ENV['STRIPE_PRICE_ENT_MONTHLY'] then ['enterprise', 'month']
+    when ENV['STRIPE_PRICE_ENT_ANNUAL'] then ['enterprise', 'year']
+    else [nil, nil]
     end
   end
 
   def quota_for(plan)
     case plan
-    when "developer" then 50_000
-    when "team" then 100_000
-    when "enterprise" then 5_000_000
+    when 'developer' then 50_000
+    when 'team' then 100_000
+    when 'enterprise' then 5_000_000
     else 50_000
     end
   end

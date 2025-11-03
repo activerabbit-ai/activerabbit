@@ -29,8 +29,8 @@ class ProjectSettingsController < ApplicationController
     begin
       slack_service = SlackNotificationService.new(@project)
       slack_service.send_custom_alert(
-        "🧪 *Test Notification*",
-        "This is a test message from ActiveRabbit to verify your Slack integration is working correctly!",
+        '🧪 *Test Notification*',
+        'This is a test message from ActiveRabbit to verify your Slack integration is working correctly!',
         color: 'good'
       )
 
@@ -51,7 +51,7 @@ class ProjectSettingsController < ApplicationController
     elsif params[:project_id].present?
       @project = current_user.projects.find(params[:project_id])
     else
-      redirect_to dashboard_path, alert: "Project not found."
+      redirect_to dashboard_path, alert: 'Project not found.'
     end
   end
 
@@ -108,8 +108,8 @@ class ProjectSettingsController < ApplicationController
     begin
       slack_service = SlackNotificationService.new(@project)
       slack_service.send_custom_alert(
-        "🧪 *Test Notification*",
-        "Your Slack integration is working correctly! Settings have been saved.",
+        '🧪 *Test Notification*',
+        'Your Slack integration is working correctly! Settings have been saved.',
         color: 'good'
       )
 

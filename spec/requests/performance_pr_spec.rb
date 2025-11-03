@@ -26,6 +26,3 @@ RSpec.describe 'Performance PR', type: :request do
     expect(response.body).to match(/Repo not found/)
   end
 end
-
-
-

@@ -60,7 +60,7 @@ class AiPerformanceSummaryService
   def build_content
     parts = []
     parts << "Target: #{@target}"
-    parts << "Recent stats:"
+    parts << 'Recent stats:'
     parts << "- total_requests: #{@stats[:total_requests]}"
     parts << "- total_errors: #{@stats[:total_errors]}"
     parts << "- error_rate: #{@stats[:error_rate]}%" if @stats[:error_rate]
@@ -78,6 +78,3 @@ class AiPerformanceSummaryService
     parts.join("\n")
   end
 end
-
-
-

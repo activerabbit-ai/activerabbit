@@ -1,4 +1,4 @@
-require "administrate/base_dashboard"
+require 'administrate/base_dashboard'
 
 class PerfRollupDashboard < Administrate::BaseDashboard
   # ATTRIBUTE_TYPES
@@ -25,7 +25,7 @@ class PerfRollupDashboard < Administrate::BaseDashboard
     timeframe: Field::String,
     timestamp: Field::DateTime,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

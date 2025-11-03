@@ -14,7 +14,7 @@ if ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && (Rails.env.production? || Rails.en
           ActiveRabbit::Client.configure do |config|
             config.api_key = ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN']
             config.project_id = ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID']
-            config.api_url = "http://web:3000"  # Self-monitoring (Docker internal)
+            config.api_url = 'http://web:3000'  # Self-monitoring (Docker internal)
             config.environment = Rails.env
 
             # Enable all monitoring features for self-monitoring
@@ -37,7 +37,7 @@ if ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && (Rails.env.production? || Rails.en
           Rails.logger.warn "Failed to initialize ActiveRabbit self-monitoring: #{e.message}"
         end
       else
-        Rails.logger.info "ActiveRabbit self-monitoring not configured (missing environment variables)"
+        Rails.logger.info 'ActiveRabbit self-monitoring not configured (missing environment variables)'
       end
     end
   end
@@ -53,7 +53,7 @@ elsif ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && Rails.env.development?
           ActiveRabbit::Client.configure do |config|
             config.api_key = ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN']
             config.project_id = ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID']
-            config.api_url = "http://web:3000"  # Self-monitoring (Docker internal)
+            config.api_url = 'http://web:3000'  # Self-monitoring (Docker internal)
             config.environment = Rails.env
 
             # Enable monitoring features
@@ -71,7 +71,7 @@ elsif ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && Rails.env.development?
             end
           end
 
-          Rails.logger.info "ActiveRabbit self-monitoring initialized in development"
+          Rails.logger.info 'ActiveRabbit self-monitoring initialized in development'
         rescue => e
           Rails.logger.warn "Failed to initialize ActiveRabbit self-monitoring: #{e.message}"
         end

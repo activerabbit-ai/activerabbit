@@ -1,4 +1,4 @@
-require "administrate/base_dashboard"
+require 'administrate/base_dashboard'
 
 class ProjectDashboard < Administrate::BaseDashboard
   # ATTRIBUTE_TYPES
@@ -31,7 +31,7 @@ class ProjectDashboard < Administrate::BaseDashboard
     url: Field::String,
     user: Field::BelongsTo,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

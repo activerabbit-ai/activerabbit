@@ -65,7 +65,7 @@ class SlackNotificationService
   end
 
   def project_url
-    host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch('APP_HOST', 'https://activerabbit.com')
+    host = Rails.env.development? ? 'http://localhost:3000' : ENV.fetch('APP_HOST', 'https://activerabbit.com')
     "#{host}/#{@project.slug}"
   end
 
@@ -73,69 +73,69 @@ class SlackNotificationService
     q = []
     q << "tab=#{tab}" if tab
     q << "event_id=#{event_id}" if event_id
-    query = q.any? ? "?#{q.join('&')}" : ""
+    query = q.any? ? "?#{q.join('&')}" : ''
     "#{project_url}/errors/#{issue.id}#{query}"
   end
 
   def build_error_frequency_message(issue, payload)
     {
-      text: "🚨 *High Error Frequency Alert*",
+      text: '🚨 *High Error Frequency Alert*',
       attachments: [
         {
-          color: "danger",
+          color: 'danger',
           fallback: "High error frequency detected for #{issue.title}",
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: @project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: @project.environment,
               short: true
             },
             {
-              title: "Exception",
+              title: 'Exception',
               value: issue.exception_class,
               short: false
             },
             {
-              title: "Frequency",
+              title: 'Frequency',
               value: "#{payload['count']} occurrences in #{payload['time_window']} minutes",
               short: true
             },
             {
-              title: "Location",
+              title: 'Location',
               value: issue.controller_action || issue.request_path || 'Unknown',
               short: false
             }
           ],
           actions: [
             {
-              type: "button",
-              text: "Open",
+              type: 'button',
+              text: 'Open',
               url: error_url(issue),
-              style: "primary"
+              style: 'primary'
             },
             {
-              type: "button",
-              text: "Stack",
+              type: 'button',
+              text: 'Stack',
               url: error_url(issue, tab: 'stack')
             },
             {
-              type: "button",
-              text: "Samples",
+              type: 'button',
+              text: 'Samples',
               url: error_url(issue, tab: 'samples')
             },
             {
-              type: "button",
-              text: "Graph",
+              type: 'button',
+              text: 'Graph',
               url: error_url(issue, tab: 'graph')
             }
           ],
-          footer: "ActiveRabbit Error Tracking",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Error Tracking',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -144,53 +144,53 @@ class SlackNotificationService
 
   def build_performance_message(event, payload)
     {
-      text: "⚠️ *Performance Alert*",
+      text: '⚠️ *Performance Alert*',
       attachments: [
         {
-          color: "warning",
+          color: 'warning',
           fallback: "Slow response time detected: #{payload['duration_ms']}ms",
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: @project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: @project.environment,
               short: true
             },
             {
-              title: "Response Time",
+              title: 'Response Time',
               value: "#{payload['duration_ms']}ms",
               short: true
             },
             {
-              title: "Threshold",
-              value: "Expected < 2000ms",
+              title: 'Threshold',
+              value: 'Expected < 2000ms',
               short: true
             },
             {
-              title: "Endpoint",
+              title: 'Endpoint',
               value: payload['controller_action'] || 'Unknown',
               short: false
             },
             {
-              title: "Occurred At",
-              value: event.occurred_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+              title: 'Occurred At',
+              value: event.occurred_at.strftime('%Y-%m-%d %H:%M:%S UTC'),
               short: true
             }
           ],
           actions: [
             {
-              type: "button",
-              text: "View Performance",
+              type: 'button',
+              text: 'View Performance',
               url: "#{project_url}/performance",
-              style: "primary"
+              style: 'primary'
             }
           ],
-          footer: "ActiveRabbit Performance Monitoring",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Performance Monitoring',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -206,53 +206,53 @@ class SlackNotificationService
     end.join("\n")
 
     {
-      text: "🔍 *N+1 Query Alert*",
+      text: '🔍 *N+1 Query Alert*',
       attachments: [
         {
-          color: "warning",
+          color: 'warning',
           fallback: "N+1 queries detected in #{controller_action}",
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: @project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: @project.environment,
               short: true
             },
             {
-              title: "Controller/Action",
+              title: 'Controller/Action',
               value: controller_action,
               short: false
             },
             {
-              title: "High Severity Incidents",
+              title: 'High Severity Incidents',
               value: incidents.size.to_s,
               short: true
             },
             {
-              title: "Impact",
-              value: "Database performance degradation",
+              title: 'Impact',
+              value: 'Database performance degradation',
               short: true
             },
             {
-              title: "Query Summary",
+              title: 'Query Summary',
               value: query_summary,
               short: false
             }
           ],
           actions: [
             {
-              type: "button",
-              text: "View Queries",
+              type: 'button',
+              text: 'View Queries',
               url: "#{project_url}/performance",
-              style: "primary"
+              style: 'primary'
             }
           ],
-          footer: "ActiveRabbit Query Analysis",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Query Analysis',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -264,70 +264,70 @@ class SlackNotificationService
       text: "🆕 *New Issue: #{issue.exception_class}*",
       attachments: [
         {
-          color: "danger",
+          color: 'danger',
           fallback: "New issue detected: #{issue.exception_class}",
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: @project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: @project.environment,
               short: true
             },
             {
-              title: "Status",
+              title: 'Status',
               value: issue.status.humanize,
               short: true
             },
             {
-              title: "Exception",
+              title: 'Exception',
               value: issue.exception_class,
               short: false
             },
             {
-              title: "Location",
+              title: 'Location',
               value: issue.controller_action || issue.request_path || 'Unknown',
               short: false
             },
             {
-              title: "First Seen",
-              value: issue.first_seen_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+              title: 'First Seen',
+              value: issue.first_seen_at.strftime('%Y-%m-%d %H:%M:%S UTC'),
               short: true
             },
             {
-              title: "Occurrences",
+              title: 'Occurrences',
               value: issue.count.to_s,
               short: true
             }
           ],
           actions: [
             {
-              type: "button",
-              text: "Open",
+              type: 'button',
+              text: 'Open',
               url: error_url(issue),
-              style: "danger"
+              style: 'danger'
             },
             {
-              type: "button",
-              text: "Stack",
+              type: 'button',
+              text: 'Stack',
               url: error_url(issue, tab: 'stack')
             },
             {
-              type: "button",
-              text: "Samples",
+              type: 'button',
+              text: 'Samples',
               url: error_url(issue, tab: 'samples')
             },
             {
-              type: "button",
-              text: "Graph",
+              type: 'button',
+              text: 'Graph',
               url: error_url(issue, tab: 'graph')
             }
           ],
-          footer: "ActiveRabbit Error Tracking",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Error Tracking',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -343,23 +343,23 @@ class SlackNotificationService
           fallback: "#{title}: #{message}",
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: @project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: @project.environment,
               short: true
             },
             {
-              title: "Message",
+              title: 'Message',
               value: message,
               short: false
             }
           ],
-          footer: "ActiveRabbit",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]

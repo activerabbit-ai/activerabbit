@@ -34,4 +34,3 @@ RSpec.describe ApiToken, type: :model do
     expect(token.active).to eq(true)
   end
 end
-

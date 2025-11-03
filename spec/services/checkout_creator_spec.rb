@@ -30,5 +30,3 @@ RSpec.describe CheckoutCreator do
     expect(Stripe::Checkout::Session).to have_received(:create).with(hash_including(line_items: array_including(include(price: 'price_ai_y'))))
   end
 end
-
-

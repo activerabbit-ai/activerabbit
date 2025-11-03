@@ -32,6 +32,3 @@ RSpec.describe PerformanceEvent, type: :model do
     end
   end
 end
-
-
-

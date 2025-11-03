@@ -1,4 +1,4 @@
-require "administrate/base_dashboard"
+require 'administrate/base_dashboard'
 
 class ApiTokenDashboard < Administrate::BaseDashboard
   # ATTRIBUTE_TYPES
@@ -18,7 +18,7 @@ class ApiTokenDashboard < Administrate::BaseDashboard
     token: Field::String,
     usage_count: Field::Number,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

@@ -159,14 +159,14 @@ class SqlFingerprint < ApplicationRecord
 
     if query.include?('SELECT') && query.include?('WHERE')
       if query.include?('users.id = ?')
-        "Consider using includes(:user) or joins(:user) to avoid N+1 queries"
+        'Consider using includes(:user) or joins(:user) to avoid N+1 queries'
       elsif query.match?(/\w+\.id = \?/)
-        "Consider eager loading this association to reduce database queries"
+        'Consider eager loading this association to reduce database queries'
       else
-        "Review if this query can be optimized with proper indexing or eager loading"
+        'Review if this query can be optimized with proper indexing or eager loading'
       end
     else
-      "Review query performance and consider optimization"
+      'Review query performance and consider optimization'
     end
   end
 end

@@ -79,7 +79,7 @@ class AlertRule < ApplicationRecord
     when 'n_plus_one'
       "#{threshold_value} high-severity N+1 queries detected"
     when 'new_issue'
-      "New error types detected"
+      'New error types detected'
     else
       "#{threshold_value} (#{time_window_minutes}min window)"
     end

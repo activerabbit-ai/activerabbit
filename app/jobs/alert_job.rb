@@ -60,22 +60,22 @@ class AlertJob
     case alert_type
     when :error_frequency
       issue, payload = args
-      account_service.broadcast_to_account("error_notifications") do |user|
+      account_service.broadcast_to_account('error_notifications') do |user|
         account_service.send_error_frequency_alert(issue, payload, user: user)
       end
     when :performance
       event, payload = args
-      account_service.broadcast_to_account("performance_notifications") do |user|
+      account_service.broadcast_to_account('performance_notifications') do |user|
         account_service.send_performance_alert(event, payload, user: user)
       end
     when :n_plus_one
       payload = args.first
-      account_service.broadcast_to_account("n_plus_one_notifications") do |user|
+      account_service.broadcast_to_account('n_plus_one_notifications') do |user|
         account_service.send_n_plus_one_alert(payload, user: user)
       end
     when :new_issue
       issue = args.first
-      account_service.broadcast_to_account("new_issue_notifications") do |user|
+      account_service.broadcast_to_account('new_issue_notifications') do |user|
         account_service.send_new_issue_alert(issue, user: user)
       end
     else
@@ -194,33 +194,33 @@ class AlertJob
 
   def build_error_frequency_slack_message(issue, payload)
     {
-      text: "🚨 High Error Frequency Alert",
+      text: '🚨 High Error Frequency Alert',
       attachments: [
         {
-          color: "danger",
+          color: 'danger',
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: issue.project.name,
               short: true
             },
             {
-              title: "Issue",
+              title: 'Issue',
               value: issue.title,
               short: true
             },
             {
-              title: "Frequency",
+              title: 'Frequency',
               value: "#{payload['count']} occurrences in #{payload['time_window']} minutes",
               short: true
             },
             {
-              title: "Controller/Action",
+              title: 'Controller/Action',
               value: issue.controller_action || 'Unknown',
               short: true
             }
           ],
-          footer: "ActiveRabbit",
+          footer: 'ActiveRabbit',
           ts: Time.current.to_i
         }
       ]
@@ -229,33 +229,33 @@ class AlertJob
 
   def build_performance_slack_message(event, payload)
     {
-      text: "⚠️ Performance Alert",
+      text: '⚠️ Performance Alert',
       attachments: [
         {
-          color: "warning",
+          color: 'warning',
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: event.project.name,
               short: true
             },
             {
-              title: "Response Time",
+              title: 'Response Time',
               value: "#{payload['duration_ms']}ms",
               short: true
             },
             {
-              title: "Endpoint",
+              title: 'Endpoint',
               value: payload['controller_action'] || 'Unknown',
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: event.environment,
               short: true
             }
           ],
-          footer: "ActiveRabbit",
+          footer: 'ActiveRabbit',
           ts: Time.current.to_i
         }
       ]
@@ -267,28 +267,28 @@ class AlertJob
     controller_action = payload['controller_action']
 
     {
-      text: "🔍 N+1 Query Alert",
+      text: '🔍 N+1 Query Alert',
       attachments: [
         {
-          color: "warning",
+          color: 'warning',
           fields: [
             {
-              title: "Controller/Action",
+              title: 'Controller/Action',
               value: controller_action,
               short: true
             },
             {
-              title: "High Severity Incidents",
+              title: 'High Severity Incidents',
               value: incidents.size.to_s,
               short: true
             },
             {
-              title: "Queries",
-              value: incidents.map { |i| "#{i['count_in_request']}x #{i['sql_fingerprint']['query_type']}" }.join(", "),
+              title: 'Queries',
+              value: incidents.map { |i| "#{i['count_in_request']}x #{i['sql_fingerprint']['query_type']}" }.join(', '),
               short: false
             }
           ],
-          footer: "ActiveRabbit",
+          footer: 'ActiveRabbit',
           ts: Time.current.to_i
         }
       ]
@@ -297,33 +297,33 @@ class AlertJob
 
   def build_new_issue_slack_message(issue)
     {
-      text: "🆕 New Issue Detected",
+      text: '🆕 New Issue Detected',
       attachments: [
         {
-          color: "danger",
+          color: 'danger',
           fields: [
             {
-              title: "Project",
+              title: 'Project',
               value: issue.project.name,
               short: true
             },
             {
-              title: "Exception",
+              title: 'Exception',
               value: issue.exception_type,
               short: true
             },
             {
-              title: "Message",
+              title: 'Message',
               value: issue.message.truncate(200),
               short: false
             },
             {
-              title: "Location",
+              title: 'Location',
               value: issue.controller_action || issue.request_path || 'Unknown',
               short: true
             }
           ],
-          footer: "ActiveRabbit",
+          footer: 'ActiveRabbit',
           ts: Time.current.to_i
         }
       ]

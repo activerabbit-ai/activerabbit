@@ -1,4 +1,4 @@
-require "administrate/base_dashboard"
+require 'administrate/base_dashboard'
 
 class AlertRuleDashboard < Administrate::BaseDashboard
   # ATTRIBUTE_TYPES
@@ -20,7 +20,7 @@ class AlertRuleDashboard < Administrate::BaseDashboard
     threshold_value: Field::Number.with_options(decimals: 2),
     time_window_minutes: Field::Number,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

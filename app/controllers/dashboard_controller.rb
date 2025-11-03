@@ -53,7 +53,7 @@ class DashboardController < ApplicationController
   def project_dashboard
     # Redirect slug-based project URLs to the full project details page
     unless @current_project
-      redirect_to dashboard_path, alert: "Project not found."
+      redirect_to dashboard_path, alert: 'Project not found.'
       return
     end
 

@@ -106,7 +106,7 @@ class AccountSlackNotificationService
 
   def account_url
     if Rails.env.development?
-      "http://localhost:3000/account/settings"
+      'http://localhost:3000/account/settings'
     else
       "#{ENV.fetch('APP_HOST', 'https://activerabbit.com')}/account/settings"
     end
@@ -121,67 +121,67 @@ class AccountSlackNotificationService
   end
 
   def build_error_frequency_message(issue, payload, user)
-    user_mention = user ? "<@#{user.email}> " : ""
+    user_mention = user ? "<@#{user.email}> " : ''
 
     {
       text: "#{user_mention}🚨 *High Error Frequency Alert*",
       attachments: [
         {
-          color: "danger",
+          color: 'danger',
           fallback: "High error frequency detected for #{issue.title}",
           fields: [
             {
-              title: "Account",
+              title: 'Account',
               value: @account.name,
               short: true
             },
             {
-              title: "Project",
+              title: 'Project',
               value: issue.project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: issue.project.environment,
               short: true
             },
             {
-              title: "Issue",
+              title: 'Issue',
               value: issue.title.truncate(100),
               short: false
             },
             {
-              title: "Frequency",
+              title: 'Frequency',
               value: "#{payload['count']} occurrences in #{payload['time_window']} minutes",
               short: true
             },
             {
-              title: "Exception Type",
+              title: 'Exception Type',
               value: issue.exception_type,
               short: true
             },
             {
-              title: "Location",
+              title: 'Location',
               value: issue.controller_action || issue.request_path || 'Unknown',
               short: false
             }
           ],
           actions: [
             {
-              type: "button",
-              text: "View Issue",
+              type: 'button',
+              text: 'View Issue',
               url: "#{project_url(issue.project)}/errors/#{issue.id}",
-              style: "primary"
+              style: 'primary'
             },
             {
-              type: "button",
-              text: "Account Settings",
+              type: 'button',
+              text: 'Account Settings',
               url: account_url,
-              style: "default"
+              style: 'default'
             }
           ],
-          footer: "ActiveRabbit Account Notifications",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Account Notifications',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -189,61 +189,61 @@ class AccountSlackNotificationService
   end
 
   def build_performance_message(event, payload, user)
-    user_mention = user ? "<@#{user.email}> " : ""
+    user_mention = user ? "<@#{user.email}> " : ''
 
     {
       text: "#{user_mention}⚠️ *Performance Alert*",
       attachments: [
         {
-          color: "warning",
+          color: 'warning',
           fallback: "Slow response time detected: #{payload['duration_ms']}ms",
           fields: [
             {
-              title: "Account",
+              title: 'Account',
               value: @account.name,
               short: true
             },
             {
-              title: "Project",
+              title: 'Project',
               value: event.project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: event.project.environment,
               short: true
             },
             {
-              title: "Response Time",
+              title: 'Response Time',
               value: "#{payload['duration_ms']}ms",
               short: true
             },
             {
-              title: "Threshold",
-              value: "Expected < 2000ms",
+              title: 'Threshold',
+              value: 'Expected < 2000ms',
               short: true
             },
             {
-              title: "Endpoint",
+              title: 'Endpoint',
               value: payload['controller_action'] || 'Unknown',
               short: false
             },
             {
-              title: "Occurred At",
-              value: event.occurred_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+              title: 'Occurred At',
+              value: event.occurred_at.strftime('%Y-%m-%d %H:%M:%S UTC'),
               short: true
             }
           ],
           actions: [
             {
-              type: "button",
-              text: "View Performance",
+              type: 'button',
+              text: 'View Performance',
               url: "#{project_url(event.project)}/performance",
-              style: "primary"
+              style: 'primary'
             }
           ],
-          footer: "ActiveRabbit Account Notifications",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Account Notifications',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -251,7 +251,7 @@ class AccountSlackNotificationService
   end
 
   def build_n_plus_one_message(payload, user)
-    user_mention = user ? "<@#{user.email}> " : ""
+    user_mention = user ? "<@#{user.email}> " : ''
     incidents = payload['incidents']
     controller_action = payload['controller_action']
 
@@ -263,37 +263,37 @@ class AccountSlackNotificationService
       text: "#{user_mention}🔍 *N+1 Query Alert*",
       attachments: [
         {
-          color: "warning",
+          color: 'warning',
           fallback: "N+1 queries detected in #{controller_action}",
           fields: [
             {
-              title: "Account",
+              title: 'Account',
               value: @account.name,
               short: true
             },
             {
-              title: "Controller/Action",
+              title: 'Controller/Action',
               value: controller_action,
               short: false
             },
             {
-              title: "High Severity Incidents",
+              title: 'High Severity Incidents',
               value: incidents.size.to_s,
               short: true
             },
             {
-              title: "Impact",
-              value: "Database performance degradation",
+              title: 'Impact',
+              value: 'Database performance degradation',
               short: true
             },
             {
-              title: "Query Summary",
+              title: 'Query Summary',
               value: query_summary,
               short: false
             }
           ],
-          footer: "ActiveRabbit Account Notifications",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Account Notifications',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -301,72 +301,72 @@ class AccountSlackNotificationService
   end
 
   def build_new_issue_message(issue, user)
-    user_mention = user ? "<@#{user.email}> " : ""
+    user_mention = user ? "<@#{user.email}> " : ''
 
     {
       text: "#{user_mention}🆕 *New Issue Detected*",
       attachments: [
         {
-          color: "danger",
+          color: 'danger',
           fallback: "New issue detected: #{issue.exception_type}",
           fields: [
             {
-              title: "Account",
+              title: 'Account',
               value: @account.name,
               short: true
             },
             {
-              title: "Project",
+              title: 'Project',
               value: issue.project.name,
               short: true
             },
             {
-              title: "Environment",
+              title: 'Environment',
               value: issue.project.environment,
               short: true
             },
             {
-              title: "Exception Type",
+              title: 'Exception Type',
               value: issue.exception_type,
               short: true
             },
             {
-              title: "Status",
+              title: 'Status',
               value: issue.status.humanize,
               short: true
             },
             {
-              title: "Error Message",
+              title: 'Error Message',
               value: issue.message.truncate(200),
               short: false
             },
             {
-              title: "Location",
+              title: 'Location',
               value: issue.controller_action || issue.request_path || 'Unknown',
               short: false
             },
             {
-              title: "First Seen",
-              value: issue.first_seen_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+              title: 'First Seen',
+              value: issue.first_seen_at.strftime('%Y-%m-%d %H:%M:%S UTC'),
               short: true
             }
           ],
           actions: [
             {
-              type: "button",
-              text: "Investigate Issue",
+              type: 'button',
+              text: 'Investigate Issue',
               url: "#{project_url(issue.project)}/errors/#{issue.id}",
-              style: "danger"
+              style: 'danger'
             },
             {
-              type: "button",
-              text: "Mark as WIP",
+              type: 'button',
+              text: 'Mark as WIP',
               url: "#{project_url(issue.project)}/errors/#{issue.id}/edit",
-              style: "primary"
+              style: 'primary'
             }
           ],
-          footer: "ActiveRabbit Account Notifications",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Account Notifications',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]
@@ -374,7 +374,7 @@ class AccountSlackNotificationService
   end
 
   def build_custom_message(title, message, color, user)
-    user_mention = user ? "<@#{user.email}> " : ""
+    user_mention = user ? "<@#{user.email}> " : ''
 
     {
       text: "#{user_mention}#{title}",
@@ -384,18 +384,18 @@ class AccountSlackNotificationService
           fallback: "#{title}: #{message}",
           fields: [
             {
-              title: "Account",
+              title: 'Account',
               value: @account.name,
               short: true
             },
             {
-              title: "Message",
+              title: 'Message',
               value: message,
               short: false
             }
           ],
-          footer: "ActiveRabbit Account Notifications",
-          footer_icon: "https://activerabbit.com/icon.png",
+          footer: 'ActiveRabbit Account Notifications',
+          footer_icon: 'https://activerabbit.com/icon.png',
           ts: Time.current.to_i
         }
       ]

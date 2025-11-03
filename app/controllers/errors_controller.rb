@@ -30,24 +30,24 @@ class ErrorsController < ApplicationController
     if params[:tab] == 'graph'
       range_key = (params[:range] || '7D').to_s.upcase
       window_seconds = case range_key
-                       when '1H' then 1.hour
-                       when '4H' then 4.hours
-                       when '8H' then 8.hours
-                       when '12H' then 12.hours
-                       when '24H' then 24.hours
-                       when '48H' then 48.hours
-                       when '7D' then 7.days
-                       when '30D' then 30.days
-                       else 7.days
-                       end
+      when '1H' then 1.hour
+      when '4H' then 4.hours
+      when '8H' then 8.hours
+      when '12H' then 12.hours
+      when '24H' then 24.hours
+      when '48H' then 48.hours
+      when '7D' then 7.days
+      when '30D' then 30.days
+      else 7.days
+      end
 
       bucket_seconds = case range_key
-                       when '1H', '4H', '8H' then 5.minutes
-                       when '12H' then 15.minutes
-                       when '24H', '48H' then 1.hour
-                       when '7D', '30D' then 1.day
-                       else 1.day
-                       end
+      when '1H', '4H', '8H' then 5.minutes
+      when '12H' then 15.minutes
+      when '24H', '48H' then 1.hour
+      when '7D', '30D' then 1.day
+      else 1.day
+      end
 
       start_time = Time.current - window_seconds
       end_time = Time.current
@@ -89,37 +89,37 @@ class ErrorsController < ApplicationController
 
     # Optional filter on error_status inside JSON context (fallback to in-memory if DB JSON querying is not enabled)
     if params[:error_status].present?
-      @events = @events.select { |e| e.context.is_a?(Hash) && e.context["error_status"].to_s == params[:error_status].to_s }
+      @events = @events.select { |e| e.context.is_a?(Hash) && e.context['error_status'].to_s == params[:error_status].to_s }
     end
 
     # Selected sample for detailed tags section
     @selected_event = if params[:event_id].present?
                         @events.find { |e| e.id.to_s == params[:event_id].to_s }
-                      end
+    end
     @selected_event ||= @events.first
 
     # Graph data for counts over time (only build when requested)
     if params[:tab] == 'graph'
       range_key = (params[:range] || '7D').to_s.upcase
       window_seconds = case range_key
-                       when '1H' then 1.hour
-                       when '4H' then 4.hours
-                       when '8H' then 8.hours
-                       when '12H' then 12.hours
-                       when '24H' then 24.hours
-                       when '48H' then 48.hours
-                       when '7D' then 7.days
-                       when '30D' then 30.days
-                       else 24.hours
-                       end
+      when '1H' then 1.hour
+      when '4H' then 4.hours
+      when '8H' then 8.hours
+      when '12H' then 12.hours
+      when '24H' then 24.hours
+      when '48H' then 48.hours
+      when '7D' then 7.days
+      when '30D' then 30.days
+      else 24.hours
+      end
 
       bucket_seconds = case range_key
-                       when '1H', '4H', '8H' then 5.minutes
-                       when '12H' then 15.minutes
-                       when '24H', '48H' then 1.hour
-                       when '7D', '30D' then 1.day
-                       else 1.hour
-                       end
+      when '1H', '4H', '8H' then 5.minutes
+      when '12H' then 15.minutes
+      when '24H', '48H' then 1.hour
+      when '7D', '30D' then 1.day
+      else 1.hour
+      end
 
       start_time = Time.current - window_seconds
       end_time = Time.current
@@ -171,20 +171,20 @@ class ErrorsController < ApplicationController
     if @issue.update(issue_params)
       redirect_path = if @current_project
                         "/#{@current_project.slug}/errors/#{@issue.id}"
-                      elsif @project
+      elsif @project
                         project_error_path(@project, @issue)
-                      else
+      else
                         errors_path
-                      end
+      end
       redirect_to(redirect_path, notice: 'Error status updated successfully.')
     else
       redirect_path = if @current_project
                         "/#{@current_project.slug}/errors/#{@issue.id}"
-                      elsif @project
+      elsif @project
                         project_error_path(@project, @issue)
-                      else
+      else
                         errors_path
-                      end
+      end
       redirect_to(redirect_path, alert: 'Failed to update error status.')
     end
   end
@@ -196,11 +196,11 @@ class ErrorsController < ApplicationController
 
     redirect_path = if @current_project
                       "/#{@current_project.slug}/errors"
-                    elsif @project
+    elsif @project
                       project_errors_path(@project)
-                    else
+    else
                       errors_path
-                    end
+    end
     redirect_to(redirect_path, notice: 'Error resolved successfully.')
   end
 
@@ -213,11 +213,11 @@ class ErrorsController < ApplicationController
 
     redirect_path = if @current_project
                       "/#{@current_project.slug}/errors/#{@issue.id}"
-                    elsif @project
+    elsif @project
                       project_error_path(@project, @issue)
-                    else
+    else
                       error_path(@issue)
-                    end
+    end
 
     if result[:success]
       # Persist PR URL for this issue so the UI can show a direct link next time

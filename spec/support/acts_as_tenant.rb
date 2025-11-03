@@ -8,6 +8,3 @@ RSpec.configure do |config|
     ActsAsTenant.current_tenant = nil
   end
 end
-
-
-

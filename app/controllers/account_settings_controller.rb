@@ -32,7 +32,7 @@ class AccountSettingsController < ApplicationController
     begin
       slack_service = AccountSlackNotificationService.new(@account)
       slack_service.send_custom_alert(
-        "🧪 *Test Notification*",
+        '🧪 *Test Notification*',
         "This is a test message from ActiveRabbit to verify your account-wide Slack integration is working correctly!\n\n" +
         "Account: #{@account.name}\n" +
         "User: #{current_user.email}",
@@ -95,7 +95,7 @@ class AccountSettingsController < ApplicationController
     begin
       slack_service = AccountSlackNotificationService.new(@account)
       slack_service.send_custom_alert(
-        "🧪 *Test Notification*",
+        '🧪 *Test Notification*',
         "Your account-wide Slack integration is working correctly! Settings have been saved.\n\n" +
         "Account: #{@account.name}\n" +
         "Configured by: #{current_user.email}",

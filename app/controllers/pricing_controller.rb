@@ -1,10 +1,10 @@
 class PricingController < ApplicationController
-  layout "admin"
+  layout 'admin'
   before_action :authenticate_user!
 
   def show
     @account = current_user.account
-    @current_plan_label = "Current plan"
+    @current_plan_label = 'Current plan'
 
     if @account
       @event_quota = (@account.event_quota.presence || @account.event_quota_value || 0).to_i
@@ -14,7 +14,7 @@ class PricingController < ApplicationController
 
     if (pay_sub = @account&.active_subscription_record)
       @subscription = pay_sub
-      @current_plan_label = "Current plan" if @subscription
+      @current_plan_label = 'Current plan' if @subscription
       @next_payment_date = calculate_next_payment_date(@subscription)
       if @subscription
         @trial_days_left = calculate_trial_days_left(@subscription)

@@ -77,7 +77,7 @@ class PerformanceIngestJob
 
     return true if event.duration_ms > 5000 # 5 seconds
     ctx = event.context || {}
-    return true if (ctx.is_a?(Hash) && (ctx['n_plus_one_detected'] || ctx[:n_plus_one_detected]))
+    return true if ctx.is_a?(Hash) && (ctx['n_plus_one_detected'] || ctx[:n_plus_one_detected])
 
     # Check for performance spike
     recent_avg = calculate_recent_average_duration(event)

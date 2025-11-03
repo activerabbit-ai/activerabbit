@@ -18,5 +18,3 @@ RSpec.describe 'BillingGuard access', type: :request do
     expect(response).to redirect_to(pricing_path)
   end
 end
-
-

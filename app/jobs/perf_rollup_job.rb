@@ -7,10 +7,10 @@ class PerfRollupJob
     case timeframe
     when 'minute'
       PerfRollup.rollup_minute_data!
-      Rails.logger.info "Completed minute rollup processing"
+      Rails.logger.info 'Completed minute rollup processing'
     when 'hour'
       PerfRollup.rollup_hourly_data!
-      Rails.logger.info "Completed hourly rollup processing"
+      Rails.logger.info 'Completed hourly rollup processing'
     else
       raise ArgumentError, "Unknown timeframe: #{timeframe}"
     end

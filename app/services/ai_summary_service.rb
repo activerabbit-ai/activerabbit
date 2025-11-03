@@ -48,7 +48,7 @@ class AiSummaryService
     req.body = JSON.dump(body)
 
     res = http.request(req)
-    raise "OpenAI error: #{res.code} #{res.body}" unless res.code.to_i.between?(200,299)
+    raise "OpenAI error: #{res.code} #{res.body}" unless res.code.to_i.between?(200, 299)
 
     json = JSON.parse(res.body)
     json.dig('choices', 0, 'message', 'content')
@@ -77,7 +77,7 @@ class AiSummaryService
       routing = @event.context && (@event.context['routing'] || @event.context[:routing])
       if routing && routing['params']
         redacted_params = routing['params'].dup
-        redacted_params.each { |k,v| redacted_params[k] = '[SCRUBBED]' if k.to_s =~ /password|token|secret|key/i }
+        redacted_params.each { |k, v| redacted_params[k] = '[SCRUBBED]' if k.to_s =~ /password|token|secret|key/i }
         parts << "Params: #{redacted_params.to_json}"
       end
     end
@@ -85,5 +85,3 @@ class AiSummaryService
     parts.join("\n")
   end
 end
-
-

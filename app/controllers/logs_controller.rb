@@ -6,7 +6,7 @@ class LogsController < ApplicationController
 
   def index
     # Account-scoped logs (mock data for now, replace with real log aggregation)
-    account_name = current_account&.name || "Unknown Account"
+    account_name = current_account&.name || 'Unknown Account'
     project_names = current_account&.projects&.pluck(:name) || []
 
     @logs = [

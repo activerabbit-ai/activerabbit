@@ -14,6 +14,3 @@ FactoryBot.define do
     context { {} }
   end
 end
-
-
-
