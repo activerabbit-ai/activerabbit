@@ -86,4 +86,3 @@ require 'pagy/extras/array'
 # Standalone extra: Use pagy in non Rack environment/gem
 # See https://ddnexus.github.io/pagy/docs/extras/standalone
 # require 'pagy/extras/standalone'
-
