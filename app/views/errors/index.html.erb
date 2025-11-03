@@ -217,6 +217,28 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Pagination -->
+    <% if @pagy && @pagy.pages > 1 %>
+      <div class="px-6 py-4 border-t border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="hidden sm:block">
+            <p class="text-sm text-gray-700">
+              Showing
+              <span class="font-medium"><%= @pagy.from %></span>
+              to
+              <span class="font-medium"><%= @pagy.to %></span>
+              of
+              <span class="font-medium"><%= @pagy.count %></span>
+              errors
+            </p>
+          </div>
+          <div class="flex-1 flex justify-end">
+            <%== pagy_nav(@pagy) %>
+          </div>
+        </div>
+      </div>
+    <% end %>
   <% else %>
     <div class="p-12 text-center">
       <div class="w-12 h-12 mx-auto mb-4 text-gray-400">
