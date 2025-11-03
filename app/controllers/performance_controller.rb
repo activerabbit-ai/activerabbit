@@ -616,11 +616,11 @@ class PerformanceController < ApplicationController
 
     # Filtering
     case params[:filter]
-    when "slow"
+    when 'slow'
       scope = scope.slow
-    when "frequent"
+    when 'frequent'
       scope = scope.frequent
-    when "n_plus_one"
+    when 'n_plus_one'
       scope = scope.n_plus_one_candidates
     end
 
