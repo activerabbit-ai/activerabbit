@@ -126,14 +126,13 @@
         </div>
         <pre id="initializer-code" class="text-green-400 text-sm"><code>ActiveRabbit::Client.configure do |config|
   config.api_key = "<%= @project.api_token %>"
-  config.project_id = "<%= @project.id %>"
-  config.api_url = "<%= request.base_url %>"
-  config.environment = Rails.env
 
   # Enable monitoring features
   config.enable_performance_monitoring = true
   config.enable_n_plus_one_detection = true
   config.enable_pii_scrubbing = true
+
+  config.ignore_404 = false
 end</code></pre>
       </div>
 
