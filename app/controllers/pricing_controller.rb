@@ -1,10 +1,10 @@
 class PricingController < ApplicationController
-  layout 'admin'
+  layout "admin"
   before_action :authenticate_user!
 
   def show
     @account = current_user.account
-    @current_plan_label = 'Current plan'
+    @current_plan_label = "Current plan"
 
     if @account
       @event_quota = (@account.event_quota.presence || @account.event_quota_value || 0).to_i
@@ -14,7 +14,7 @@ class PricingController < ApplicationController
 
     if (pay_sub = @account&.active_subscription_record)
       @subscription = pay_sub
-      @current_plan_label = 'Current plan' if @subscription
+      @current_plan_label = "Current plan" if @subscription
       @next_payment_date = calculate_next_payment_date(@subscription)
       if @subscription
         @trial_days_left = calculate_trial_days_left(@subscription)
@@ -36,7 +36,7 @@ class PricingController < ApplicationController
       Time.current + 1.month
     end
 
-    next_payment_date.strftime('%B %d, %Y')
+    next_payment_date.strftime("%B %d, %Y")
   end
 
   def calculate_trial_days_left(subscription)
@@ -49,8 +49,8 @@ class PricingController < ApplicationController
   def format_billing_period(subscription)
     return nil unless subscription.current_period_start && subscription.current_period_end
 
-    start_date = subscription.current_period_start.strftime('%B %d')
-    end_date = subscription.current_period_end.strftime('%B %d')
+    start_date = subscription.current_period_start.strftime("%B %d")
+    end_date = subscription.current_period_end.strftime("%B %d")
     "#{start_date} – #{end_date}"
   end
 end

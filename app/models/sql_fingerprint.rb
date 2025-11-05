@@ -10,7 +10,7 @@ class SqlFingerprint < ApplicationRecord
 
   scope :frequent, -> { order(total_count: :desc) }
   scope :slow, -> { order(avg_duration_ms: :desc) }
-  scope :n_plus_one_candidates, -> { where('total_count > ? AND avg_duration_ms < ?', 100, 50) }
+  scope :n_plus_one_candidates, -> { where("total_count > ? AND avg_duration_ms < ?", 100, 50) }
 
   def self.track_query(project:, sql:, duration_ms:, controller_action: nil)
     fingerprint = generate_fingerprint(sql)
@@ -113,31 +113,31 @@ class SqlFingerprint < ApplicationRecord
     normalized.gsub!(/'[^']*'/, "'?'")
 
     # Replace numeric literals
-    normalized.gsub(/\b\d+\b/, '?')
+    normalized.gsub(/\b\d+\b/, "?")
 
     # Replace IN clauses with multiple values
-    normalized.gsub(/IN\s*\([^)]+\)/i, 'IN (?)')
+    normalized.gsub(/IN\s*\([^)]+\)/i, "IN (?)")
 
     # Replace LIMIT/OFFSET values
-    normalized.gsub(/LIMIT\s+\d+/i, 'LIMIT ?')
-    normalized.gsub(/OFFSET\s+\d+/i, 'OFFSET ?')
+    normalized.gsub(/LIMIT\s+\d+/i, "LIMIT ?")
+    normalized.gsub(/OFFSET\s+\d+/i, "OFFSET ?")
 
     # Normalize whitespace
-    normalized.gsub(/\s+/, ' ').strip.upcase
+    normalized.gsub(/\s+/, " ").strip.upcase
   end
 
   def self.extract_query_type(sql)
     case sql.strip.upcase
     when /^SELECT/
-      'SELECT'
+      "SELECT"
     when /^INSERT/
-      'INSERT'
+      "INSERT"
     when /^UPDATE/
-      'UPDATE'
+      "UPDATE"
     when /^DELETE/
-      'DELETE'
+      "DELETE"
     else
-      'OTHER'
+      "OTHER"
     end
   end
 
@@ -146,27 +146,27 @@ class SqlFingerprint < ApplicationRecord
 
     case impact_score
     when 0..100
-      'low'
+      "low"
     when 101..500
-      'medium'
+      "medium"
     else
-      'high'
+      "high"
     end
   end
 
   def self.generate_suggestion(sql_fingerprint)
     query = sql_fingerprint.normalized_query
 
-    if query.include?('SELECT') && query.include?('WHERE')
-      if query.include?('users.id = ?')
-        'Consider using includes(:user) or joins(:user) to avoid N+1 queries'
+    if query.include?("SELECT") && query.include?("WHERE")
+      if query.include?("users.id = ?")
+        "Consider using includes(:user) or joins(:user) to avoid N+1 queries"
       elsif query.match?(/\w+\.id = \?/)
-        'Consider eager loading this association to reduce database queries'
+        "Consider eager loading this association to reduce database queries"
       else
-        'Review if this query can be optimized with proper indexing or eager loading'
+        "Review if this query can be optimized with proper indexing or eager loading"
       end
     else
-      'Review query performance and consider optimization'
+      "Review query performance and consider optimization"
     end
   end
 end

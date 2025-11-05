@@ -1,5 +1,5 @@
 class ErrorsController < ApplicationController
-  layout 'admin'
+  layout "admin"
   before_action :authenticate_user!
   before_action :set_project, if: -> { params[:project_id] }
 
@@ -16,34 +16,34 @@ class ErrorsController < ApplicationController
       @total_errors = project_scope.issues.count
       @open_errors = project_scope.issues.open.count
       @resolved_errors = project_scope.issues.closed.count
-      @recent_errors = project_scope.issues.where('last_seen_at > ?', 1.hour.ago).count
+      @recent_errors = project_scope.issues.where("last_seen_at > ?", 1.hour.ago).count
     else
       @total_errors = Issue.count
       @open_errors = Issue.open.count
       @resolved_errors = Issue.closed.count
-      @recent_errors = Issue.where('last_seen_at > ?', 1.hour.ago).count
+      @recent_errors = Issue.where("last_seen_at > ?", 1.hour.ago).count
     end
 
     # Optional: build graph data across all errors
-    if params[:tab] == 'graph'
-      range_key = (params[:range] || '7D').to_s.upcase
+    if params[:tab] == "graph"
+      range_key = (params[:range] || "7D").to_s.upcase
       window_seconds = case range_key
-      when '1H' then 1.hour
-      when '4H' then 4.hours
-      when '8H' then 8.hours
-      when '12H' then 12.hours
-      when '24H' then 24.hours
-      when '48H' then 48.hours
-      when '7D' then 7.days
-      when '30D' then 30.days
+      when "1H" then 1.hour
+      when "4H" then 4.hours
+      when "8H" then 8.hours
+      when "12H" then 12.hours
+      when "24H" then 24.hours
+      when "48H" then 48.hours
+      when "7D" then 7.days
+      when "30D" then 30.days
       else 7.days
       end
 
       bucket_seconds = case range_key
-      when '1H', '4H', '8H' then 5.minutes
-      when '12H' then 15.minutes
-      when '24H', '48H' then 1.hour
-      when '7D', '30D' then 1.day
+      when "1H", "4H", "8H" then 5.minutes
+      when "12H" then 15.minutes
+      when "24H", "48H" then 1.hour
+      when "7D", "30D" then 1.day
       else 1.day
       end
 
@@ -55,7 +55,7 @@ class ErrorsController < ApplicationController
       labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
 
       events_scope = project_scope ? project_scope.events : Event
-      event_times = events_scope.where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time).pluck(:occurred_at)
+      event_times = events_scope.where("occurred_at >= ? AND occurred_at <= ?", start_time, end_time).pluck(:occurred_at)
       event_times.each do |ts|
         idx = (((ts - start_time) / bucket_seconds).floor).to_i
         next if idx.negative? || idx >= bucket_count
@@ -87,7 +87,7 @@ class ErrorsController < ApplicationController
 
     # Optional filter on error_status inside JSON context (fallback to in-memory if DB JSON querying is not enabled)
     if params[:error_status].present?
-      @events = @events.select { |e| e.context.is_a?(Hash) && e.context['error_status'].to_s == params[:error_status].to_s }
+      @events = @events.select { |e| e.context.is_a?(Hash) && e.context["error_status"].to_s == params[:error_status].to_s }
     end
 
     # Selected sample for detailed tags section
@@ -97,25 +97,25 @@ class ErrorsController < ApplicationController
     @selected_event ||= @events.first
 
     # Graph data for counts over time (only build when requested)
-    if params[:tab] == 'graph'
-      range_key = (params[:range] || '7D').to_s.upcase
+    if params[:tab] == "graph"
+      range_key = (params[:range] || "7D").to_s.upcase
       window_seconds = case range_key
-      when '1H' then 1.hour
-      when '4H' then 4.hours
-      when '8H' then 8.hours
-      when '12H' then 12.hours
-      when '24H' then 24.hours
-      when '48H' then 48.hours
-      when '7D' then 7.days
-      when '30D' then 30.days
+      when "1H" then 1.hour
+      when "4H" then 4.hours
+      when "8H" then 8.hours
+      when "12H" then 12.hours
+      when "24H" then 24.hours
+      when "48H" then 48.hours
+      when "7D" then 7.days
+      when "30D" then 30.days
       else 24.hours
       end
 
       bucket_seconds = case range_key
-      when '1H', '4H', '8H' then 5.minutes
-      when '12H' then 15.minutes
-      when '24H', '48H' then 1.hour
-      when '7D', '30D' then 1.day
+      when "1H", "4H", "8H" then 5.minutes
+      when "12H" then 15.minutes
+      when "24H", "48H" then 1.hour
+      when "7D", "30D" then 1.day
       else 1.hour
       end
 
@@ -128,7 +128,7 @@ class ErrorsController < ApplicationController
       labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
 
       # Load only events in window (pluck timestamps to reduce AR object overhead)
-      event_times = events_scope.where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time).pluck(:occurred_at)
+      event_times = events_scope.where("occurred_at >= ? AND occurred_at <= ?", start_time, end_time).pluck(:occurred_at)
       event_times.each do |ts|
         idx = (((ts - start_time) / bucket_seconds).floor).to_i
         next if idx.negative? || idx >= bucket_count
@@ -142,12 +142,12 @@ class ErrorsController < ApplicationController
       @graph_range_key = range_key
     end
 
-    if params[:tab] == 'ai'
+    if params[:tab] == "ai"
       if @issue.ai_summary.present?
         @ai_result = { summary: @issue.ai_summary }
       elsif @issue.ai_summary_generated_at.present?
         # Already attempted previously and no summary was stored
-        @ai_result = { error: 'no_summary_available', message: 'No AI summary available for this issue.' }
+        @ai_result = { error: "no_summary_available", message: "No AI summary available for this issue." }
       else
         # First-time attempt only
         result = AiSummaryService.new(issue: @issue, sample_event: @selected_event).call
@@ -174,7 +174,7 @@ class ErrorsController < ApplicationController
       else
                         errors_path
       end
-      redirect_to(redirect_path, notice: 'Error status updated successfully.')
+      redirect_to(redirect_path, notice: "Error status updated successfully.")
     else
       redirect_path = if @current_project
                         "/#{@current_project.slug}/errors/#{@issue.id}"
@@ -183,7 +183,7 @@ class ErrorsController < ApplicationController
       else
                         errors_path
       end
-      redirect_to(redirect_path, alert: 'Failed to update error status.')
+      redirect_to(redirect_path, alert: "Failed to update error status.")
     end
   end
 
@@ -199,7 +199,7 @@ class ErrorsController < ApplicationController
     else
                       errors_path
     end
-    redirect_to(redirect_path, notice: 'Error resolved successfully.')
+    redirect_to(redirect_path, notice: "Error resolved successfully.")
   end
 
   def create_pr
@@ -222,16 +222,16 @@ class ErrorsController < ApplicationController
       pr_project = project_scope || @issue.project
       if pr_project
         settings = pr_project.settings || {}
-        issue_pr_urls = settings['issue_pr_urls'] || {}
+        issue_pr_urls = settings["issue_pr_urls"] || {}
         issue_pr_urls[@issue.id.to_s] = result[:pr_url]
-        settings['issue_pr_urls'] = issue_pr_urls
+        settings["issue_pr_urls"] = issue_pr_urls
         pr_project.update(settings: settings)
       end
 
       # Open PR in the new tab by redirecting directly to GitHub
       redirect_to result[:pr_url], allow_other_host: true
     else
-      redirect_to redirect_path, alert: (result[:error] || 'Failed to open PR')
+      redirect_to redirect_path, alert: (result[:error] || "Failed to open PR")
     end
   end
 

@@ -36,8 +36,8 @@ class PerformanceIngestJob
       payload[:sql_queries].each do |query_data|
         SqlFingerprint.track_query(
           project: project,
-          sql: query_data[:sql] || query_data['sql'],
-          duration_ms: query_data[:duration_ms] || query_data['duration_ms'] || 0,
+          sql: query_data[:sql] || query_data["sql"],
+          duration_ms: query_data[:duration_ms] || query_data["duration_ms"] || 0,
           controller_action: payload[:controller_action]
         )
       end
@@ -77,7 +77,7 @@ class PerformanceIngestJob
 
     return true if event.duration_ms > 5000 # 5 seconds
     ctx = event.context || {}
-    return true if ctx.is_a?(Hash) && (ctx['n_plus_one_detected'] || ctx[:n_plus_one_detected])
+    return true if ctx.is_a?(Hash) && (ctx["n_plus_one_detected"] || ctx[:n_plus_one_detected])
 
     # Check for performance spike
     recent_avg = calculate_recent_average_duration(event)
@@ -95,7 +95,7 @@ class PerformanceIngestJob
     recent_events = PerformanceEvent
                       .where(project: event.project)
                       .where(target: event.target)
-                      .where('occurred_at > ?', 1.hour.ago)
+                      .where("occurred_at > ?", 1.hour.ago)
                       .where.not(duration_ms: nil)
                       .limit(100)
 

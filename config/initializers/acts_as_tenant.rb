@@ -13,7 +13,7 @@ if Rails.env.development?
   SET_TENANT_PROC = lambda do
     if defined?(Rails::Console)
       if Account.exists?
-        puts '> ActsAsTenant.current_tenant = Account.first'
+        puts "> ActsAsTenant.current_tenant = Account.first"
         ActsAsTenant.current_tenant = Account.first
       else
         puts "> No accounts found. Create one with: Account.create!(name: 'Test Account')"

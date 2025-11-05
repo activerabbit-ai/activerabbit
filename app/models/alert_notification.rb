@@ -13,19 +13,19 @@ class AlertNotification < ApplicationRecord
   scope :by_type, ->(type) { where(notification_type: type) }
 
   def mark_sent!
-    update!(status: 'sent', sent_at: Time.current)
+    update!(status: "sent", sent_at: Time.current)
   end
 
   def mark_failed!(error_message = nil)
     update!(
-      status: 'failed',
+      status: "failed",
       error_message: error_message,
       failed_at: Time.current
     )
   end
 
   def retry!
-    update!(status: 'pending', error_message: nil, failed_at: nil)
+    update!(status: "pending", error_message: nil, failed_at: nil)
     AlertJob.perform_async(alert_rule.id, rule_type, payload)
   end
 end

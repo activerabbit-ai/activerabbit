@@ -1,5 +1,5 @@
 class DashboardController < ApplicationController
-  layout 'admin'
+  layout "admin"
   before_action :authenticate_user!
 
   def index
@@ -13,10 +13,10 @@ class DashboardController < ApplicationController
       total_issues: Issue.count, # Automatically scoped by acts_as_tenant
       open_issues: Issue.open.count,
       total_events: Event.count, # Automatically scoped by acts_as_tenant
-      events_today: Event.where('occurred_at > ?', 24.hours.ago).count,
-      events_last_30_days: Event.where('occurred_at > ?', 30.days.ago).count,
+      events_today: Event.where("occurred_at > ?", 24.hours.ago).count,
+      events_last_30_days: Event.where("occurred_at > ?", 30.days.ago).count,
       account_users: account_users.count,
-      active_users: account_users.where('current_sign_in_at > ?', 7.days.ago).count
+      active_users: account_users.where("current_sign_in_at > ?", 7.days.ago).count
     }
 
     # Recent activity (account-scoped) - keeping recent_events for potential future use
@@ -31,14 +31,14 @@ class DashboardController < ApplicationController
     project_ids = @projects.map(&:id)
     issues_counts_by_project = Issue.open.where(project_id: project_ids).group(:project_id).count
     events_today_by_project = Event.where(project_id: project_ids)
-                                   .where('occurred_at > ?', 24.hours.ago)
+                                   .where("occurred_at > ?", 24.hours.ago)
                                    .group(:project_id).count
 
     # Stats for each project
     @project_stats = {}
     @projects.each do |project|
-      issue_pr_urls = project.settings&.dig('issue_pr_urls') || {}
-      perf_pr_urls = project.settings&.dig('perf_pr_urls') || {}
+      issue_pr_urls = project.settings&.dig("issue_pr_urls") || {}
+      perf_pr_urls = project.settings&.dig("perf_pr_urls") || {}
 
       @project_stats[project.id] = {
         issues_count: issues_counts_by_project[project.id].to_i,
@@ -53,7 +53,7 @@ class DashboardController < ApplicationController
   def project_dashboard
     # Redirect slug-based project URLs to the full project details page
     unless @current_project
-      redirect_to dashboard_path, alert: 'Project not found.'
+      redirect_to dashboard_path, alert: "Project not found."
       return
     end
 

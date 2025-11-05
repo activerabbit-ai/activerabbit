@@ -1,5 +1,5 @@
-require 'sidekiq'
-require 'sidekiq-cron'
+require "sidekiq"
+require "sidekiq-cron"
 
 # Configure recurring jobs for performance rollups
 # Temporarily disabled until PerformanceEvent data is available
@@ -16,11 +16,11 @@ require 'sidekiq-cron'
 #   }
 # }) if defined?(Sidekiq::Cron)
 
-if defined?(Sidekiq::Cron) && ENV['REDIS_URL'].present? && !ActiveModel::Type::Boolean.new.cast(ENV['DISABLE_SIDEKIQ_CRON']) && !Rails.env.test?
+if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::Boolean.new.cast(ENV["DISABLE_SIDEKIQ_CRON"]) && !Rails.env.test?
   jobs = {
-    'report_usage_daily' => {
-      'cron' => '0 1 * * *',
-      'class' => 'ReportUsageDailyLoader'
+    "report_usage_daily" => {
+      "cron" => "0 1 * * *",
+      "class" => "ReportUsageDailyLoader"
     }
   }
 

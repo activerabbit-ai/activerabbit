@@ -12,14 +12,14 @@ class Issue < ApplicationRecord
   validates :controller_action, presence: true
   validates :status, inclusion: { in: %w[open wip closed] }
 
-  scope :open, -> { where(status: 'open') }
-  scope :wip, -> { where(status: 'wip') }
-  scope :closed, -> { where(status: 'closed') }
+  scope :open, -> { where(status: "open") }
+  scope :wip, -> { where(status: "wip") }
+  scope :closed, -> { where(status: "closed") }
   scope :recent, -> { order(last_seen_at: :desc) }
   scope :by_frequency, -> { order(count: :desc) }
 
   def github_pr_url
-    read_attribute(:github_pr_url).presence || project&.settings&.dig('issue_pr_urls', id.to_s)
+    read_attribute(:github_pr_url).presence || project&.settings&.dig("issue_pr_urls", id.to_s)
   end
 
   def self.find_or_create_by_fingerprint(project:, exception_class:, top_frame:, controller_action:, sample_message: nil)
@@ -30,9 +30,9 @@ class Issue < ApplicationRecord
 
     if issue
       # Auto-reopen if closed
-      if issue.status == 'closed'
+      if issue.status == "closed"
         issue.update!(
-          status: 'open',
+          status: "open",
           closed_at: nil,
           count: issue.count + 1,
           last_seen_at: Time.current
@@ -55,7 +55,7 @@ class Issue < ApplicationRecord
         count: 1,
         first_seen_at: Time.current,
         last_seen_at: Time.current,
-        status: 'open'
+        status: "open"
       )
     end
 
@@ -63,15 +63,15 @@ class Issue < ApplicationRecord
   end
 
   def mark_wip!
-    update!(status: 'wip')
+    update!(status: "wip")
   end
 
   def close!
-    update!(status: 'closed', closed_at: Time.current)
+    update!(status: "closed", closed_at: Time.current)
   end
 
   def reopen!
-    update!(status: 'open', closed_at: nil)
+    update!(status: "open", closed_at: nil)
   end
 
   def title
@@ -83,14 +83,14 @@ class Issue < ApplicationRecord
   end
 
   def events_last_24h
-    events.where('created_at > ?', 24.hours.ago).count
+    events.where("created_at > ?", 24.hours.ago).count
   end
 
   private
 
   def self.generate_fingerprint(exception_class, top_frame, controller_action)
     # Normalize top frame (remove line numbers, normalize paths)
-    normalized_frame = top_frame.gsub(/:\d+/, ':N').gsub(/\/\d+\//, '/N/')
+    normalized_frame = top_frame.gsub(/:\d+/, ":N").gsub(/\/\d+\//, "/N/")
 
     components = [
       exception_class,
@@ -98,6 +98,6 @@ class Issue < ApplicationRecord
       controller_action
     ].compact
 
-    Digest::SHA256.hexdigest(components.join('|'))
+    Digest::SHA256.hexdigest(components.join("|"))
   end
 end

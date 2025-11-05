@@ -13,7 +13,7 @@ class PerfRollup < ApplicationRecord
   scope :for_target, ->(target) { where(target: target) }
 
     def self.rollup_minute_data!
-    require 'HDRHistogram'
+    require "HDRHistogram"
 
     # Process performance events from the last 2 minutes to handle any delays
     start_time = 2.minutes.ago.beginning_of_minute
@@ -61,7 +61,7 @@ class PerfRollup < ApplicationRecord
       # Create or update rollup
       rollup = find_or_initialize_by(
         project_id: project_id,
-        timeframe: 'minute',
+        timeframe: "minute",
         timestamp: timestamp,
         target: target,
         environment: environment
@@ -88,7 +88,7 @@ class PerfRollup < ApplicationRecord
     start_time = 2.hours.ago.beginning_of_hour
     end_time = 1.hour.ago.end_of_hour
 
-    where(timeframe: 'minute')
+    where(timeframe: "minute")
       .for_timerange(start_time, end_time)
       .select(:project_id, :target, :environment, "date_trunc('hour', timestamp) as truncated_timestamp")
       .group(:project_id, :target, :environment, "date_trunc('hour', timestamp)")
@@ -100,7 +100,7 @@ class PerfRollup < ApplicationRecord
 
       minute_rollups = where(
         project_id: project_id,
-        timeframe: 'minute',
+        timeframe: "minute",
         target: target,
         environment: environment,
         timestamp: timestamp..(timestamp + 1.hour)
@@ -110,11 +110,11 @@ class PerfRollup < ApplicationRecord
 
       # Aggregate minute data
       total_requests = minute_rollups.sum(:request_count)
-      total_duration = minute_rollups.sum('avg_duration_ms * request_count')
+      total_duration = minute_rollups.sum("avg_duration_ms * request_count")
 
       rollup = find_or_initialize_by(
         project_id: project_id,
-        timeframe: 'hour',
+        timeframe: "hour",
         timestamp: timestamp,
         target: target,
         environment: environment

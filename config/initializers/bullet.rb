@@ -1,5 +1,5 @@
 begin
-  require 'bullet'
+  require "bullet"
   Rails.application.configure do
     config.after_initialize do
       if defined?(Bullet) && Bullet.respond_to?(:enable=)

@@ -2,7 +2,7 @@ class BillingPortalController < ApplicationController
   before_action :authenticate_user!
 
   def create
-    Stripe.api_key = ENV['STRIPE_SECRET_KEY'] if defined?(Stripe) && (Stripe.api_key.nil? || Stripe.api_key.to_s.strip.empty?)
+    Stripe.api_key = ENV["STRIPE_SECRET_KEY"] if defined?(Stripe) && (Stripe.api_key.nil? || Stripe.api_key.to_s.strip.empty?)
     user = current_user
     user.set_payment_processor :stripe if user.payment_processor.blank?
     if user.payment_processor.processor_id.blank?

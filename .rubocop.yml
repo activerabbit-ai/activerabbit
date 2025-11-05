@@ -8,11 +8,12 @@ inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 #   Enabled: false
 AllCops:
   Exclude:
+    - 'Gemfile'
     - 'db/schema.rb'
     - 'db/migrate/**/*'
 
 Style/StringLiterals:
-  EnforcedStyle: single_quotes
+  EnforcedStyle: double_quotes
 
 Layout/SpaceInsideArrayLiteralBrackets:
   EnforcedStyle: no_space

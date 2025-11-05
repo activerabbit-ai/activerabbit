@@ -1,8 +1,8 @@
-require 'ostruct'
+require "ostruct"
 
 class PerformanceController < ApplicationController
   # Keep views under admin/performance
-  layout 'admin'
+  layout "admin"
   before_action :authenticate_user!
   before_action :set_project, if: -> { params[:project_id] }
 
@@ -12,20 +12,20 @@ class PerformanceController < ApplicationController
 
     if project_scope
       # Single project performance view
-      @timeframe = params[:timeframe] || 'hour'
+      @timeframe = params[:timeframe] || "hour"
       # Adaptive default window so the page shows data by default
       requested_hours = (params[:hours_back] || 24).to_i
       @hours_back = requested_hours
-      unless PerformanceEvent.where(project: project_scope).where('occurred_at > ?', @hours_back.hours.ago).exists?
+      unless PerformanceEvent.where(project: project_scope).where("occurred_at > ?", @hours_back.hours.ago).exists?
         @hours_back = [@hours_back, 168].max # 7 days
       end
-      unless PerformanceEvent.where(project: project_scope).where('occurred_at > ?', @hours_back.hours.ago).exists?
+      unless PerformanceEvent.where(project: project_scope).where("occurred_at > ?", @hours_back.hours.ago).exists?
         @hours_back = [@hours_back, 720].max # 30 days
       end
 
       @rollups = project_scope.perf_rollups
                          .where(timeframe: @timeframe)
-                         .where('timestamp > ?', @hours_back.hours.ago)
+                         .where("timestamp > ?", @hours_back.hours.ago)
                          .order(:timestamp)
 
       # Group by target (controller action)
@@ -42,32 +42,32 @@ class PerformanceController < ApplicationController
                               .limit(20)
 
       # Calculate project-specific metrics
-      recent_rollups = project_scope.perf_rollups.where('timestamp > ?', @hours_back.hours.ago)
-      raw_events_scope = PerformanceEvent.where(project: project_scope).where('occurred_at > ?', @hours_back.hours.ago)
+      recent_rollups = project_scope.perf_rollups.where("timestamp > ?", @hours_back.hours.ago)
+      raw_events_scope = PerformanceEvent.where(project: project_scope).where("occurred_at > ?", @hours_back.hours.ago)
       slow_threshold_ms = 1000
 
       if recent_rollups.exists?
       total_requests = recent_rollups.sum(:request_count)
       total_errors = recent_rollups.sum(:error_count)
       avg_response = recent_rollups.average(:avg_duration_ms)
-        slow_requests = raw_events_scope.where('duration_ms > ?', slow_threshold_ms).count
+        slow_requests = raw_events_scope.where("duration_ms > ?", slow_threshold_ms).count
 
         @metrics = {
-          response_time: avg_response ? "#{avg_response.round(1)}ms" : 'N/A',
+          response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
           throughput: "#{total_requests}/day",
-          error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : '0%',
+          error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%",
           slow_requests: slow_requests
         }
       else
         # Fallback to raw events when rollups are not present
         total_requests = raw_events_scope.count
         avg_response = raw_events_scope.average(:duration_ms)
-        slow_requests = raw_events_scope.where('duration_ms > ?', slow_threshold_ms).count
+        slow_requests = raw_events_scope.where("duration_ms > ?", slow_threshold_ms).count
 
       @metrics = {
-        response_time: avg_response ? "#{avg_response.round(1)}ms" : 'N/A',
+        response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
         throughput: "#{total_requests}/day",
-          error_rate: total_requests > 0 ? '0.0%' : '0%',
+          error_rate: total_requests > 0 ? "0.0%" : "0%",
           slow_requests: slow_requests
         }
       end
@@ -88,30 +88,30 @@ class PerformanceController < ApplicationController
           p95_val = p95_ms.any? ? (p95_ms.sum / p95_ms.size.to_f).round(1) : nil
 
           status = if total_errors_t.to_i > 0
-                     'issues'
+                     "issues"
           elsif (avg_val || 0) > 1000 || (p95_val || 0) > 1500
-                     'slow'
+                     "slow"
           else
-                     'healthy'
+                     "healthy"
           end
 
         @list_rows << {
           action: target,
-          avg_response_time: avg_val ? "#{avg_val}ms" : 'N/A',
-          p95_response_time: p95_val ? "#{p95_val}ms" : 'N/A',
+          avg_response_time: avg_val ? "#{avg_val}ms" : "N/A",
+          p95_response_time: p95_val ? "#{p95_val}ms" : "N/A",
           total_requests: total_requests_t,
           error_count: total_errors_t,
           status: status,
           first_seen: first_seen,
           last_seen: last_seen,
-          github_pr_url: project_scope.settings&.dig('perf_pr_urls', target.to_s)
+          github_pr_url: project_scope.settings&.dig("perf_pr_urls", target.to_s)
         }
         end
       else
         # Fallback: derive from raw performance events within window
         window_start = @hours_back.hours.ago
         events = PerformanceEvent.where(project: project_scope)
-                                 .where('occurred_at > ?', window_start)
+                                 .where("occurred_at > ?", window_start)
         events.group_by(&:target).each do |target, evts|
           durations = evts.map(&:duration_ms).compact.sort
           avg_val = durations.any? ? (durations.sum / durations.size.to_f) : nil
@@ -123,21 +123,21 @@ class PerformanceController < ApplicationController
           last_seen = evts.map(&:occurred_at).max
 
           status = if (avg_val || 0) > 1000 || (p95_val || 0) > 1500
-                     'slow'
+                     "slow"
           else
-                     'healthy'
+                     "healthy"
           end
 
         @list_rows << {
           action: target,
-          avg_response_time: avg_val ? "#{avg_val.round(1)}ms" : 'N/A',
-          p95_response_time: p95_val ? "#{p95_val.round(1)}ms" : 'N/A',
+          avg_response_time: avg_val ? "#{avg_val.round(1)}ms" : "N/A",
+          p95_response_time: p95_val ? "#{p95_val.round(1)}ms" : "N/A",
           total_requests: evts.size,
           error_count: 0,
           status: status,
           first_seen: first_seen,
           last_seen: last_seen,
-          github_pr_url: project_scope.settings&.dig('perf_pr_urls', target.to_s)
+          github_pr_url: project_scope.settings&.dig("perf_pr_urls", target.to_s)
         }
         end
         @list_rows.sort_by! { |r| -r[:total_requests].to_i }
@@ -147,9 +147,9 @@ class PerformanceController < ApplicationController
       @pagy, @list_rows = pagy_array(@list_rows, limit: 50)
 
       # Optional Graph (counts over time) for Performance Events
-      if params[:tab] == 'graph'
-        range_key = (params[:range] || '7D').to_s.upcase
-        if range_key == 'ALL'
+      if params[:tab] == "graph"
+        range_key = (params[:range] || "7D").to_s.upcase
+        if range_key == "ALL"
           earliest = PerformanceEvent.where(project: project_scope).minimum(:occurred_at) ||
                      project_scope.perf_rollups.minimum(:timestamp)
           if earliest
@@ -172,22 +172,22 @@ class PerformanceController < ApplicationController
           end
         else
           window_seconds = case range_key
-          when '1H' then 1.hour
-          when '4H' then 4.hours
-          when '8H' then 8.hours
-          when '12H' then 12.hours
-          when '24H' then 24.hours
-          when '48H' then 48.hours
-          when '7D' then 7.days
-          when '30D' then 30.days
+          when "1H" then 1.hour
+          when "4H" then 4.hours
+          when "8H" then 8.hours
+          when "12H" then 12.hours
+          when "24H" then 24.hours
+          when "48H" then 48.hours
+          when "7D" then 7.days
+          when "30D" then 30.days
           else 7.days
           end
 
           bucket_seconds = case range_key
-          when '1H', '4H', '8H' then 5.minutes
-          when '12H' then 15.minutes
-          when '24H', '48H' then 1.hour
-          when '7D', '30D' then 1.day
+          when "1H", "4H", "8H" then 5.minutes
+          when "12H" then 15.minutes
+          when "24H", "48H" then 1.hour
+          when "7D", "30D" then 1.day
           else 1.day
           end
 
@@ -200,7 +200,7 @@ class PerformanceController < ApplicationController
         labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
 
         event_times = PerformanceEvent.where(project: project_scope)
-                                      .where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
+                                      .where("occurred_at >= ? AND occurred_at <= ?", start_time, end_time)
                                       .pluck(:occurred_at)
         event_times.each do |ts|
           idx = (((ts - start_time) / bucket_seconds).floor).to_i
@@ -226,21 +226,21 @@ class PerformanceController < ApplicationController
       slow_threshold_ms = 1000
       slow_requests_sum = 0
       @projects.each do |project|
-        recent_rollups = project.perf_rollups.where('timestamp > ?', 24.hours.ago)
+        recent_rollups = project.perf_rollups.where("timestamp > ?", 24.hours.ago)
         if recent_rollups.exists?
         avg_response = recent_rollups.average(:avg_duration_ms)
         requests = recent_rollups.sum(:request_count)
         errors = recent_rollups.sum(:error_count)
           p95 = recent_rollups.average(:p95_duration_ms)
         else
-          raw_events = PerformanceEvent.where(project: project).where('occurred_at > ?', 24.hours.ago)
+          raw_events = PerformanceEvent.where(project: project).where("occurred_at > ?", 24.hours.ago)
           avg_response = raw_events.average(:duration_ms)
           requests = raw_events.count
           errors = 0
           p95 = nil
         end
 
-        slow_requests_sum += PerformanceEvent.where(project: project).where('occurred_at > ?', 24.hours.ago).where('duration_ms > ?', slow_threshold_ms).count
+        slow_requests_sum += PerformanceEvent.where(project: project).where("occurred_at > ?", 24.hours.ago).where("duration_ms > ?", slow_threshold_ms).count
 
         @global_stats[project.id] = {
           avg_response_time: avg_response&.round(2),
@@ -257,15 +257,15 @@ class PerformanceController < ApplicationController
 
       # Calculate global metrics
       @metrics = {
-        response_time: response_times.any? ? "#{(response_times.sum / response_times.size).round(1)}ms" : 'N/A',
+        response_time: response_times.any? ? "#{(response_times.sum / response_times.size).round(1)}ms" : "N/A",
         throughput: "#{total_requests}/day",
-        error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : '0%',
+        error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%",
         slow_requests: slow_requests_sum
       }
 
-      if params[:tab] == 'graph'
-        range_key = (params[:range] || '7D').to_s.upcase
-        if range_key == 'ALL'
+      if params[:tab] == "graph"
+        range_key = (params[:range] || "7D").to_s.upcase
+        if range_key == "ALL"
           earliest = PerformanceEvent.minimum(:occurred_at) || PerfRollup.minimum(:timestamp)
           if earliest
             start_time = earliest
@@ -287,22 +287,22 @@ class PerformanceController < ApplicationController
           end
         else
           window_seconds = case range_key
-          when '1H' then 1.hour
-          when '4H' then 4.hours
-          when '8H' then 8.hours
-          when '12H' then 12.hours
-          when '24H' then 24.hours
-          when '48H' then 48.hours
-          when '7D' then 7.days
-          when '30D' then 30.days
+          when "1H" then 1.hour
+          when "4H" then 4.hours
+          when "8H" then 8.hours
+          when "12H" then 12.hours
+          when "24H" then 24.hours
+          when "48H" then 48.hours
+          when "7D" then 7.days
+          when "30D" then 30.days
           else 7.days
           end
 
           bucket_seconds = case range_key
-          when '1H', '4H', '8H' then 5.minutes
-          when '12H' then 15.minutes
-          when '24H', '48H' then 1.hour
-          when '7D', '30D' then 1.day
+          when "1H", "4H", "8H" then 5.minutes
+          when "12H" then 15.minutes
+          when "24H", "48H" then 1.hour
+          when "7D", "30D" then 1.day
           else 1.day
           end
 
@@ -314,7 +314,7 @@ class PerformanceController < ApplicationController
         counts = Array.new(bucket_count, 0)
         labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
 
-        event_times = PerformanceEvent.where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
+        event_times = PerformanceEvent.where("occurred_at >= ? AND occurred_at <= ?", start_time, end_time)
                                       .pluck(:occurred_at)
         event_times.each do |ts|
           idx = (((ts - start_time) / bucket_seconds).floor).to_i
@@ -334,25 +334,25 @@ class PerformanceController < ApplicationController
   def action_detail
     @target = params[:target]
     @current_tab = case params[:tab]
-    when 'samples' then 'samples'
-    when 'graph' then 'graph'
-    when 'ai' then 'ai'
-    else 'summary'
+    when "samples" then "samples"
+    when "graph" then "graph"
+    when "ai" then "ai"
+    else "summary"
     end
 
     # Range handling (default ALL except Graph which defaults to 7D)
-    default_range_key = (@current_tab == 'graph') ? '7D' : 'ALL'
+    default_range_key = (@current_tab == "graph") ? "7D" : "ALL"
     range_key = (params[:range] || default_range_key).to_s.upcase
     window_seconds = case range_key
-    when '1H' then 1.hour
-    when '4H' then 4.hours
-    when '8H' then 8.hours
-    when '12H' then 12.hours
-    when '24H' then 24.hours
-    when '48H' then 48.hours
-    when '7D' then 7.days
-    when '30D' then 30.days
-    when 'ALL' then nil
+    when "1H" then 1.hour
+    when "4H" then 4.hours
+    when "8H" then 8.hours
+    when "12H" then 12.hours
+    when "24H" then 24.hours
+    when "48H" then 48.hours
+    when "7D" then 7.days
+    when "30D" then 30.days
+    when "ALL" then nil
     else 7.days
     end
 
@@ -363,13 +363,13 @@ class PerformanceController < ApplicationController
 
     # Try to find real rollups for this specific target
     rollups_scope = project_scope.perf_rollups.where(target: @target)
-    rollups_scope = rollups_scope.where('timestamp > ?', start_time) if start_time
+    rollups_scope = rollups_scope.where("timestamp > ?", start_time) if start_time
     @rollups = rollups_scope.order(:timestamp)
 
       if @rollups.empty?
         # Fallback: derive summary from raw events for this target (last 7 days)
         raw_events_scope = PerformanceEvent.where(project: project_scope, target: @target)
-        raw_events_scope = raw_events_scope.where('occurred_at > ?', start_time) if start_time
+        raw_events_scope = raw_events_scope.where("occurred_at > ?", start_time) if start_time
         raw_events = raw_events_scope
         durations = raw_events.pluck(:duration_ms).compact.sort
 
@@ -388,7 +388,7 @@ class PerformanceController < ApplicationController
 
         # Build synthetic daily "rollups" for the Performance History table from raw events
         occurred_and_duration = PerformanceEvent.where(project: project_scope, target: @target)
-                                                .yield_self { |rel| start_time ? rel.where('occurred_at > ?', start_time) : rel }
+                                                .yield_self { |rel| start_time ? rel.where("occurred_at > ?", start_time) : rel }
                                                 .pluck(:occurred_at, :duration_ms)
         grouped = occurred_and_duration.group_by { |(ts, _)| ts.beginning_of_day }
         synthetic = []
@@ -420,7 +420,7 @@ class PerformanceController < ApplicationController
       @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
 
       # Group by timeframe for charts
-      @hourly_data = @rollups.where('timestamp > ?', 24.hours.ago)
+      @hourly_data = @rollups.where("timestamp > ?", 24.hours.ago)
                              .group_by { |r| r.timestamp.beginning_of_hour }
 
       @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
@@ -430,7 +430,7 @@ class PerformanceController < ApplicationController
     # Common: recent samples for this action
     project_scope = @current_project || @project
     events_scope = PerformanceEvent.where(project: project_scope, target: @target)
-    events_scope = events_scope.where('occurred_at > ?', start_time) if start_time
+    events_scope = events_scope.where("occurred_at > ?", start_time) if start_time
     @events = events_scope
                               .order(occurred_at: :desc)
                               .limit(200)
@@ -440,9 +440,9 @@ class PerformanceController < ApplicationController
     @selected_event ||= @events.first
 
     # Graph data for this action
-    if @current_tab == 'graph'
-      range_key = (params[:range] || '7D').to_s.upcase
-      if range_key == 'ALL'
+    if @current_tab == "graph"
+      range_key = (params[:range] || "7D").to_s.upcase
+      if range_key == "ALL"
         earliest = PerformanceEvent.where(project: project_scope, target: @target).minimum(:occurred_at) ||
                    project_scope.perf_rollups.where(target: @target).minimum(:timestamp)
         if earliest
@@ -467,22 +467,22 @@ class PerformanceController < ApplicationController
         end
       else
         window_seconds = case range_key
-        when '1H' then 1.hour
-        when '4H' then 4.hours
-        when '8H' then 8.hours
-        when '12H' then 12.hours
-        when '24H' then 24.hours
-        when '48H' then 48.hours
-        when '7D' then 7.days
-        when '30D' then 30.days
+        when "1H" then 1.hour
+        when "4H" then 4.hours
+        when "8H" then 8.hours
+        when "12H" then 12.hours
+        when "24H" then 24.hours
+        when "48H" then 48.hours
+        when "7D" then 7.days
+        when "30D" then 30.days
         else 24.hours
         end
 
         bucket_seconds = case range_key
-        when '1H', '4H', '8H' then 5.minutes
-        when '12H' then 15.minutes
-        when '24H', '48H' then 1.hour
-        when '7D', '30D' then 1.day
+        when "1H", "4H", "8H" then 5.minutes
+        when "12H" then 15.minutes
+        when "24H", "48H" then 1.hour
+        when "7D", "30D" then 1.day
         else 1.hour
         end
 
@@ -495,7 +495,7 @@ class PerformanceController < ApplicationController
       labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
 
       events = PerformanceEvent.where(project: project_scope, target: @target)
-                               .where('occurred_at >= ? AND occurred_at <= ?', start_time, end_time)
+                               .where("occurred_at >= ? AND occurred_at <= ?", start_time, end_time)
                                .pluck(:occurred_at, :duration_ms)
       sum_per_bucket = Array.new(bucket_count, 0.0)
       count_per_bucket = Array.new(bucket_count, 0)
@@ -520,7 +520,7 @@ class PerformanceController < ApplicationController
     end
 
     # AI summary generation on demand
-    if @current_tab == 'ai'
+    if @current_tab == "ai"
       summary_record = PerformanceSummary.find_by(project: project_scope, target: @target)
       if summary_record&.summary.present?
         @performance_summary = summary_record.summary
@@ -561,7 +561,7 @@ class PerformanceController < ApplicationController
 
     # Order actions by recent volume (last hours), descending
     action_counts = PerformanceEvent.where(project: project_scope)
-                                    .where('occurred_at > ?', window_start)
+                                    .where("occurred_at > ?", window_start)
                                     .group(:target)
                                     .count
     ordered_targets = action_counts.sort_by { |_, c| -c }.map(&:first)
@@ -575,7 +575,7 @@ class PerformanceController < ApplicationController
       else
                         performance_path
       end
-      redirect_to redirect_path, alert: 'Performance issue not found'
+      redirect_to redirect_path, alert: "Performance issue not found"
       return
     end
 
@@ -616,11 +616,11 @@ class PerformanceController < ApplicationController
 
     # Filtering
     case params[:filter]
-    when 'slow'
+    when "slow"
       scope = scope.slow
-    when 'frequent'
+    when "frequent"
       scope = scope.frequent
-    when 'n_plus_one'
+    when "n_plus_one"
       scope = scope.n_plus_one_candidates
     end
 
@@ -632,7 +632,7 @@ class PerformanceController < ApplicationController
     @sql_fingerprint = project_scope.sql_fingerprints.find(params[:id])
     @recent_events = project_scope.events
                              .where("payload->>'sql_queries' IS NOT NULL")
-                             .where('created_at > ?', 7.days.ago)
+                             .where("created_at > ?", 7.days.ago)
                              .limit(50)
   end
 
@@ -663,15 +663,15 @@ class PerformanceController < ApplicationController
       pr_project = project_scope
       if pr_project
         settings = pr_project.settings || {}
-        perf_pr_urls = settings['perf_pr_urls'] || {}
+        perf_pr_urls = settings["perf_pr_urls"] || {}
         perf_pr_urls[target.to_s] = result[:pr_url]
-        settings['perf_pr_urls'] = perf_pr_urls
+        settings["perf_pr_urls"] = perf_pr_urls
         pr_project.update(settings: settings)
       end
 
       redirect_to result[:pr_url], allow_other_host: true
     else
-      redirect_to redirect_path, alert: (result[:error] || 'Failed to open PR')
+      redirect_to redirect_path, alert: (result[:error] || "Failed to open PR")
     end
   end
 

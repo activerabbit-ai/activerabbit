@@ -17,8 +17,8 @@ class IssueAlertJob
         AlertRule.check_error_frequency_rules(issue)
 
         # Also trigger new issue alerts if configured
-        issue.project.alert_rules.active.for_type('new_issue').each do |rule|
-          AlertJob.perform_async(rule.id, 'new_issue', { issue_id: issue.id })
+        issue.project.alert_rules.active.for_type("new_issue").each do |rule|
+          AlertJob.perform_async(rule.id, "new_issue", { issue_id: issue.id })
         end
       else
         # Check frequency-based rules
