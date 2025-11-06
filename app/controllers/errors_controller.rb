@@ -17,11 +17,13 @@ class ErrorsController < ApplicationController
       @open_errors = project_scope.issues.open.count
       @resolved_errors = project_scope.issues.closed.count
       @recent_errors = project_scope.issues.where('last_seen_at > ?', 1.hour.ago).count
+      @total_events = project_scope.events.count
     else
       @total_errors = Issue.count
       @open_errors = Issue.open.count
       @resolved_errors = Issue.closed.count
       @recent_errors = Issue.where('last_seen_at > ?', 1.hour.ago).count
+      @total_events = Event.count
     end
 
     # Optional: build graph data across all errors
