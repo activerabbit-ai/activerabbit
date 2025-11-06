@@ -33,6 +33,7 @@ class DashboardController < ApplicationController
     events_today_by_project = Event.where(project_id: project_ids)
                                    .where("occurred_at > ?", 24.hours.ago)
                                    .group(:project_id).count
+    events_total_by_project = Event.where(project_id: project_ids).group(:project_id).count
 
     # Stats for each project
     @project_stats = {}
@@ -43,6 +44,7 @@ class DashboardController < ApplicationController
       @project_stats[project.id] = {
         issues_count: issues_counts_by_project[project.id].to_i,
         events_today: events_today_by_project[project.id].to_i,
+        events_total: events_total_by_project[project.id].to_i,
         health_status: project.health_status,
         issue_pr_urls: issue_pr_urls,
         perf_pr_urls: perf_pr_urls
