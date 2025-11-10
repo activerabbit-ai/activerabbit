@@ -86,6 +86,17 @@ class Issue < ApplicationRecord
     events.where("created_at > ?", 24.hours.ago).count
   end
 
+  def self.ransackable_attributes(auth_object = nil)
+    ["account_id", "ai_summary", "ai_summary_generated_at", "closed_at",
+    "controller_action", "count", "created_at", "exception_class",
+    "fingerprint", "first_seen_at", "id", "id_value", "last_seen_at",
+    "project_id", "sample_message", "status", "top_frame", "updated_at"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["account", "events", "project"]
+  end
+
   private
 
   def self.generate_fingerprint(exception_class, top_frame, controller_action)
