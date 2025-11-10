@@ -143,6 +143,24 @@ class PerformanceController < ApplicationController
         @list_rows.sort_by! { |r| -r[:total_requests].to_i }
       end
 
+      if params[:q].present?
+        query = params[:q].downcase
+        @list_rows.select! { |row| row[:action].downcase.include?(query) }
+      end
+
+      if params[:sort].present?
+        sort_key, sort_dir = params[:sort].split("_") # ex: "avg_response_time_desc"
+        @list_rows.sort_by! do |row|
+          value = row[sort_key.to_sym]
+          if value.to_s.end_with?("ms")
+            value.to_f
+          else
+            value.to_s.downcase
+          end
+        end
+        @list_rows.reverse! if sort_dir == "desc"
+      end
+
       # Paginate list_rows (array pagination)
       @pagy, @list_rows = pagy_array(@list_rows, limit: 50)
 

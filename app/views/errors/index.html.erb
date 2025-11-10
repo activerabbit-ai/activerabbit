@@ -74,6 +74,19 @@
   <div class="px-6 py-4 border-b border-gray-200">
     <div class="flex items-center justify-between">
       <h3 class="text-lg font-medium text-gray-900">🐰 Captured Errors</h3>
+      <div class="flex-1 max-w ml-4 mr-4">
+        <%= search_form_for @q, url: errors_path, method: :get, html: { class: "w-full" } do |f| %>
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <%= f.search_field :exception_class_or_sample_message_or_status_or_project_name_cont, 
+              placeholder: "Search", 
+              class: "block w-full pl-6 pr-4 py-1.5 text-xs border border-gray-300 rounded-full focus:ring-indigo-500 focus:border-indigo-500" %>
+          </div>
+        <% end %>
+      </div>
       <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
         <% list_url = url_for(params.permit!.to_h.except(:tab, :range)) %>
         <% graph_url = url_for(params.permit!.to_h.merge(tab: 'graph', range: (params[:range] || '7D'))) %>
@@ -116,25 +129,25 @@
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Error & Action
+              <%= sort_link(@q, :exception_class, "Error & Action", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
+              <%= sort_link(@q, :status, "Status", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Total
+              <%= sort_link(@q, :count, "Total", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               PR
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              AI
+              <%= sort_link(@q, :ai_summary, "AI", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Last Seen
+              <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              First Seen
+              <%= sort_link(@q, :first_seen_at, "First Seen", class: "inline-flex items-center") %>
             </th>
           </tr>
         </thead>
@@ -213,7 +226,11 @@
                   end,
                   target: "_blank",
                   rel: "noopener",
-                  class: "inline-flex items-center px-2 py-1 border border-indigo-200 shadow-sm text-xs font-medium rounded text-indigo-600 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-1 focus:ring-indigo-500") do %>
+                  class: "inline-flex items-center px-2 py-1 border shadow-sm text-xs font-medium rounded focus:outline-none focus:ring-1 " +
+                    (issue.ai_summary.present? ? 
+                      "text-green-600 bg-green-50 border-green-200 hover:bg-green-100 focus:ring-green-500" :
+                      "text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500")
+                ) do %>
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

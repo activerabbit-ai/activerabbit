@@ -149,6 +149,12 @@ class Project < ApplicationRecord
     save!
   end
 
+  def self.ransackable_attributes(auth_object = nil)
+    ["account_id", "active", "created_at", "description",
+    "environment", "health_status", "id", "id_value", "last_event_at",
+    "name", "settings", "slug", "tech_stack", "updated_at", "url", "user_id"]
+  end
+
   private
 
   def generate_slug

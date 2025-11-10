@@ -8,8 +8,11 @@ class ErrorsController < ApplicationController
     project_scope = @current_project || @project
 
     # Get all issues (errors) ordered by most recent, including resolved ones
-    scope = project_scope ? project_scope.issues : Issue
-    @pagy, @issues = pagy(scope.includes(:project).recent, limit: 50)
+    base_scope = project_scope ? project_scope.issues : Issue
+    @q = base_scope.ransack(params[:q])
+    scoped_issues = @q.result.includes(:project).recent
+
+    @pagy, @issues = pagy(scoped_issues, limit: 50)
 
     # Get summary stats scoped to current project or global
     if project_scope
