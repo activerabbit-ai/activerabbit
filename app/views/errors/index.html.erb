@@ -73,20 +73,25 @@
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 py-4 border-b border-gray-200">
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-medium text-gray-900">🐰 Captured Errors</h3>
-      <div class="flex-1 max-w ml-4 mr-4">
-        <%= search_form_for @q, url: errors_path, method: :get, html: { class: "w-full" } do |f| %>
-          <div class="relative">
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
-                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      <h3 class="text-lg font-medium text-gray-900 whitespace-nowrap">🐰 Captured Errors</h3>
+
+      <div class="flex-1 flex justify-center">
+        <%= search_form_for @q, url: errors_path, method: :get, html: { class: "w-full flex justify-end mr-2" } do |f| %>
+          <div class="relative w-64">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                 xmlns="http://www.w3.org/2000/svg" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <%= f.search_field :exception_class_or_sample_message_or_status_or_project_name_cont, 
-              placeholder: "Search", 
-              class: "block w-full pl-6 pr-4 py-1.5 text-xs border border-gray-300 rounded-full focus:ring-indigo-500 focus:border-indigo-500" %>
+            <%= f.search_field :exception_class_or_sample_message_or_status_or_project_name_cont,
+              placeholder: "Filter by attribute values",
+              class: "block w-full pl-9 pr-3 py-1.5 text-xs text-center border border-gray-300 rounded-full bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400" %>
           </div>
         <% end %>
       </div>
+
       <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
         <% list_url = url_for(params.permit!.to_h.except(:tab, :range)) %>
         <% graph_url = url_for(params.permit!.to_h.merge(tab: 'graph', range: (params[:range] || '7D'))) %>
