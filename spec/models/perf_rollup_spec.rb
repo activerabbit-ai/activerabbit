@@ -23,4 +23,3 @@ RSpec.describe PerfRollup, type: :model do
     end
   end
 end
-

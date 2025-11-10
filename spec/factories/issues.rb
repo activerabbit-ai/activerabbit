@@ -12,6 +12,3 @@ FactoryBot.define do
     last_seen_at { Time.current }
   end
 end
-
-
-

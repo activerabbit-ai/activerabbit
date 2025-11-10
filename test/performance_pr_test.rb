@@ -27,12 +27,10 @@ class PerformancePrTest < ActionDispatch::IntegrationTest
 
   test "action_detail renders Open on GitHub when perf_pr_urls present" do
     pr_url = "https://github.com/owner/repo/pull/42"
-    @project.update(settings: (@project.settings || {}).merge('perf_pr_urls' => { 'HomeController#index' => pr_url }))
+    @project.update(settings: (@project.settings || {}).merge("perf_pr_urls" => { "HomeController#index" => pr_url }))
 
     get project_performance_action_detail_path(@project, target: "HomeController#index")
     assert_response :success
     assert_select "a[href='#{pr_url}']", text: /Open on GitHub/
   end
 end
-
-

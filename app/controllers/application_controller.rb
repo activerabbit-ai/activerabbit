@@ -95,8 +95,8 @@ class ApplicationController < ActionController::Base
   def check_onboarding_needed
     return unless user_signed_in?
     return if devise_controller?
-    return if controller_name == 'onboarding'
-    return if controller_name == 'projects' # Allow access to projects controller during onboarding
+    return if controller_name == "onboarding"
+    return if controller_name == "projects" # Allow access to projects controller during onboarding
 
     begin
       if current_user.needs_onboarding?
@@ -110,7 +110,7 @@ class ApplicationController < ActionController::Base
 
   def handle_subscription_welcome
     return unless user_signed_in?
-    return unless params[:subscribed] == '1'
+    return unless params[:subscribed] == "1"
     plan = params[:plan].presence || current_account&.current_plan
     interval = params[:interval].presence || current_account&.billing_interval
     if plan && !session[:subscription_welcome_shown]

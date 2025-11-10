@@ -25,7 +25,7 @@ class IssueDashboard < Administrate::BaseDashboard
     status: Field::String,
     top_frame: Field::Text,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

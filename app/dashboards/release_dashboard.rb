@@ -19,7 +19,7 @@ class ReleaseDashboard < Administrate::BaseDashboard
     regression_detected: Field::Boolean,
     version: Field::String,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

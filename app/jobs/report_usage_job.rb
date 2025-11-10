@@ -19,7 +19,7 @@ class ReportUsageJob < ApplicationJob
     start_at = account.event_usage_period_start || Time.current.beginning_of_month
     end_at   = account.event_usage_period_end || Time.current.end_of_month
     used = AiRequest.where(account_id: account.id, occurred_at: start_at..end_at).count
-    over = [ used - 500, 0 ].max
+    over = [used - 500, 0].max
     units = (over.to_f / 1000).ceil
     return if units <= 0
 

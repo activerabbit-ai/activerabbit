@@ -12,12 +12,12 @@ class PerformanceEvent < ApplicationRecord
   scope :recent, -> { order(occurred_at: :desc) }
   scope :for_timerange, ->(start_time, end_time) { where(occurred_at: start_time..end_time) }
   scope :for_target, ->(target) { where(target: target) }
-  scope :slow, -> { where('duration_ms > ?', 1000) } # > 1 second
+  scope :slow, -> { where("duration_ms > ?", 1000) } # > 1 second
 
   before_create :set_defaults
 
   def self.ingest_performance(project:, payload:)
-    target = payload[:controller_action] || payload[:job_class] || 'unknown'
+    target = payload[:controller_action] || payload[:job_class] || "unknown"
 
     create!(
       project: project,
@@ -28,7 +28,7 @@ class PerformanceEvent < ApplicationRecord
       allocations: payload[:allocations],
       sql_queries_count: payload[:sql_queries_count],
       occurred_at: payload[:occurred_at] || Time.current,
-      environment: payload[:environment] || 'production',
+      environment: payload[:environment] || "production",
       release_version: payload[:release_version],
       request_path: payload[:request_path],
       request_method: payload[:request_method],
@@ -51,6 +51,6 @@ class PerformanceEvent < ApplicationRecord
 
   def set_defaults
     self.occurred_at ||= Time.current
-    self.environment ||= 'production'
+    self.environment ||= "production"
   end
 end

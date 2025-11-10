@@ -18,7 +18,7 @@ class ApiTokenDashboard < Administrate::BaseDashboard
     token: Field::String,
     usage_count: Field::Number,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

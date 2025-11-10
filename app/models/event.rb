@@ -12,7 +12,7 @@ class Event < ApplicationRecord
 
   scope :recent, -> { order(occurred_at: :desc) }
   scope :for_timerange, ->(start_time, end_time) { where(occurred_at: start_time..end_time) }
-  scope :last_24h, -> { where('occurred_at > ?', 24.hours.ago) }
+  scope :last_24h, -> { where("occurred_at > ?", 24.hours.ago) }
 
   before_create :set_defaults
 
@@ -44,7 +44,7 @@ class Event < ApplicationRecord
       request_path: payload[:request_path],
       request_method: payload[:request_method],
       occurred_at: payload[:occurred_at] || Time.current,
-      environment: payload[:environment] || 'production',
+      environment: payload[:environment] || "production",
       release_version: payload[:release_version],
       user_id_hash: payload[:user_id] ? Digest::SHA256.hexdigest(payload[:user_id].to_s) : nil,
       context: scrub_pii(payload[:context] || {}),
@@ -66,7 +66,7 @@ class Event < ApplicationRecord
   def event_type
     # For now, all events are error events
     # This could be extended in the future to support performance events, etc.
-    'error'
+    "error"
   end
 
   def duration_ms
@@ -79,27 +79,27 @@ class Event < ApplicationRecord
 
   def set_defaults
     self.occurred_at ||= Time.current
-    self.environment ||= 'production'
+    self.environment ||= "production"
   end
 
   def self.extract_top_frame(backtrace)
-    return 'unknown' if backtrace.blank?
+    return "unknown" if backtrace.blank?
 
     frames = backtrace.is_a?(Array) ? backtrace : backtrace.split("\n")
 
     # Find first frame that's not from gems/system
     app_frame = frames.find do |frame|
-      !frame.include?('/gems/') &&
-      !frame.include?('/ruby/') &&
-      !frame.include?('/lib/ruby/') &&
-      frame.include?('/')
+      !frame.include?("/gems/") &&
+      !frame.include?("/ruby/") &&
+      !frame.include?("/lib/ruby/") &&
+      frame.include?("/")
     end
 
-    app_frame || frames.first || 'unknown'
+    app_frame || frames.first || "unknown"
   end
 
   def self.extract_controller_from_backtrace(backtrace)
-    return 'unknown' if backtrace.blank?
+    return "unknown" if backtrace.blank?
 
     frames = backtrace.is_a?(Array) ? backtrace : backtrace.split("\n")
 
@@ -114,10 +114,10 @@ class Event < ApplicationRecord
       if match = controller_frame.match(/([a-z_]+)_controller\.rb.*in `([a-z_]+)'/)
         "#{match[1].camelize}Controller##{match[2]}"
       else
-        'UnknownController#unknown'
+        "UnknownController#unknown"
       end
     else
-      'BackgroundJob' # Assume background job if no controller found
+      "BackgroundJob" # Assume background job if no controller found
     end
   end
 
@@ -133,7 +133,7 @@ class Event < ApplicationRecord
       if value.is_a?(String)
         pii_fields.each do |field|
           if value.match?(/#{field}/i)
-            value = '[SCRUBBED]'
+            value = "[SCRUBBED]"
             break
           end
         end

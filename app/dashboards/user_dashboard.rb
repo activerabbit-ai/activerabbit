@@ -26,7 +26,7 @@ class UserDashboard < Administrate::BaseDashboard
     sign_in_count: Field::Number,
     subscriptions: Field::HasMany,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

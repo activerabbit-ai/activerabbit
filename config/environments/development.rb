@@ -3,7 +3,7 @@ require "active_support/core_ext/integer/time"
 Rails.application.configure do
   # Bullet guard for AR 8
   begin
-    require 'bullet'
+    require "bullet"
     config.after_initialize do
       if Bullet.respond_to?(:enable=)
         Bullet.enable = true

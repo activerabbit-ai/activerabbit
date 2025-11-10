@@ -75,16 +75,16 @@ class Project < ApplicationRecord
   end
 
   def update_health_status!(healthcheck_results)
-    critical_count = healthcheck_results.count { |r| r[:status] == 'critical' }
-    warning_count = healthcheck_results.count { |r| r[:status] == 'warning' }
+    critical_count = healthcheck_results.count { |r| r[:status] == "critical" }
+    warning_count = healthcheck_results.count { |r| r[:status] == "warning" }
 
     new_status = if critical_count > 0
-                   'critical'
-                 elsif warning_count > 0
-                   'warning'
-                 else
-                   'healthy'
-                 end
+                   "critical"
+    elsif warning_count > 0
+                   "warning"
+    else
+                   "healthy"
+    end
 
     update!(health_status: new_status)
   end
@@ -93,42 +93,42 @@ class Project < ApplicationRecord
   def slack_webhook_url
     # Priority: ENV variable > database setting
     env_webhook = ENV["SLACK_WEBHOOK_URL_#{slug.upcase}"] || ENV["SLACK_WEBHOOK_URL"]
-    env_webhook.presence || settings['slack_webhook_url']
+    env_webhook.presence || settings["slack_webhook_url"]
   end
 
   def slack_webhook_url=(url)
     # Only store in database if not using environment variable
-    if url.present? && !url.start_with?('ENV:')
-      self.settings = settings.merge('slack_webhook_url' => url&.strip)
-    elsif url&.start_with?('ENV:')
+    if url.present? && !url.start_with?("ENV:")
+      self.settings = settings.merge("slack_webhook_url" => url&.strip)
+    elsif url&.start_with?("ENV:")
       # Store reference to environment variable
-      env_var = url.sub('ENV:', '')
-      self.settings = settings.merge('slack_webhook_url' => "ENV:#{env_var}")
+      env_var = url.sub("ENV:", "")
+      self.settings = settings.merge("slack_webhook_url" => "ENV:#{env_var}")
     else
       # Clear the setting
       new_settings = settings.dup
-      new_settings.delete('slack_webhook_url')
+      new_settings.delete("slack_webhook_url")
       self.settings = new_settings
     end
   end
 
   def slack_webhook_from_env?
-    settings['slack_webhook_url']&.start_with?('ENV:') ||
+    settings["slack_webhook_url"]&.start_with?("ENV:") ||
     ENV["SLACK_WEBHOOK_URL_#{slug.upcase}"].present? ||
     ENV["SLACK_WEBHOOK_URL"].present?
   end
 
   def slack_channel
-    settings['slack_channel'] || '#alerts'
+    settings["slack_channel"] || "#alerts"
   end
 
   def slack_channel=(channel)
     # Ensure channel starts with # if it's not a user DM
     formatted_channel = channel&.strip
-    if formatted_channel.present? && !formatted_channel.start_with?('#', '@')
+    if formatted_channel.present? && !formatted_channel.start_with?("#", "@")
       formatted_channel = "##{formatted_channel}"
     end
-    self.settings = settings.merge('slack_channel' => formatted_channel)
+    self.settings = settings.merge("slack_channel" => formatted_channel)
   end
 
   def slack_configured?
@@ -136,16 +136,16 @@ class Project < ApplicationRecord
   end
 
   def slack_notifications_enabled?
-    slack_configured? && settings['slack_notifications_enabled'] != false
+    slack_configured? && settings["slack_notifications_enabled"] != false
   end
 
   def enable_slack_notifications!
-    self.settings = settings.merge('slack_notifications_enabled' => true)
+    self.settings = settings.merge("slack_notifications_enabled" => true)
     save!
   end
 
   def disable_slack_notifications!
-    self.settings = settings.merge('slack_notifications_enabled' => false)
+    self.settings = settings.merge("slack_notifications_enabled" => false)
     save!
   end
 

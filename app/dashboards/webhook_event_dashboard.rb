@@ -13,7 +13,7 @@ class WebhookEventDashboard < Administrate::BaseDashboard
     processed_at: Field::DateTime,
     provider: Field::String,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

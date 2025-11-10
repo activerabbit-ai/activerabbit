@@ -52,7 +52,7 @@ class CheckoutCreator
   end
 
   def build_line_items
-    items = [ { price: price_for_plan(@plan, @interval), quantity: 1 } ]
+    items = [{ price: price_for_plan(@plan, @interval), quantity: 1 }]
     if @ai
       items << { price: ai_base_price, quantity: 1 }
       items << { price: ENV.fetch("STRIPE_PRICE_AI_OVERAGE_METERED"), quantity: 1 }
@@ -61,13 +61,13 @@ class CheckoutCreator
   end
 
   def price_for_plan(plan, interval)
-    case [ plan, interval ]
-    when [ "developer", "month" ] then ENV.fetch("STRIPE_PRICE_DEV_MONTHLY")
-    when [ "developer", "year" ]  then ENV.fetch("STRIPE_PRICE_DEV_ANNUAL")
-    when [ "team", "month" ]      then ENV.fetch("STRIPE_PRICE_TEAM_MONTHLY")
-    when [ "team", "year" ]       then ENV.fetch("STRIPE_PRICE_TEAM_ANNUAL")
-    when [ "enterprise", "month" ] then ENV.fetch("STRIPE_PRICE_ENT_MONTHLY")
-    when [ "enterprise", "year" ]  then ENV.fetch("STRIPE_PRICE_ENT_ANNUAL")
+    case [plan, interval]
+    when ["developer", "month"] then ENV.fetch("STRIPE_PRICE_DEV_MONTHLY")
+    when ["developer", "year"]  then ENV.fetch("STRIPE_PRICE_DEV_ANNUAL")
+    when ["team", "month"]      then ENV.fetch("STRIPE_PRICE_TEAM_MONTHLY")
+    when ["team", "year"]       then ENV.fetch("STRIPE_PRICE_TEAM_ANNUAL")
+    when ["enterprise", "month"] then ENV.fetch("STRIPE_PRICE_ENT_MONTHLY")
+    when ["enterprise", "year"]  then ENV.fetch("STRIPE_PRICE_ENT_ANNUAL")
     else raise ArgumentError, "unknown plan/interval"
     end
   end

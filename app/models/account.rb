@@ -22,8 +22,8 @@ class Account < ApplicationRecord
     user_ids_relation = users.select(:id)
     @_active_subscription_record = Pay::Subscription
                                     .joins(:customer)
-                                    .where(status: 'active')
-                                    .where(pay_customers: { owner_type: 'User', owner_id: user_ids_relation })
+                                    .where(status: "active")
+                                    .where(pay_customers: { owner_type: "User", owner_id: user_ids_relation })
                                     .order(updated_at: :desc)
                                     .first
   end

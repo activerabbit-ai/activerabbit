@@ -7,6 +7,3 @@ FactoryBot.define do
     active { true }
   end
 end
-
-
-

@@ -10,6 +10,3 @@ FactoryBot.define do
     settings { {} }
   end
 end
-
-
-

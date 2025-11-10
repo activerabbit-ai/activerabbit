@@ -80,11 +80,11 @@ class Release < ApplicationRecord
       )
 
       # Send alerts for significant regressions
-      high_severity_regressions = regressions.select { |r| r[:severity] == 'high' }
+      high_severity_regressions = regressions.select { |r| r[:severity] == "high" }
       if high_severity_regressions.any?
         AlertJob.perform_async(
           project.id,
-          'performance_regression',
+          "performance_regression",
           {
             release_version: version,
             environment: environment,
@@ -105,7 +105,7 @@ class Release < ApplicationRecord
     return nil unless regression_data.present?
 
     total_regressions = regression_data.size
-    high_severity = regression_data.count { |r| r['severity'] == 'high' }
+    high_severity = regression_data.count { |r| r["severity"] == "high" }
 
     "#{total_regressions} performance regression#{'s' if total_regressions != 1} detected" +
     (high_severity > 0 ? " (#{high_severity} high severity)" : "")
@@ -119,11 +119,11 @@ class Release < ApplicationRecord
 
   def calculate_regression_severity(regression_pct, absolute_increase_ms)
     if regression_pct > 50 && absolute_increase_ms > 500
-      'high'
+      "high"
     elsif regression_pct > 25 && absolute_increase_ms > 200
-      'medium'
+      "medium"
     else
-      'low'
+      "low"
     end
   end
 end

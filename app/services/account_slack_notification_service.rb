@@ -14,7 +14,7 @@ class AccountSlackNotificationService
     return unless configured?
 
     # Check user preferences
-    return unless should_notify_user?(user, 'error_notifications')
+    return unless should_notify_user?(user, "error_notifications")
 
     message = build_error_frequency_message(issue, payload, user)
     send_notification(message, user)
@@ -24,7 +24,7 @@ class AccountSlackNotificationService
     return unless configured?
 
     # Check user preferences
-    return unless should_notify_user?(user, 'performance_notifications')
+    return unless should_notify_user?(user, "performance_notifications")
 
     message = build_performance_message(event, payload, user)
     send_notification(message, user)
@@ -34,7 +34,7 @@ class AccountSlackNotificationService
     return unless configured?
 
     # Check user preferences
-    return unless should_notify_user?(user, 'n_plus_one_notifications')
+    return unless should_notify_user?(user, "n_plus_one_notifications")
 
     message = build_n_plus_one_message(payload, user)
     send_notification(message, user)
@@ -44,13 +44,13 @@ class AccountSlackNotificationService
     return unless configured?
 
     # Check user preferences
-    return unless should_notify_user?(user, 'new_issue_notifications')
+    return unless should_notify_user?(user, "new_issue_notifications")
 
     message = build_new_issue_message(issue, user)
     send_notification(message, user)
   end
 
-  def send_custom_alert(title, message, color: 'warning', user: nil)
+  def send_custom_alert(title, message, color: "warning", user: nil)
     return unless configured?
 
     notification = build_custom_message(title, message, color, user)
@@ -75,8 +75,8 @@ class AccountSlackNotificationService
 
     notifier = Slack::Notifier.new(@webhook_url) do
       defaults channel: channel,
-               username: 'ActiveRabbit',
-               icon_emoji: ':rabbit:'
+               username: "ActiveRabbit",
+               icon_emoji: ":rabbit:"
     end
 
     notifier.post(message)
@@ -88,7 +88,7 @@ class AccountSlackNotificationService
   def determine_channel(user)
     if user
       preferences = @account.user_notification_preferences(user)
-      personal_channel = preferences['personal_channel']
+      personal_channel = preferences["personal_channel"]
       return personal_channel if personal_channel.present?
     end
 
@@ -162,7 +162,7 @@ class AccountSlackNotificationService
             },
             {
               title: "Location",
-              value: issue.controller_action || issue.request_path || 'Unknown',
+              value: issue.controller_action || issue.request_path || "Unknown",
               short: false
             }
           ],
@@ -225,7 +225,7 @@ class AccountSlackNotificationService
             },
             {
               title: "Endpoint",
-              value: payload['controller_action'] || 'Unknown',
+              value: payload["controller_action"] || "Unknown",
               short: false
             },
             {
@@ -252,8 +252,8 @@ class AccountSlackNotificationService
 
   def build_n_plus_one_message(payload, user)
     user_mention = user ? "<@#{user.email}> " : ""
-    incidents = payload['incidents']
-    controller_action = payload['controller_action']
+    incidents = payload["incidents"]
+    controller_action = payload["controller_action"]
 
     query_summary = incidents.first(3).map do |incident|
       "• #{incident['count_in_request']}x #{incident['sql_fingerprint']['query_type']} queries"
@@ -342,7 +342,7 @@ class AccountSlackNotificationService
             },
             {
               title: "Location",
-              value: issue.controller_action || issue.request_path || 'Unknown',
+              value: issue.controller_action || issue.request_path || "Unknown",
               short: false
             },
             {

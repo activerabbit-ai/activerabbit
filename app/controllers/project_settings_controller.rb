@@ -1,5 +1,5 @@
 class ProjectSettingsController < ApplicationController
-  layout 'admin'
+  layout "admin"
   before_action :authenticate_user!
   before_action :set_project
 
@@ -10,10 +10,10 @@ class ProjectSettingsController < ApplicationController
 
   def update
     if update_slack_settings && update_github_settings
-      if params[:test_slack] == 'true'
+      if params[:test_slack] == "true"
         test_slack_notification
       else
-        redirect_to project_settings_path(@project), notice: 'Settings updated successfully.'
+        redirect_to project_settings_path(@project), notice: "Settings updated successfully."
       end
     else
       render :show, status: :unprocessable_entity
@@ -22,7 +22,7 @@ class ProjectSettingsController < ApplicationController
 
   def test_notification
     unless @project.slack_configured?
-      redirect_to project_settings_path(@project), alert: 'Slack webhook URL must be configured first.'
+      redirect_to project_settings_path(@project), alert: "Slack webhook URL must be configured first."
       return
     end
 
@@ -31,10 +31,10 @@ class ProjectSettingsController < ApplicationController
       slack_service.send_custom_alert(
         "🧪 *Test Notification*",
         "This is a test message from ActiveRabbit to verify your Slack integration is working correctly!",
-        color: 'good'
+        color: "good"
       )
 
-      redirect_to project_settings_path(@project), notice: 'Test notification sent successfully! Check your Slack channel.'
+      redirect_to project_settings_path(@project), notice: "Test notification sent successfully! Check your Slack channel."
     rescue StandardError => e
       Rails.logger.error "Slack test failed: #{e.message}"
       redirect_to project_settings_path(@project), alert: "Failed to send test notification: #{e.message}"
@@ -63,10 +63,10 @@ class ProjectSettingsController < ApplicationController
     @project.slack_channel = slack_params[:slack_channel]
 
     # Handle checkbox for notifications enabled
-    if slack_params[:slack_notifications_enabled] == '1'
-      @project.settings = @project.settings.merge('slack_notifications_enabled' => true)
+    if slack_params[:slack_notifications_enabled] == "1"
+      @project.settings = @project.settings.merge("slack_notifications_enabled" => true)
     else
-      @project.settings = @project.settings.merge('slack_notifications_enabled' => false)
+      @project.settings = @project.settings.merge("slack_notifications_enabled" => false)
     end
 
     @project.save
@@ -89,16 +89,16 @@ class ProjectSettingsController < ApplicationController
       end
     end
 
-    set_or_clear.call('github_repo', :github_repo)
-    set_or_clear.call('github_installation_id', :github_installation_id)
-    set_or_clear.call('github_pat', :github_pat)
-    set_or_clear.call('github_app_id', :github_app_id)
+    set_or_clear.call("github_repo", :github_repo)
+    set_or_clear.call("github_installation_id", :github_installation_id)
+    set_or_clear.call("github_pat", :github_pat)
+    set_or_clear.call("github_app_id", :github_app_id)
     # File upload takes precedence over pasted PEM
     if gh_params[:github_app_pk_file].present?
       uploaded = gh_params[:github_app_pk_file]
-      settings['github_app_pk'] = uploaded.read
+      settings["github_app_pk"] = uploaded.read
     else
-      set_or_clear.call('github_app_pk', :github_app_pk)
+      set_or_clear.call("github_app_pk", :github_app_pk)
     end
     @project.settings = settings
     @project.save
@@ -110,11 +110,11 @@ class ProjectSettingsController < ApplicationController
       slack_service.send_custom_alert(
         "🧪 *Test Notification*",
         "Your Slack integration is working correctly! Settings have been saved.",
-        color: 'good'
+        color: "good"
       )
 
       redirect_to project_settings_path(@project),
-                  notice: 'Slack settings saved and test notification sent successfully!'
+                  notice: "Slack settings saved and test notification sent successfully!"
     rescue StandardError => e
       Rails.logger.error "Slack test failed: #{e.message}"
       redirect_to project_settings_path(@project),

@@ -16,6 +16,3 @@ FactoryBot.define do
     error_count { 0 }
   end
 end
-
-
-

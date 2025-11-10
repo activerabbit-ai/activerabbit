@@ -19,8 +19,8 @@ class ErrorIngestJob
       payload[:sql_queries].each do |query_data|
         SqlFingerprint.track_query(
           project: project,
-          sql: query_data[:sql] || query_data['sql'],
-          duration_ms: query_data[:duration_ms] || query_data['duration_ms'] || 0,
+          sql: query_data[:sql] || query_data["sql"],
+          duration_ms: query_data[:duration_ms] || query_data["duration_ms"] || 0,
           controller_action: payload[:controller_action]
         )
       end
@@ -33,7 +33,7 @@ class ErrorIngestJob
       )
 
       # Queue alerts for significant N+1 issues
-      if n_plus_one_incidents.any? { |incident| incident[:severity] == 'high' }
+      if n_plus_one_incidents.any? { |incident| incident[:severity] == "high" }
         NPlusOneAlertJob.perform_async(project.id, n_plus_one_incidents)
       end
     end
@@ -68,7 +68,7 @@ class ErrorIngestJob
   private
 
   def should_alert_for_issue?(issue)
-    return false unless issue.status == 'open'
+    return false unless issue.status == "open"
 
     # Alert conditions:
     # 1. New issue (first occurrence)
@@ -83,7 +83,7 @@ class ErrorIngestJob
     end
 
     # Check frequency in last hour
-    recent_events = issue.events.where('created_at > ?', 1.hour.ago).count
+    recent_events = issue.events.where("created_at > ?", 1.hour.ago).count
     return true if recent_events >= 10
 
     false

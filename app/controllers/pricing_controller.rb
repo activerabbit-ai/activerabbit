@@ -36,7 +36,7 @@ class PricingController < ApplicationController
       Time.current + 1.month
     end
 
-    next_payment_date.strftime('%B %d, %Y')
+    next_payment_date.strftime("%B %d, %Y")
   end
 
   def calculate_trial_days_left(subscription)
@@ -49,8 +49,8 @@ class PricingController < ApplicationController
   def format_billing_period(subscription)
     return nil unless subscription.current_period_start && subscription.current_period_end
 
-    start_date = subscription.current_period_start.strftime('%B %d')
-    end_date = subscription.current_period_end.strftime('%B %d')
+    start_date = subscription.current_period_start.strftime("%B %d")
+    end_date = subscription.current_period_end.strftime("%B %d")
     "#{start_date} – #{end_date}"
   end
 end

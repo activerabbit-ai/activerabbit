@@ -20,7 +20,7 @@ class AlertRuleDashboard < Administrate::BaseDashboard
     threshold_value: Field::Number.with_options(decimals: 2),
     time_window_minutes: Field::Number,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

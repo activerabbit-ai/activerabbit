@@ -13,7 +13,7 @@ class DailyEventCountDashboard < Administrate::BaseDashboard
     count: Field::Number,
     day: Field::Date,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

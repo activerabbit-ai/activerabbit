@@ -95,7 +95,7 @@ class TestMonitoringController < ApplicationController
         test_manual_tracking: "/test_monitoring/manual",
         test_connection: "/test_monitoring/connection"
       },
-      env_project_id: ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID'],
+      env_project_id: ENV["ACTIVERABBIT_SELF_MONITOR_PROJECT_ID"],
       gem_project_id: gem_project_id,
       gem_api_key: gem_api_key,
       gem_configured: defined?(ActiveRabbit::Client),
@@ -105,6 +105,6 @@ class TestMonitoringController < ApplicationController
 
   def health_test
     # Simple health check that bypasses authentication
-    render json: { status: 'ok', timestamp: Time.current.iso8601 }, status: :ok
+    render json: { status: "ok", timestamp: Time.current.iso8601 }, status: :ok
   end
 end

@@ -12,49 +12,49 @@ class AiPerformanceSummaryService
   end
 
   def call
-    return { error: 'missing_api_key', message: 'OPENAI_API_KEY not configured' } if api_key.blank?
+    return { error: "missing_api_key", message: "OPENAI_API_KEY not configured" } if api_key.blank?
 
     content = build_content
     response = client_completion(content)
     { summary: response }
   rescue => e
     Rails.logger.error("AI perf summary failed: #{e.class}: #{e.message}")
-    { error: 'ai_error', message: e.message }
+    { error: "ai_error", message: e.message }
   end
 
   private
 
   def api_key
-    ENV['OPENAI_API_KEY']
+    ENV["OPENAI_API_KEY"]
   end
 
   def client_completion(content)
-    require 'net/http'
-    require 'json'
+    require "net/http"
+    require "json"
 
-    uri = URI.parse('https://api.openai.com/v1/chat/completions')
+    uri = URI.parse("https://api.openai.com/v1/chat/completions")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
 
     body = {
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: content }
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: content }
       ],
       temperature: 0.2
     }
 
     req = Net::HTTP::Post.new(uri.request_uri)
-    req['Authorization'] = "Bearer #{api_key}"
-    req['Content-Type'] = 'application/json'
+    req["Authorization"] = "Bearer #{api_key}"
+    req["Content-Type"] = "application/json"
     req.body = JSON.dump(body)
 
     res = http.request(req)
     raise "OpenAI error: #{res.code} #{res.body}" unless res.code.to_i.between?(200, 299)
 
     json = JSON.parse(res.body)
-    json.dig('choices', 0, 'message', 'content')
+    json.dig("choices", 0, "message", "content")
   end
 
   def build_content
@@ -78,6 +78,3 @@ class AiPerformanceSummaryService
     parts.join("\n")
   end
 end
-
-
-

@@ -14,4 +14,3 @@ RSpec.describe User, type: :model do
     expect(user.needs_onboarding?).to eq(false)
   end
 end
-

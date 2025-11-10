@@ -1,19 +1,19 @@
 # ActiveRabbit self-monitoring configuration (disabled by default).
 # Enable only if ACTIVERABBIT_SELF_MONITOR=1 is set.
-if ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && (Rails.env.production? || Rails.env.staging?)
+if ENV["ACTIVERABBIT_SELF_MONITOR"] == "1" && (Rails.env.production? || Rails.env.staging?)
   # We'll need to create a self-monitoring project and get its API token
   # For now, let's set up the basic configuration structure
 
   Rails.application.configure do
     config.after_initialize do
       # Check if we have the necessary environment variables for self-monitoring
-      if ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN'].present? && ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID'].present?
+      if ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"].present? && ENV["ACTIVERABBIT_SELF_MONITOR_PROJECT_ID"].present?
         begin
-          require 'active_rabbit'
+          require "active_rabbit"
 
           ActiveRabbit::Client.configure do |config|
-            config.api_key = ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN']
-            config.project_id = ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID']
+            config.api_key = ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"]
+            config.project_id = ENV["ACTIVERABBIT_SELF_MONITOR_PROJECT_ID"]
             config.api_url = "http://web:3000"  # Self-monitoring (Docker internal)
             config.environment = Rails.env
 
@@ -24,9 +24,9 @@ if ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && (Rails.env.production? || Rails.en
 
             # Drop exceptions from alert jobs to avoid feedback loops
             config.before_send_exception = proc do |ex|
-              ctx = ex[:context] || ex['context'] || {}
-              job_ctx = ctx[:sidekiq] || ctx['sidekiq'] || ctx[:job] || ctx['job'] || {}
-              job_class = job_ctx[:job_class] || job_ctx['job_class'] || job_ctx[:worker_class] || job_ctx['worker_class']
+              ctx = ex[:context] || ex["context"] || {}
+              job_ctx = ctx[:sidekiq] || ctx["sidekiq"] || ctx[:job] || ctx["job"] || {}
+              job_class = job_ctx[:job_class] || job_ctx["job_class"] || job_ctx[:worker_class] || job_ctx["worker_class"]
               next nil if job_class.to_s =~ /IssueAlertJob|PerformanceAlertJob|ErrorIngestJob/
               ex
             end
@@ -41,18 +41,18 @@ if ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && (Rails.env.production? || Rails.en
       end
     end
   end
-elsif ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && Rails.env.development?
+elsif ENV["ACTIVERABBIT_SELF_MONITOR"] == "1" && Rails.env.development?
   # For development, we can set up self-monitoring if desired
   Rails.application.configure do
     config.after_initialize do
       # Only initialize if we have a self-monitoring project set up
-      if ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN'].present? && ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID'].present?
+      if ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"].present? && ENV["ACTIVERABBIT_SELF_MONITOR_PROJECT_ID"].present?
         begin
-          require 'active_rabbit'
+          require "active_rabbit"
 
           ActiveRabbit::Client.configure do |config|
-            config.api_key = ENV['ACTIVERABBIT_SELF_MONITOR_TOKEN']
-            config.project_id = ENV['ACTIVERABBIT_SELF_MONITOR_PROJECT_ID']
+            config.api_key = ENV["ACTIVERABBIT_SELF_MONITOR_TOKEN"]
+            config.project_id = ENV["ACTIVERABBIT_SELF_MONITOR_PROJECT_ID"]
             config.api_url = "http://web:3000"  # Self-monitoring (Docker internal)
             config.environment = Rails.env
 
@@ -63,9 +63,9 @@ elsif ENV['ACTIVERABBIT_SELF_MONITOR'] == '1' && Rails.env.development?
 
             # Drop exceptions from alert jobs to avoid feedback loops
             config.before_send_exception = proc do |ex|
-              ctx = ex[:context] || ex['context'] || {}
-              job_ctx = ctx[:sidekiq] || ctx['sidekiq'] || ctx[:job] || ctx['job'] || {}
-              job_class = job_ctx[:job_class] || job_ctx['job_class'] || job_ctx[:worker_class] || job_ctx['worker_class']
+              ctx = ex[:context] || ex["context"] || {}
+              job_ctx = ctx[:sidekiq] || ctx["sidekiq"] || ctx[:job] || ctx["job"] || {}
+              job_class = job_ctx[:job_class] || job_ctx["job_class"] || job_ctx[:worker_class] || job_ctx["worker_class"]
               next nil if job_class.to_s =~ /IssueAlertJob|PerformanceAlertJob|ErrorIngestJob/
               ex
             end

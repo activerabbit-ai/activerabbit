@@ -20,7 +20,7 @@ class HealthcheckDashboard < Administrate::BaseDashboard
     response_time_ms: Field::Number.with_options(decimals: 2),
     status: Field::String,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

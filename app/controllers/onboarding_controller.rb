@@ -1,7 +1,7 @@
 class OnboardingController < ApplicationController
   before_action :authenticate_user!
   before_action :redirect_if_has_projects, except: [:install_gem, :verify_gem]  # Allow gem installation for additional projects
-  layout 'admin'
+  layout "admin"
 
   def welcome
     # Welcome page - only for users without projects
@@ -15,11 +15,11 @@ class OnboardingController < ApplicationController
     project = current_account.projects.first
     if installation_id.present? && project
       settings = project.settings || {}
-      settings['github_installation_id'] = installation_id
+      settings["github_installation_id"] = installation_id
       project.update(settings: settings)
-      redirect_to project_settings_path(project), notice: 'GitHub connected. Installation ID saved.'
+      redirect_to project_settings_path(project), notice: "GitHub connected. Installation ID saved."
     else
-      redirect_to dashboard_path, alert: 'Failed to connect GitHub.'
+      redirect_to dashboard_path, alert: "Failed to connect GitHub."
     end
   end
 
@@ -29,7 +29,7 @@ class OnboardingController < ApplicationController
 
   def create_project
     @project = current_user.projects.build(project_params)
-    @project.environment = 'production' # Default environment
+    @project.environment = "production" # Default environment
 
     if @project.save
       # Generate API token for the new project
@@ -39,7 +39,7 @@ class OnboardingController < ApplicationController
       @project.create_default_alert_rules!
 
       # Redirect to gem installation step instead of dashboard
-      redirect_to onboarding_install_gem_path(@project), notice: 'Project created! Now let\'s install the ActiveRabbit gem.'
+      redirect_to onboarding_install_gem_path(@project), notice: "Project created! Now let's install the ActiveRabbit gem."
     else
       render :new_project
     end

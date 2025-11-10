@@ -1,5 +1,4 @@
 class Api::V1::EventsController < Api::BaseController
-
   # POST /api/v1/events/errors
   def create_error
     Rails.logger.info "=== DEBUG: create_error called ==="
@@ -10,7 +9,7 @@ class Api::V1::EventsController < Api::BaseController
     # Check if project exists
     unless @current_project
       Rails.logger.error "ERROR: @current_project is nil!"
-      render json: { error: 'project_not_found', message: 'Project not found' }, status: :not_found
+      render json: { error: "project_not_found", message: "Project not found" }, status: :not_found
       return
     end
 
@@ -34,17 +33,16 @@ class Api::V1::EventsController < Api::BaseController
         project_id: @current_project.id,
         exception_class: payload[:exception_class] || payload[:exception_type]
       },
-      message: 'Error event queued for processing'
+      message: "Error event queued for processing"
     )
   rescue => e
     Rails.logger.error "ERROR in create_error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
-    render json: { error: 'processing_error', message: e.message }, status: :internal_server_error
+    render json: { error: "processing_error", message: e.message }, status: :internal_server_error
   end
 
   # POST /api/v1/events/performance
   def create_performance
-
     Rails.logger.info "=== DEBUG: create_performance called ==="
     Rails.logger.info "Raw params: #{params.inspect}"
     Rails.logger.info "Current project: #{@current_project.inspect}"
@@ -52,7 +50,7 @@ class Api::V1::EventsController < Api::BaseController
     # Check if project exists
     unless @current_project
       Rails.logger.error "ERROR: @current_project is nil!"
-      render json: { error: 'project_not_found', message: 'Project not found' }, status: :not_found
+      render json: { error: "project_not_found", message: "Project not found" }, status: :not_found
       return
     end
 
@@ -74,12 +72,12 @@ class Api::V1::EventsController < Api::BaseController
         project_id: @current_project.id,
         target: payload[:controller_action] || payload[:job_class]
       },
-      message: 'Performance event queued for processing'
+      message: "Performance event queued for processing"
     )
   rescue => e
     Rails.logger.error "ERROR in create_performance: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
-    render json: { error: 'processing_error', message: e.message }, status: :internal_server_error
+    render json: { error: "processing_error", message: e.message }, status: :internal_server_error
   end
 
   # POST /api/v1/events/batch
@@ -92,16 +90,16 @@ class Api::V1::EventsController < Api::BaseController
 
     if events.empty?
       render json: {
-        error: 'validation_failed',
-        message: 'No events provided'
+        error: "validation_failed",
+        message: "No events provided"
       }, status: :unprocessable_entity
       return
     end
 
     if events.size > 100 # Batch size limit
       render json: {
-        error: 'validation_failed',
-        message: 'Batch size exceeds maximum of 100 events'
+        error: "validation_failed",
+        message: "Batch size exceeds maximum of 100 events"
       }, status: :unprocessable_entity
       return
     end
@@ -112,18 +110,18 @@ class Api::V1::EventsController < Api::BaseController
     events.each do |event_data|
       next if event_data.nil?
       # Extract the actual payload from the data field first
-      actual_data = event_data[:data] || event_data['data'] || event_data
+      actual_data = event_data[:data] || event_data["data"] || event_data
       next if actual_data.nil?
 
       # Event type can be at top level or inside the data
-      event_type = event_data[:event_type] || event_data['event_type'] ||
-                   actual_data[:event_type] || actual_data['event_type']
+      event_type = event_data[:event_type] || event_data["event_type"] ||
+                   actual_data[:event_type] || actual_data["event_type"]
       Rails.logger.info "Processing event with type: #{event_type.inspect}"
       Rails.logger.info "Event data structure: #{event_data.keys.inspect}"
       Rails.logger.info "Actual data structure: #{actual_data.keys.inspect if actual_data.respond_to?(:keys)}"
 
       case event_type
-      when 'error'
+      when "error"
         Rails.logger.info "Processing error event. actual_data: #{actual_data.inspect}"
         payload = sanitize_error_payload(actual_data)
         Rails.logger.info "Error payload after sanitization: #{payload.inspect}"
@@ -137,7 +135,7 @@ class Api::V1::EventsController < Api::BaseController
         else
           Rails.logger.info "Payload validation failed, skipping"
         end
-      when 'performance'
+      when "performance"
         payload = sanitize_performance_payload(actual_data)
         next unless valid_performance_payload?(payload)
         serializable_payload = JSON.parse(payload.to_h.to_json)
@@ -153,19 +151,19 @@ class Api::V1::EventsController < Api::BaseController
         total_count: events.size,
         project_id: @current_project.id
       },
-      message: 'Batch events queued for processing'
+      message: "Batch events queued for processing"
     )
   end
 
   # POST /api/v1/test/connection
   def test_connection
     render json: {
-      status: 'success',
-      message: 'ActiveRabbit connection successful!',
+      status: "success",
+      message: "ActiveRabbit connection successful!",
       project_id: @current_project.id,
       project_name: @current_project.name,
       timestamp: Time.current.iso8601,
-      gem_version: params[:gem_version] || 'unknown'
+      gem_version: params[:gem_version] || "unknown"
     }
   end
 
@@ -173,67 +171,67 @@ class Api::V1::EventsController < Api::BaseController
 
   def sanitize_error_payload(params)
     # Extract context data for better field mapping
-    context = params[:context] || params['context'] || {}
-    request_context = context[:request] || context['request'] || {}
+    context = params[:context] || params["context"] || {}
+    request_context = context[:request] || context["request"] || {}
 
     {
-      exception_class: params[:exception_class] || params['exception_class'] || params[:exception_type] || params['exception_type'] || params[:type] || params['type'],
-      message: params[:message] || params['message'],
-      backtrace: normalize_backtrace(params[:backtrace] || params['backtrace'] || []),
-      controller_action: params[:controller_action] || params['controller_action'] || extract_controller_action(request_context),
-      request_path: params[:request_path] || params['request_path'] || request_context[:path] || request_context['path'],
-      request_method: params[:request_method] || params['request_method'] || request_context[:method] || request_context['method'],
-      user_id: params[:user_id] || params['user_id'],
-      environment: params[:environment] || params['environment'] || 'production',
-      release_version: params[:release_version] || params['release_version'],
-      occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at'] || params[:timestamp] || params['timestamp']),
+      exception_class: params[:exception_class] || params["exception_class"] || params[:exception_type] || params["exception_type"] || params[:type] || params["type"],
+      message: params[:message] || params["message"],
+      backtrace: normalize_backtrace(params[:backtrace] || params["backtrace"] || []),
+      controller_action: params[:controller_action] || params["controller_action"] || extract_controller_action(request_context),
+      request_path: params[:request_path] || params["request_path"] || request_context[:path] || request_context["path"],
+      request_method: params[:request_method] || params["request_method"] || request_context[:method] || request_context["method"],
+      user_id: params[:user_id] || params["user_id"],
+      environment: params[:environment] || params["environment"] || "production",
+      release_version: params[:release_version] || params["release_version"],
+      occurred_at: parse_timestamp(params[:occurred_at] || params["occurred_at"] || params[:timestamp] || params["timestamp"]),
       context: context,
-      server_name: params[:server_name] || params['server_name'],
-      request_id: params[:request_id] || params['request_id']
+      server_name: params[:server_name] || params["server_name"],
+      request_id: params[:request_id] || params["request_id"]
     }
   end
 
   def sanitize_performance_payload(params)
-    md = params[:metadata] || params['metadata'] || {}
+    md = params[:metadata] || params["metadata"] || {}
 
     # Derive controller_action from metadata if not explicitly provided
-    ctrl_action = params[:controller_action] || params['controller_action']
+    ctrl_action = params[:controller_action] || params["controller_action"]
     if ctrl_action.blank?
-      c = md[:controller] || md['controller']
-      a = md[:action] || md['action']
+      c = md[:controller] || md["controller"]
+      a = md[:action] || md["action"]
       ctrl_action = "#{c}##{a}" if c && a
     end
 
     {
-      controller_action: ctrl_action || params[:name] || params['name'],
-      job_class: params[:job_class] || params['job_class'],
-      request_path: params[:request_path] || params['request_path'] || md[:path] || md['path'],
-      request_method: params[:request_method] || params['request_method'] || md[:method] || md['method'],
-      duration_ms: parse_float(params[:duration_ms] || params['duration_ms']),
-      db_duration_ms: parse_float(params[:db_duration_ms] || params['db_duration_ms'] || md[:db_runtime] || md['db_runtime']),
-      view_duration_ms: parse_float(params[:view_duration_ms] || params['view_duration_ms'] || md[:view_runtime] || md['view_runtime']),
-      allocations: parse_int(params[:allocations] || params['allocations'] || md[:allocations] || md['allocations']),
-      sql_queries_count: parse_int(params[:sql_queries_count] || params['sql_queries_count']),
-      user_id: params[:user_id] || params['user_id'],
-      environment: params[:environment] || params['environment'] || 'production',
-      release_version: params[:release_version] || params['release_version'],
-      occurred_at: parse_timestamp(params[:occurred_at] || params['occurred_at']),
-      context: (params[:context] || params['context'] || {}).presence || md, # fallback to metadata for visibility
-      server_name: params[:server_name] || params['server_name'],
-      request_id: params[:request_id] || params['request_id']
+      controller_action: ctrl_action || params[:name] || params["name"],
+      job_class: params[:job_class] || params["job_class"],
+      request_path: params[:request_path] || params["request_path"] || md[:path] || md["path"],
+      request_method: params[:request_method] || params["request_method"] || md[:method] || md["method"],
+      duration_ms: parse_float(params[:duration_ms] || params["duration_ms"]),
+      db_duration_ms: parse_float(params[:db_duration_ms] || params["db_duration_ms"] || md[:db_runtime] || md["db_runtime"]),
+      view_duration_ms: parse_float(params[:view_duration_ms] || params["view_duration_ms"] || md[:view_runtime] || md["view_runtime"]),
+      allocations: parse_int(params[:allocations] || params["allocations"] || md[:allocations] || md["allocations"]),
+      sql_queries_count: parse_int(params[:sql_queries_count] || params["sql_queries_count"]),
+      user_id: params[:user_id] || params["user_id"],
+      environment: params[:environment] || params["environment"] || "production",
+      release_version: params[:release_version] || params["release_version"],
+      occurred_at: parse_timestamp(params[:occurred_at] || params["occurred_at"]),
+      context: (params[:context] || params["context"] || {}).presence || md, # fallback to metadata for visibility
+      server_name: params[:server_name] || params["server_name"],
+      request_id: params[:request_id] || params["request_id"]
     }
   end
 
     def validate_error_payload!(payload)
     errors = []
 
-    errors << 'exception_class is required' if payload[:exception_class].blank?
-    errors << 'message is required' if payload[:message].blank?
+    errors << "exception_class is required" if payload[:exception_class].blank?
+    errors << "message is required" if payload[:message].blank?
 
     if errors.any?
       render json: {
-        error: 'validation_failed',
-        message: 'Invalid error payload',
+        error: "validation_failed",
+        message: "Invalid error payload",
         details: errors
       }, status: :unprocessable_entity
       return false
@@ -245,13 +243,13 @@ class Api::V1::EventsController < Api::BaseController
   def validate_performance_payload!(payload)
     errors = []
 
-    errors << 'duration_ms is required' if payload[:duration_ms].blank?
-    errors << 'controller_action or job_class is required' if payload[:controller_action].blank? && payload[:job_class].blank?
+    errors << "duration_ms is required" if payload[:duration_ms].blank?
+    errors << "controller_action or job_class is required" if payload[:controller_action].blank? && payload[:job_class].blank?
 
     if errors.any?
       render json: {
-        error: 'validation_failed',
-        message: 'Invalid performance payload',
+        error: "validation_failed",
+        message: "Invalid performance payload",
         details: errors
       }, status: :unprocessable_entity
       return false
@@ -293,8 +291,8 @@ class Api::V1::EventsController < Api::BaseController
   end
 
   def extract_controller_action(request_context)
-    controller = request_context[:controller] || request_context['controller']
-    action = request_context[:action] || request_context['action']
+    controller = request_context[:controller] || request_context["controller"]
+    action = request_context[:action] || request_context["action"]
 
     if controller && action
       "#{controller}##{action}"
@@ -316,7 +314,7 @@ class Api::V1::EventsController < Api::BaseController
       backtrace.map do |frame|
         if frame.is_a?(Hash) || frame.respond_to?(:[])
           # Extract the 'line' field which contains the full stack frame
-          frame[:line] || frame['line'] || frame.to_s
+          frame[:line] || frame["line"] || frame.to_s
         else
           frame.to_s
         end

@@ -25,10 +25,10 @@ class GemVerificationService
   private
 
   def check_recent_events
-    recent_events = project.events.where('created_at > ?', verification_window)
+    recent_events = project.events.where("created_at > ?", verification_window)
 
     if recent_events.any?
-      success_response('Gem is working correctly! Recent events detected.')
+      success_response("Gem is working correctly! Recent events detected.")
     else
       { success: false, reason: :no_recent_events }
     end
@@ -38,7 +38,7 @@ class GemVerificationService
     all_events = project.events.limit(1)
 
     if all_events.any?
-      success_response('Gem was previously connected and working!')
+      success_response("Gem was previously connected and working!")
     else
       { success: false, reason: :no_events_ever }
     end
@@ -46,7 +46,7 @@ class GemVerificationService
 
   def no_events_response
     error_response(
-      'No events received from your application. Please ensure the gem is properly installed and configured.',
+      "No events received from your application. Please ensure the gem is properly installed and configured.",
       :no_events_detected
     )
   end
@@ -77,22 +77,22 @@ class GemVerificationService
     case error_code
     when :no_events_detected
       [
-        'Verify the gem is added to your Gemfile and bundle install was run',
-        'Check that your Rails application has been restarted',
-        'Ensure your application can reach the ActiveRabbit API',
+        "Verify the gem is added to your Gemfile and bundle install was run",
+        "Check that your Rails application has been restarted",
+        "Ensure your application can reach the ActiveRabbit API",
         'Try triggering a test error: ActiveRabbit::Client.track_exception(StandardError.new("Test"))',
-        'Check your Rails logs for any ActiveRabbit-related errors'
+        "Check your Rails logs for any ActiveRabbit-related errors"
       ]
     when :connection_failed
       [
-        'Check your internet connection',
-        'Verify the API URL is correct in your configuration',
-        'Ensure your API token is valid and active'
+        "Check your internet connection",
+        "Verify the API URL is correct in your configuration",
+        "Ensure your API token is valid and active"
       ]
     else
       [
-        'Check the ActiveRabbit documentation for troubleshooting steps',
-        'Contact support if the issue persists'
+        "Check the ActiveRabbit documentation for troubleshooting steps",
+        "Contact support if the issue persists"
       ]
     end
   end

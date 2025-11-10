@@ -11,5 +11,3 @@ RSpec.describe 'User signup trial', type: :model do
     expect(account.billing_interval).to eq('month')
   end
 end
-
-

@@ -1,5 +1,5 @@
 class EventsController < ApplicationController
-  layout 'admin'
+  layout "admin"
   before_action :authenticate_user!
   before_action :set_project
   before_action :set_event, only: [:show, :destroy]
@@ -10,26 +10,26 @@ class EventsController < ApplicationController
     # Filtering
     @events = @events.where(event_type: params[:event_type]) if params[:event_type].present?
     @events = @events.where(environment: params[:environment]) if params[:environment].present?
-    @events = @events.where('controller_action ILIKE ?', "%#{params[:controller_action]}%") if params[:controller_action].present?
+    @events = @events.where("controller_action ILIKE ?", "%#{params[:controller_action]}%") if params[:controller_action].present?
     @events = @events.joins(:issue).where(issues: { id: params[:issue_id] }) if params[:issue_id].present?
 
     # Date filtering
     if params[:date_from].present?
-      @events = @events.where('occurred_at >= ?', Date.parse(params[:date_from]))
+      @events = @events.where("occurred_at >= ?", Date.parse(params[:date_from]))
     end
     if params[:date_to].present?
-      @events = @events.where('occurred_at <= ?', Date.parse(params[:date_to]).end_of_day)
+      @events = @events.where("occurred_at <= ?", Date.parse(params[:date_to]).end_of_day)
     end
 
     @events = @events.order(occurred_at: :desc).page(params[:page]).per(50)
 
     # Stats
     @stats = {
-      total_today: @project.events.where('occurred_at > ?', 24.hours.ago).count,
-      errors_today: @project.events.errors.where('occurred_at > ?', 24.hours.ago).count,
-      performance_today: @project.events.performance.where('occurred_at > ?', 24.hours.ago).count,
+      total_today: @project.events.where("occurred_at > ?", 24.hours.ago).count,
+      errors_today: @project.events.errors.where("occurred_at > ?", 24.hours.ago).count,
+      performance_today: @project.events.performance.where("occurred_at > ?", 24.hours.ago).count,
       avg_response_time: @project.events.performance
-                                .where('occurred_at > ? AND duration_ms IS NOT NULL', 24.hours.ago)
+                                .where("occurred_at > ? AND duration_ms IS NOT NULL", 24.hours.ago)
                                 .average(:duration_ms)&.round(2)
     }
 
@@ -43,14 +43,14 @@ class EventsController < ApplicationController
 
   def destroy
     @event.destroy
-    redirect_to project_events_path(@project), notice: 'Event deleted successfully.'
+    redirect_to project_events_path(@project), notice: "Event deleted successfully."
   end
 
   def bulk_delete
     event_ids = params[:event_ids] || []
 
     if event_ids.empty?
-      redirect_to project_events_path(@project), alert: 'No events selected.'
+      redirect_to project_events_path(@project), alert: "No events selected."
       return
     end
 
@@ -65,12 +65,12 @@ class EventsController < ApplicationController
     days = params[:days]&.to_i || 90
 
     if days < 7
-      redirect_to project_events_path(@project), alert: 'Minimum retention period is 7 days.'
+      redirect_to project_events_path(@project), alert: "Minimum retention period is 7 days."
       return
     end
 
-    count = @project.events.where('created_at < ?', days.days.ago).count
-    @project.events.where('created_at < ?', days.days.ago).destroy_all
+    count = @project.events.where("created_at < ?", days.days.ago).count
+    @project.events.where("created_at < ?", days.days.ago).destroy_all
 
     redirect_to project_events_path(@project), notice: "#{count} old events deleted (older than #{days} days)."
   end

@@ -160,18 +160,18 @@ class StripeEventHandler
   end
 
   def ai_price_ids
-    [ ENV["STRIPE_PRICE_AI_MONTHLY"], ENV["STRIPE_PRICE_AI_ANNUAL"] ].compact
+    [ENV["STRIPE_PRICE_AI_MONTHLY"], ENV["STRIPE_PRICE_AI_ANNUAL"]].compact
   end
 
   def plan_interval_from_price(price_id)
     case price_id
-    when ENV["STRIPE_PRICE_DEV_MONTHLY"] then [ "developer", "month" ]
-    when ENV["STRIPE_PRICE_DEV_ANNUAL"] then [ "developer", "year" ]
-    when ENV["STRIPE_PRICE_TEAM_MONTHLY"] then [ "team", "month" ]
-    when ENV["STRIPE_PRICE_TEAM_ANNUAL"] then [ "team", "year" ]
-    when ENV["STRIPE_PRICE_ENT_MONTHLY"] then [ "enterprise", "month" ]
-    when ENV["STRIPE_PRICE_ENT_ANNUAL"] then [ "enterprise", "year" ]
-    else [ nil, nil ]
+    when ENV["STRIPE_PRICE_DEV_MONTHLY"] then ["developer", "month"]
+    when ENV["STRIPE_PRICE_DEV_ANNUAL"] then ["developer", "year"]
+    when ENV["STRIPE_PRICE_TEAM_MONTHLY"] then ["team", "month"]
+    when ENV["STRIPE_PRICE_TEAM_ANNUAL"] then ["team", "year"]
+    when ENV["STRIPE_PRICE_ENT_MONTHLY"] then ["enterprise", "month"]
+    when ENV["STRIPE_PRICE_ENT_ANNUAL"] then ["enterprise", "year"]
+    else [nil, nil]
     end
   end
 

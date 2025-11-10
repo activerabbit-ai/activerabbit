@@ -16,7 +16,7 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#index", as: "dashboard"
   get "deploys", to: "deploys#index", as: "deploys"
   get "errors", to: "errors#index", as: "errors"
-  resources :errors, only: [ :show, :update, :destroy ]
+  resources :errors, only: [:show, :update, :destroy]
   get "security", to: "security#index", as: "security"
   get "settings", to: "settings#index", as: "settings"
   patch "settings/update_slack_settings", to: "settings#update_slack_settings", as: "update_slack_settings_settings"
@@ -24,7 +24,7 @@ Rails.application.routes.draw do
   post "settings/test_slack_notification", to: "settings#test_slack_notification", as: "test_slack_notification_settings"
 
   # Account-wide settings
-  resource :account_settings, path: "account/settings", only: [ :show, :update ] do
+  resource :account_settings, path: "account/settings", only: [:show, :update] do
     post :test_notification
     patch :update_user_preferences
   end
@@ -59,12 +59,12 @@ Rails.application.routes.draw do
 
   # Projects management (non-admin)
   # Note: projects index page is hidden - dashboard shows all projects instead
-  resources :projects, except: [ :index ] do
+  resources :projects, except: [:index] do
     member do
       post :regenerate_token
     end
 
-    resource :settings, controller: "project_settings", only: [ :show, :update ] do
+    resource :settings, controller: "project_settings", only: [:show, :update] do
       post :test_notification
     end
 
@@ -114,7 +114,7 @@ Rails.application.routes.draw do
   post "/webhooks/stripe", to: "webhooks#stripe"
 
   # Subscription management
-  resources :subscriptions, only: [ :new, :create, :show, :destroy ]
+  resources :subscriptions, only: [:new, :create, :show, :destroy]
 
   # API routes for data ingestion
   namespace :api do
@@ -130,7 +130,7 @@ Rails.application.routes.draw do
       post "test/connection", to: "events#test_connection"
 
       # Release tracking
-      resources :releases, only: [ :create, :index, :show ] do
+      resources :releases, only: [:create, :index, :show] do
         member do
           post :trigger_regression_check
         end

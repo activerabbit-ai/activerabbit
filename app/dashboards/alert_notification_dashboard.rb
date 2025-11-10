@@ -19,7 +19,7 @@ class AlertNotificationDashboard < Administrate::BaseDashboard
     sent_at: Field::DateTime,
     status: Field::String,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

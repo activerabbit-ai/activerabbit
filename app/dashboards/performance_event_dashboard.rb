@@ -28,7 +28,7 @@ class PerformanceEventDashboard < Administrate::BaseDashboard
     user_id_hash: Field::String,
     view_duration_ms: Field::Number.with_options(decimals: 2),
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

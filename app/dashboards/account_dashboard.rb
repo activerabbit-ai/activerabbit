@@ -30,7 +30,7 @@ class AccountDashboard < Administrate::BaseDashboard
     trial_ends_at: Field::DateTime,
     users: Field::HasMany,
     created_at: Field::DateTime,
-    updated_at: Field::DateTime,
+    updated_at: Field::DateTime
   }.freeze
 
   # COLLECTION_ATTRIBUTES

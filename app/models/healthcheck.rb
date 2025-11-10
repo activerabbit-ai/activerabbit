@@ -5,9 +5,9 @@ class Healthcheck < ApplicationRecord
   validates :check_type, inclusion: { in: %w[http database redis sidekiq custom] }
   validates :status, inclusion: { in: %w[healthy warning critical unknown] }
 
-  scope :healthy, -> { where(status: 'healthy') }
-  scope :warning, -> { where(status: 'warning') }
-  scope :critical, -> { where(status: 'critical') }
+  scope :healthy, -> { where(status: "healthy") }
+  scope :warning, -> { where(status: "warning") }
+  scope :critical, -> { where(status: "critical") }
   scope :recent, -> { order(last_checked_at: :desc) }
 
   def self.perform_checks(project)
@@ -30,48 +30,48 @@ class Healthcheck < ApplicationRecord
 
     begin
       case check_type
-      when 'http'
+      when "http"
         perform_http_check
-      when 'database'
+      when "database"
         perform_database_check
-      when 'redis'
+      when "redis"
         perform_redis_check
-      when 'sidekiq'
+      when "sidekiq"
         perform_sidekiq_check
-      when 'custom'
+      when "custom"
         perform_custom_check
       else
         raise "Unknown check type: #{check_type}"
       end
     rescue => e
-      update_check_result('critical', "Check failed: #{e.message}", Time.current - start_time)
-      { status: 'critical', message: e.message, duration: Time.current - start_time }
+      update_check_result("critical", "Check failed: #{e.message}", Time.current - start_time)
+      { status: "critical", message: e.message, duration: Time.current - start_time }
     end
   end
 
   private
 
   def perform_http_check
-    require 'net/http'
-    require 'uri'
+    require "net/http"
+    require "uri"
 
-    uri = URI(config['url'])
-    timeout = config['timeout'] || 10
+    uri = URI(config["url"])
+    timeout = config["timeout"] || 10
 
     start_time = Time.current
 
-    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', read_timeout: timeout) do |http|
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", read_timeout: timeout) do |http|
       response = http.get(uri.path)
       duration = Time.current - start_time
 
-      expected_status = config['expected_status'] || 200
+      expected_status = config["expected_status"] || 200
 
       if response.code.to_i == expected_status
-        update_check_result('healthy', "HTTP #{response.code}", duration)
-        { status: 'healthy', message: "HTTP #{response.code}", duration: duration }
+        update_check_result("healthy", "HTTP #{response.code}", duration)
+        { status: "healthy", message: "HTTP #{response.code}", duration: duration }
       else
-        update_check_result('critical', "HTTP #{response.code} (expected #{expected_status})", duration)
-        { status: 'critical', message: "HTTP #{response.code}", duration: duration }
+        update_check_result("critical", "HTTP #{response.code} (expected #{expected_status})", duration)
+        { status: "critical", message: "HTTP #{response.code}", duration: duration }
       end
     end
   end
@@ -79,15 +79,15 @@ class Healthcheck < ApplicationRecord
   def perform_database_check
     start_time = Time.current
 
-    ActiveRecord::Base.connection.execute('SELECT 1')
+    ActiveRecord::Base.connection.execute("SELECT 1")
     duration = Time.current - start_time
 
     if duration < 1.0 # Less than 1 second is healthy
-      update_check_result('healthy', 'Database responsive', duration)
-      { status: 'healthy', message: 'Database responsive', duration: duration }
+      update_check_result("healthy", "Database responsive", duration)
+      { status: "healthy", message: "Database responsive", duration: duration }
     else
-      update_check_result('warning', 'Database slow', duration)
-      { status: 'warning', message: 'Database slow', duration: duration }
+      update_check_result("warning", "Database slow", duration)
+      { status: "warning", message: "Database slow", duration: duration }
     end
   end
 
@@ -97,8 +97,8 @@ class Healthcheck < ApplicationRecord
     Redis.current.ping
     duration = Time.current - start_time
 
-    update_check_result('healthy', 'Redis responsive', duration)
-    { status: 'healthy', message: 'Redis responsive', duration: duration }
+    update_check_result("healthy", "Redis responsive", duration)
+    { status: "healthy", message: "Redis responsive", duration: duration }
   end
 
   def perform_sidekiq_check
@@ -109,12 +109,12 @@ class Healthcheck < ApplicationRecord
 
     failed_jobs = stats.failed
 
-    if failed_jobs > (config['max_failed_jobs'] || 100)
-      update_check_result('warning', "#{failed_jobs} failed jobs", duration)
-      { status: 'warning', message: "#{failed_jobs} failed jobs", duration: duration }
+    if failed_jobs > (config["max_failed_jobs"] || 100)
+      update_check_result("warning", "#{failed_jobs} failed jobs", duration)
+      { status: "warning", message: "#{failed_jobs} failed jobs", duration: duration }
     else
-      update_check_result('healthy', 'Sidekiq healthy', duration)
-      { status: 'healthy', message: 'Sidekiq healthy', duration: duration }
+      update_check_result("healthy", "Sidekiq healthy", duration)
+      { status: "healthy", message: "Sidekiq healthy", duration: duration }
     end
   end
 
@@ -124,8 +124,8 @@ class Healthcheck < ApplicationRecord
     start_time = Time.current
     duration = Time.current - start_time
 
-    update_check_result('healthy', 'Custom check passed', duration)
-    { status: 'healthy', message: 'Custom check passed', duration: duration }
+    update_check_result("healthy", "Custom check passed", duration)
+    { status: "healthy", message: "Custom check passed", duration: duration }
   end
 
   def update_check_result(status, message, duration)

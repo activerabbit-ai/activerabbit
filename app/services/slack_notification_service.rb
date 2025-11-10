@@ -3,7 +3,7 @@ class SlackNotificationService
 
   def initialize(project)
     @project = project
-    @webhook_url = project.settings&.dig('slack_webhook_url')
+    @webhook_url = project.settings&.dig("slack_webhook_url")
   end
 
   def configured?
@@ -38,7 +38,7 @@ class SlackNotificationService
     send_notification(message)
   end
 
-  def send_custom_alert(title, message, color: 'warning')
+  def send_custom_alert(title, message, color: "warning")
     return unless configured?
 
     notification = build_custom_message(title, message, color)
@@ -50,8 +50,8 @@ class SlackNotificationService
   def send_notification(message)
     notifier = Slack::Notifier.new(@webhook_url) do
       defaults channel: slack_channel,
-               username: 'ActiveRabbit',
-               icon_emoji: ':rabbit:'
+               username: "ActiveRabbit",
+               icon_emoji: ":rabbit:"
     end
 
     notifier.post(message)
@@ -61,11 +61,11 @@ class SlackNotificationService
   end
 
   def slack_channel
-    @project.settings&.dig('slack_channel') || '#alerts'
+    @project.settings&.dig("slack_channel") || "#alerts"
   end
 
   def project_url
-    host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch('APP_HOST', 'https://activerabbit.com')
+    host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
     "#{host}/#{@project.slug}"
   end
 
@@ -107,7 +107,7 @@ class SlackNotificationService
             },
             {
               title: "Location",
-              value: issue.controller_action || issue.request_path || 'Unknown',
+              value: issue.controller_action || issue.request_path || "Unknown",
               short: false
             }
           ],
@@ -121,17 +121,17 @@ class SlackNotificationService
             {
               type: "button",
               text: "Stack",
-              url: error_url(issue, tab: 'stack')
+              url: error_url(issue, tab: "stack")
             },
             {
               type: "button",
               text: "Samples",
-              url: error_url(issue, tab: 'samples')
+              url: error_url(issue, tab: "samples")
             },
             {
               type: "button",
               text: "Graph",
-              url: error_url(issue, tab: 'graph')
+              url: error_url(issue, tab: "graph")
             }
           ],
           footer: "ActiveRabbit Error Tracking",
@@ -172,7 +172,7 @@ class SlackNotificationService
             },
             {
               title: "Endpoint",
-              value: payload['controller_action'] || 'Unknown',
+              value: payload["controller_action"] || "Unknown",
               short: false
             },
             {
@@ -198,8 +198,8 @@ class SlackNotificationService
   end
 
   def build_n_plus_one_message(payload)
-    incidents = payload['incidents']
-    controller_action = payload['controller_action']
+    incidents = payload["incidents"]
+    controller_action = payload["controller_action"]
 
     query_summary = incidents.first(3).map do |incident|
       "• #{incident['count_in_request']}x #{incident['sql_fingerprint']['query_type']} queries"
@@ -289,7 +289,7 @@ class SlackNotificationService
             },
             {
               title: "Location",
-              value: issue.controller_action || issue.request_path || 'Unknown',
+              value: issue.controller_action || issue.request_path || "Unknown",
               short: false
             },
             {
@@ -313,17 +313,17 @@ class SlackNotificationService
             {
               type: "button",
               text: "Stack",
-              url: error_url(issue, tab: 'stack')
+              url: error_url(issue, tab: "stack")
             },
             {
               type: "button",
               text: "Samples",
-              url: error_url(issue, tab: 'samples')
+              url: error_url(issue, tab: "samples")
             },
             {
               type: "button",
               text: "Graph",
-              url: error_url(issue, tab: 'graph')
+              url: error_url(issue, tab: "graph")
             }
           ],
           footer: "ActiveRabbit Error Tracking",

@@ -8,4 +8,3 @@ class PerformanceSummary < ApplicationRecord
 
   scope :for_target, ->(target) { where(target: target) }
 end
-

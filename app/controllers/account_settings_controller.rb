@@ -1,5 +1,5 @@
 class AccountSettingsController < ApplicationController
-  layout 'admin'
+  layout "admin"
   before_action :authenticate_user!
   before_action :ensure_account_access
 
@@ -11,10 +11,10 @@ class AccountSettingsController < ApplicationController
     @account = current_account
 
     if update_slack_settings
-      if params[:test_slack] == 'true'
+      if params[:test_slack] == "true"
         test_slack_notification
       else
-        redirect_to account_settings_path, notice: 'Account Slack settings updated successfully.'
+        redirect_to account_settings_path, notice: "Account Slack settings updated successfully."
       end
     else
       render :show, status: :unprocessable_entity
@@ -25,7 +25,7 @@ class AccountSettingsController < ApplicationController
     @account = current_account
 
     unless @account.slack_configured?
-      redirect_to account_settings_path, alert: 'Slack webhook URL must be configured first.'
+      redirect_to account_settings_path, alert: "Slack webhook URL must be configured first."
       return
     end
 
@@ -36,10 +36,10 @@ class AccountSettingsController < ApplicationController
         "This is a test message from ActiveRabbit to verify your account-wide Slack integration is working correctly!\n\n" +
         "Account: #{@account.name}\n" +
         "User: #{current_user.email}",
-        color: 'good'
+        color: "good"
       )
 
-      redirect_to account_settings_path, notice: 'Test notification sent successfully! Check your Slack channel.'
+      redirect_to account_settings_path, notice: "Test notification sent successfully! Check your Slack channel."
     rescue StandardError => e
       Rails.logger.error "Account Slack test failed: #{e.message}"
       redirect_to account_settings_path, alert: "Failed to send test notification: #{e.message}"
@@ -58,12 +58,12 @@ class AccountSettingsController < ApplicationController
 
     # Convert checkbox values to booleans
     preferences.each do |key, value|
-      next if key == 'personal_channel'
-      preferences[key] = value == '1'
+      next if key == "personal_channel"
+      preferences[key] = value == "1"
     end
 
     @account.update_user_notification_preferences(current_user, preferences)
-    redirect_to account_settings_path, notice: 'Your notification preferences have been updated.'
+    redirect_to account_settings_path, notice: "Your notification preferences have been updated."
   end
 
   private
@@ -71,7 +71,7 @@ class AccountSettingsController < ApplicationController
   def ensure_account_access
     # Users can only modify their own account settings
     # In the future, could add admin role checks here
-    redirect_to root_path, alert: 'Access denied.' unless current_account
+    redirect_to root_path, alert: "Access denied." unless current_account
   end
 
   def update_slack_settings
@@ -82,10 +82,10 @@ class AccountSettingsController < ApplicationController
     @account.slack_channel = slack_params[:slack_channel]
 
     # Handle checkbox for notifications enabled
-    if slack_params[:slack_notifications_enabled] == '1'
-      @account.settings = (@account.settings || {}).merge('slack_notifications_enabled' => true)
+    if slack_params[:slack_notifications_enabled] == "1"
+      @account.settings = (@account.settings || {}).merge("slack_notifications_enabled" => true)
     else
-      @account.settings = (@account.settings || {}).merge('slack_notifications_enabled' => false)
+      @account.settings = (@account.settings || {}).merge("slack_notifications_enabled" => false)
     end
 
     @account.save
@@ -99,11 +99,11 @@ class AccountSettingsController < ApplicationController
         "Your account-wide Slack integration is working correctly! Settings have been saved.\n\n" +
         "Account: #{@account.name}\n" +
         "Configured by: #{current_user.email}",
-        color: 'good'
+        color: "good"
       )
 
       redirect_to account_settings_path,
-                  notice: 'Account Slack settings saved and test notification sent successfully!'
+                  notice: "Account Slack settings saved and test notification sent successfully!"
     rescue StandardError => e
       Rails.logger.error "Account Slack test failed: #{e.message}"
       redirect_to account_settings_path,

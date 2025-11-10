@@ -17,10 +17,10 @@ class PerformanceController < ApplicationController
       requested_hours = (params[:hours_back] || 24).to_i
       @hours_back = requested_hours
       unless PerformanceEvent.where(project: project_scope).where("occurred_at > ?", @hours_back.hours.ago).exists?
-        @hours_back = [ @hours_back, 168 ].max # 7 days
+        @hours_back = [@hours_back, 168].max # 7 days
       end
       unless PerformanceEvent.where(project: project_scope).where("occurred_at > ?", @hours_back.hours.ago).exists?
-        @hours_back = [ @hours_back, 720 ].max # 30 days
+        @hours_back = [@hours_back, 720].max # 30 days
       end
 
       @rollups = project_scope.perf_rollups
@@ -104,7 +104,7 @@ class PerformanceController < ApplicationController
           status: status,
           first_seen: first_seen,
           last_seen: last_seen,
-          github_pr_url: project_scope.settings&.dig('perf_pr_urls', target.to_s)
+          github_pr_url: project_scope.settings&.dig("perf_pr_urls", target.to_s)
         }
         end
       else
@@ -137,7 +137,7 @@ class PerformanceController < ApplicationController
           status: status,
           first_seen: first_seen,
           last_seen: last_seen,
-          github_pr_url: project_scope.settings&.dig('perf_pr_urls', target.to_s)
+          github_pr_url: project_scope.settings&.dig("perf_pr_urls", target.to_s)
         }
         end
         @list_rows.sort_by! { |r| -r[:total_requests].to_i }
@@ -210,7 +210,7 @@ class PerformanceController < ApplicationController
 
         @graph_labels = labels
         @graph_counts = counts
-        @graph_max = [ counts.max || 0, 1 ].max
+        @graph_max = [counts.max || 0, 1].max
         @graph_has_data = counts.sum > 0
         @graph_range_key = range_key
       end
@@ -324,7 +324,7 @@ class PerformanceController < ApplicationController
 
         @graph_labels = labels
         @graph_counts = counts
-        @graph_max = [ counts.max || 0, 1 ].max
+        @graph_max = [counts.max || 0, 1].max
         @graph_has_data = counts.sum > 0
         @graph_range_key = range_key
       end
@@ -511,7 +511,7 @@ class PerformanceController < ApplicationController
 
       @graph_labels = labels
       @graph_counts = counts
-      @graph_max = [ counts.max || 0, 1 ].max
+      @graph_max = [counts.max || 0, 1].max
       @graph_has_data = counts.sum > 0
       @graph_range_key = range_key
 
@@ -590,7 +590,7 @@ class PerformanceController < ApplicationController
                         range: params[:range],
                         event_id: params[:event_id]
                       )
-                    elsif @project
+    elsif @project
                       project_performance_action_detail_path(
                         @project,
                         target: target,
@@ -598,14 +598,14 @@ class PerformanceController < ApplicationController
                         range: params[:range],
                         event_id: params[:event_id]
                       )
-                    else
+    else
                       performance_action_detail_path(
                         target: target,
                         tab: params[:tab],
                         range: params[:range],
                         event_id: params[:event_id]
                       )
-                    end
+    end
 
     redirect_to redirect_path and return
   end

@@ -32,7 +32,7 @@ class ApiToken < ApplicationRecord
   end
 
   def mask_token
-    return '[INVALID]' if token.blank?
+    return "[INVALID]" if token.blank?
 
     "#{token[0..7]}#{'*' * (token.length - 16)}#{token[-8..-1]}"
   end

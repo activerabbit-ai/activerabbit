@@ -7,7 +7,6 @@ class OverageCalculator
   end
 
   def attach_overage_invoice_item!(stripe_invoice:, customer_id:)
-
     period_start = Time.at(stripe_invoice["period_start"]) if stripe_invoice["period_start"]
     period_end   = Time.at(stripe_invoice["period_end"]) if stripe_invoice["period_end"]
     return unless period_start && period_end
@@ -27,7 +26,7 @@ class OverageCalculator
 
   def overage_events(period_start:, period_end:)
     used = events_in_range(period_start:, period_end:)
-    [ used - quota_for_account, 0 ].max
+    [used - quota_for_account, 0].max
   end
 
   def events_in_range(period_start:, period_end:)

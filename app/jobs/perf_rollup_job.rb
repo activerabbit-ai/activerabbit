@@ -3,12 +3,12 @@ class PerfRollupJob
 
   sidekiq_options queue: :analysis, retry: 2
 
-  def perform(timeframe = 'minute')
+  def perform(timeframe = "minute")
     case timeframe
-    when 'minute'
+    when "minute"
       PerfRollup.rollup_minute_data!
       Rails.logger.info "Completed minute rollup processing"
-    when 'hour'
+    when "hour"
       PerfRollup.rollup_hourly_data!
       Rails.logger.info "Completed hourly rollup processing"
     else

@@ -1,5 +1,4 @@
 class Api::V1::ReleasesController < Api::BaseController
-
   # POST /api/v1/releases
   def create
     payload = sanitize_release_payload(params)
@@ -15,8 +14,8 @@ class Api::V1::ReleasesController < Api::BaseController
 
     if existing_release
       render json: {
-        error: 'conflict',
-        message: 'Release already exists',
+        error: "conflict",
+        message: "Release already exists",
         data: { id: existing_release.id, version: existing_release.version }
       }, status: :conflict
       return
@@ -37,7 +36,7 @@ class Api::V1::ReleasesController < Api::BaseController
         environment: release.environment,
         deployed_at: release.deployed_at
       },
-      message: 'Release created and regression detection scheduled'
+      message: "Release created and regression detection scheduled"
     )
   end
 
@@ -88,7 +87,7 @@ class Api::V1::ReleasesController < Api::BaseController
 
     render_success(
       { id: release.id },
-      message: 'Regression detection queued'
+      message: "Regression detection queued"
     )
   end
 
@@ -96,21 +95,21 @@ class Api::V1::ReleasesController < Api::BaseController
 
   def sanitize_release_payload(params)
     {
-      version: params[:version] || params['version'],
-      environment: params[:environment] || params['environment'] || 'production',
-      metadata: params[:metadata] || params['metadata'] || {}
+      version: params[:version] || params["version"],
+      environment: params[:environment] || params["environment"] || "production",
+      metadata: params[:metadata] || params["metadata"] || {}
     }
   end
 
   def validate_release_payload!(payload)
     errors = []
 
-    errors << 'version is required' if payload[:version].blank?
+    errors << "version is required" if payload[:version].blank?
 
     if errors.any?
       render json: {
-        error: 'validation_failed',
-        message: 'Invalid release payload',
+        error: "validation_failed",
+        message: "Invalid release payload",
         details: errors
       }, status: :unprocessable_entity
       return false
