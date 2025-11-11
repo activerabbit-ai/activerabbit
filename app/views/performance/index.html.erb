@@ -66,16 +66,22 @@
   <div class="px-6 py-4 border-b border-gray-200">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-gray-900">🚀 Performance Issues</h2>
-      <form method="get" class="flex items-center space-x-2 flex-1 ml-4 mr-4">
-        <div class="relative flex-1">
-          <svg class="absolute inset-y-0 ml-4 mt-2 my-auto h-4 w-4 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+
+      <form method="get" class="flex-1 flex justify-end mr-2">
+        <div class="relative w-64">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+               xmlns="http://www.w3.org/2000/svg" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input type="text" name="q" placeholder="Search..." value="<%= params[:q] %>"
-            class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 bg-gray-50 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+          <input type="text" name="q" placeholder="Filter by attribute values"
+                 value="<%= params[:q] %>"
+                 class="w-full pl-9 pr-3 py-1.5 rounded-full border border-gray-300 bg-gray-50 text-xs text-center focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400">
         </div>
       </form>
+
       <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
         <% list_url = url_for(params.permit!.to_h.except(:tab, :range)) %>
         <% graph_url = url_for(params.permit!.to_h.merge(tab: 'graph', range: (params[:range] || '7D'))) %>
