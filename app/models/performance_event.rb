@@ -19,14 +19,20 @@ class PerformanceEvent < ApplicationRecord
   def self.ingest_performance(project:, payload:)
     target = payload[:controller_action] || payload[:job_class] || "unknown"
 
+    # Only store positive values, use NULL for zeros (more efficient storage and queries)
+    db_ms = payload[:db_duration_ms].to_f
+    view_ms = payload[:view_duration_ms].to_f
+    allocs = payload[:allocations].to_i
+    sql_count = payload[:sql_queries_count].to_i
+
     create!(
       project: project,
       target: target,
       duration_ms: payload[:duration_ms],
-      db_duration_ms: payload[:db_duration_ms],
-      view_duration_ms: payload[:view_duration_ms],
-      allocations: payload[:allocations],
-      sql_queries_count: payload[:sql_queries_count],
+      db_duration_ms: db_ms > 0 ? db_ms : nil,
+      view_duration_ms: view_ms > 0 ? view_ms : nil,
+      allocations: allocs > 0 ? allocs : nil,
+      sql_queries_count: sql_count > 0 ? sql_count : nil,
       occurred_at: payload[:occurred_at] || Time.current,
       environment: payload[:environment] || "production",
       release_version: payload[:release_version],
