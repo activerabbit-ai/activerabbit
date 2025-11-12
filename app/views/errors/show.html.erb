@@ -56,8 +56,8 @@
       </div>
 
       <div class="flex items-center space-x-3">
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= @issue.status == 'open' ? 'bg-red-100 text-red-800' : @issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
-          <%= @issue.status.upcase %>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-normal <%= @issue.status == 'open' ? 'bg-red-100 text-red-800' : @issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
+          <%= @issue.status == 'open' ? 'Open' : @issue.status == 'wip' ? 'WIP' : 'Closed' %>
         </span>
 
         <div class="text-right">
@@ -75,21 +75,21 @@
       <% if @issue.status != 'open' %>
         <%= form_with model: @issue, url: (@project ? project_error_path(@project, @issue) : error_path(@issue)), method: :patch, local: true, class: "inline" do |f| %>
           <%= f.hidden_field :status, value: 'open' %>
-          <%= f.submit "Reopen", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+          <%= f.submit "Reopen", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
         <% end %>
       <% end %>
 
       <% if @issue.status != 'wip' %>
         <%= form_with model: @issue, url: (@project ? project_error_path(@project, @issue) : error_path(@issue)), method: :patch, local: true, class: "inline" do |f| %>
           <%= f.hidden_field :status, value: 'wip' %>
-          <%= f.submit "Mark as Work in Progress", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500" %>
+          <%= f.submit "Mark as WIP", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500" %>
         <% end %>
       <% end %>
 
       <% if @issue.status != 'closed' %>
         <%= form_with model: @issue, url: (@project ? project_error_path(@project, @issue) : error_path(@issue)), method: :patch, local: true, class: "inline" do |f| %>
           <%= f.hidden_field :status, value: 'closed' %>
-          <%= f.submit "Close", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" %>
+          <%= f.submit "Close", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" %>
         <% end %>
       <% end %>
     </div>

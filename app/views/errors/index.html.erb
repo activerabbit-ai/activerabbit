@@ -87,7 +87,7 @@
             </svg>
             <%= f.search_field :exception_class_or_sample_message_or_status_or_project_name_cont,
               placeholder: "Filter by attribute values",
-              class: "block w-full pl-9 pr-3 py-1.5 text-xs text-center border border-gray-300 rounded-full bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400" %>
+              class: "block w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-full bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400" %>
           </div>
         <% end %>
       </div>
@@ -204,9 +204,9 @@
                               local: true,
                               class: "inline" do |f| %>
                   <%= f.select :status,
-                    options_for_select([['OPEN', 'open'], ['WORK IN PROGRESS', 'wip'], ['RESOLVED', 'closed']], issue.status),
+                    options_for_select([['Open', 'open'], ['WIP', 'wip'], ['Closed', 'closed']], issue.status),
                     {},
-                    class: "rounded-full text-xs font-medium px-2 py-1
+                    class: "rounded-full text-xs font-normal px-2 py-1
                             #{ issue.status == 'open' ? 'bg-red-100 text-red-800' :
                               issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-green-100 text-green-800' }",
@@ -244,7 +244,7 @@
                   target: "_blank",
                   rel: "noopener",
                   class: "inline-flex items-center px-2 py-1 border shadow-sm text-xs font-medium rounded focus:outline-none focus:ring-1 " +
-                    (issue.ai_summary.present? ? 
+                    (issue.ai_summary.present? ?
                       "text-green-600 bg-green-50 border-green-200 hover:bg-green-100 focus:ring-green-500" :
                       "text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500")
                 ) do %>

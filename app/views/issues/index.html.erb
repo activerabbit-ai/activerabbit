@@ -96,8 +96,8 @@
           <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0">
               <div class="flex items-center space-x-3">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= issue.status == 'open' ? 'bg-red-100 text-red-800' : issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
-                  <%= issue.status.upcase %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-normal <%= issue.status == 'open' ? 'bg-red-100 text-red-800' : issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
+                  <%= issue.status == 'open' ? 'Open' : issue.status == 'wip' ? 'WIP' : 'Closed' %>
                 </span>
                 <h4 class="text-sm font-medium text-gray-900 truncate">
                   <%= link_to issue.title, project_issue_path(@project, issue), class: "hover:text-indigo-600" %>
