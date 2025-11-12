@@ -1,0 +1,20 @@
+<div id="status_dropdown_<%= issue.id %>">
+  <%= form_with model: issue,
+                url: (project ? project_error_path(project, issue) : error_path(issue)),
+                method: :patch,
+                data: { turbo_frame: "status_dropdown_#{issue.id}" },
+                class: "inline" do |f| %>
+    <%= f.hidden_field :from_list, value: true %>
+    <%= f.select :status,
+      options_for_select([['🔴 Open', 'open'], ['🟡 WIP', 'wip'], ['🟢 Closed', 'closed']], issue.status),
+      {},
+      class: "rounded-full text-xs font-normal px-2 py-1 cursor-pointer
+              #{ issue.status == 'open' ? 'bg-red-100 text-red-800' :
+                issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800' }
+              hover:shadow-md transition-all duration-200",
+      onchange: 'this.form.requestSubmit();',
+      onclick: 'event.stopPropagation();' %>
+  <% end %>
+</div>
+

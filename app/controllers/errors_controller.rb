@@ -172,14 +172,58 @@ class ErrorsController < ApplicationController
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
 
     if @issue.update(issue_params)
-      redirect_path = if @current_project
+      respond_to do |format|
+        format.html do
+          redirect_path = if @current_project
+                            "/#{@current_project.slug}/errors/#{@issue.id}"
+          elsif @project
+                            project_error_path(@project, @issue)
+          else
+                            errors_path
+          end
+          redirect_to(redirect_path, notice: "Error status updated successfully.")
+        end
+        format.turbo_stream do
+          error_url = if @current_project
                         "/#{@current_project.slug}/errors/#{@issue.id}"
-      elsif @project
+                      elsif @project
                         project_error_path(@project, @issue)
-      else
-                        errors_path
+                      else
+                        error_path(@issue)
+                      end
+
+          # Check if it's from the detail page or list page
+          if params[:from_list]
+            # Update the list view status dropdown
+            render turbo_stream: [
+              turbo_stream.replace(
+                "status_dropdown_#{@issue.id}",
+                partial: "errors/status_dropdown_list",
+                locals: { issue: @issue, project: @project }
+              ),
+              turbo_stream.append(
+                "flash_messages",
+                partial: "shared/toast",
+                locals: { message: "Status updated successfully", type: "success" }
+              )
+            ]
+          else
+            # Update the detail page status dropdown
+            render turbo_stream: [
+              turbo_stream.replace(
+                "status_dropdown",
+                partial: "errors/status_dropdown",
+                locals: { issue: @issue, error_url: error_url }
+              ),
+              turbo_stream.append(
+                "flash_messages",
+                partial: "shared/toast",
+                locals: { message: "Status updated successfully", type: "success" }
+              )
+            ]
+          end
+        end
       end
-      redirect_to(redirect_path, notice: "Error status updated successfully.")
     else
       redirect_path = if @current_project
                         "/#{@current_project.slug}/errors/#{@issue.id}"

@@ -1,0 +1,44 @@
+<div class="fixed top-4 right-4 z-50 animate-fade-in-down" data-controller="toast">
+  <div class="<%= type == 'success' ? 'bg-green-500' : 'bg-red-500' %> text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+    <% if type == 'success' %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+    <% else %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    <% end %>
+    <span class="font-medium"><%= message %></span>
+  </div>
+</div>
+
+<script>
+  // Auto-remove toast after 3 seconds
+  setTimeout(() => {
+    const toast = document.querySelector('[data-controller="toast"]');
+    if (toast) {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-20px)';
+      toast.style.transition = 'all 0.3s ease-out';
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 3000);
+</script>
+
+<style>
+  @keyframes fade-in-down {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-down {
+    animation: fade-in-down 0.3s ease-out;
+  }
+</style>
+

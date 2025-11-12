@@ -198,21 +198,7 @@
 
               <!-- Status -->
               <td class="px-6 py-4" onclick="event.stopPropagation();">
-                <%= form_with model: issue,
-                              url: (@project ? project_error_path(@project, issue) : error_path(issue)),
-                              method: :patch,
-                              local: true,
-                              class: "inline" do |f| %>
-                  <%= f.select :status,
-                    options_for_select([['Open', 'open'], ['WIP', 'wip'], ['Closed', 'closed']], issue.status),
-                    {},
-                    class: "rounded-full text-xs font-normal px-2 py-1
-                            #{ issue.status == 'open' ? 'bg-red-100 text-red-800' :
-                              issue.status == 'wip' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800' }",
-                    onchange: 'this.form.submit();',
-                    onclick: 'event.stopPropagation();' %>
-                <% end %>
+                <%= render "errors/status_dropdown_list", issue: issue, project: @project %>
               </td>
 
               <!-- Total -->

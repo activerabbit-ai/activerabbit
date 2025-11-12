@@ -183,6 +183,7 @@ Rails.application.routes.draw do
   get ":project_slug", to: "dashboard#project_dashboard", as: "project_dashboard"
   get ":project_slug/errors", to: "errors#index", as: "project_slug_errors"
   get ":project_slug/errors/:id", to: "errors#show", as: "project_slug_error"
+  patch ":project_slug/errors/:id", to: "errors#update"
   post ":project_slug/errors/:id/create_pr", to: "errors#create_pr", as: "project_slug_error_create_pr"
   get ":project_slug/performance", to: "performance#index", as: "project_slug_performance"
   get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"
