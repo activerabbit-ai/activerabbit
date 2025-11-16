@@ -13,6 +13,7 @@ class Project < ApplicationRecord
   has_many :healthchecks, dependent: :destroy
   has_many :alert_rules, dependent: :destroy
   has_many :alert_notifications, dependent: :destroy
+  has_many :deploys, dependent: :destroy
 
   validates :name, presence: true
   validates_uniqueness_to_tenant :name, scope: :user_id

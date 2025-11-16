@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_16_163647) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -111,6 +111,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
     t.datetime "updated_at", null: false
     t.index ["account_id", "day"], name: "index_daily_event_counts_on_account_id_and_day", unique: true
     t.index ["account_id"], name: "index_daily_event_counts_on_account_id"
+  end
+
+  create_table "deploys", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "release_id", null: false
+    t.bigint "user_id"
+    t.bigint "account_id", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "started_at", null: false
+    t.datetime "finished_at"
+    t.jsonb "metadata"
+    t.jsonb "errors_metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_deploys_on_account_id"
+    t.index ["project_id"], name: "index_deploys_on_project_id"
+    t.index ["release_id"], name: "index_deploys_on_release_id"
+    t.index ["user_id"], name: "index_deploys_on_user_id"
   end
 
   create_table "events", force: :cascade do |t|
@@ -447,6 +465,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
   add_foreign_key "daily_event_counts", "accounts"
+  add_foreign_key "deploys", "accounts"
+  add_foreign_key "deploys", "projects"
+  add_foreign_key "deploys", "releases"
+  add_foreign_key "deploys", "users"
   add_foreign_key "events", "accounts"
   add_foreign_key "events", "issues"
   add_foreign_key "events", "projects"
