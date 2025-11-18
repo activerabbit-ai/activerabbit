@@ -31,6 +31,13 @@
       <p class="alert"><%= alert %></p>
     <% end %>
 
+    <!-- Quota Warning Banners -->
+    <% if user_signed_in? %>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <%= render "shared/quota_warning_banner" %>
+      </div>
+    <% end %>
+
     <div class="fixed top-4 right-4 z-10 flex gap-2">
       <% if user_signed_in? %>
         <%= button_to 'Subscribe', checkouts_path, params: { plan: 'developer', interval: 'month', ai: false }, method: :post, class: 'btn btn-primary' %>

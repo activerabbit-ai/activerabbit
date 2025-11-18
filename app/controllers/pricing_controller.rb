@@ -7,9 +7,30 @@ class PricingController < ApplicationController
     @current_plan_label = "Current plan"
 
     if @account
+      # Event/Error tracking usage
       @event_quota = (@account.event_quota.presence || @account.event_quota_value || 0).to_i
       @events_used = @account.events_used_in_billing_period
       @events_remaining = [@event_quota - @events_used, 0].max
+
+      # AI Summaries usage
+      @ai_summaries_quota = @account.ai_summaries_quota
+      @ai_summaries_used = @account.ai_summaries_used_in_period
+      @ai_summaries_remaining = [@ai_summaries_quota - @ai_summaries_used, 0].max
+
+      # Pull Requests usage
+      @pull_requests_quota = @account.pull_requests_quota
+      @pull_requests_used = @account.pull_requests_used_in_period
+      @pull_requests_remaining = [@pull_requests_quota - @pull_requests_used, 0].max
+
+      # Uptime Monitors usage
+      @uptime_monitors_quota = @account.uptime_monitors_quota
+      @uptime_monitors_used = @account.uptime_monitors_used
+      @uptime_monitors_remaining = [@uptime_monitors_quota - @uptime_monitors_used, 0].max
+
+      # Status Pages usage
+      @status_pages_quota = @account.status_pages_quota
+      @status_pages_used = @account.status_pages_used
+      @status_pages_remaining = [@status_pages_quota - @status_pages_used, 0].max
     end
 
     if (pay_sub = @account&.active_subscription_record)

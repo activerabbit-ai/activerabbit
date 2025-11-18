@@ -3,15 +3,10 @@
 <% end %>
 
 <% if @account&.active_subscription? %>
-  <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6 mx-auto" style="width: 70%">
-    <div class="flex items-center justify-between">
+  <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6 mx-auto" style="width: 85%">
+    <div class="flex items-center justify-between mb-4">
       <div>
         <h2 class="text-lg font-semibold text-indigo-900">Current Plan: <%= @account.current_plan&.titleize %></h2>
-        <% if @events_remaining && @event_quota %>
-          <p class="text-sm text-indigo-700">
-            <%= number_with_delimiter(@events_remaining) %> events remaining on your <%= @account.current_plan&.titleize %> plan
-          </p>
-        <% end %>
         <% if @next_payment_date %>
           <p class="text-sm text-indigo-700">
             Next payment on <%= @next_payment_date %>
@@ -25,48 +20,119 @@
               method: :post, data: { turbo: false }, class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
       </div>
     </div>
+
+    <!-- Usage Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
+      <!-- Error Tracking -->
+      <div class="bg-white rounded-lg p-3 border border-indigo-100">
+        <div class="text-xs font-medium text-gray-500 mb-1">Error Tracking</div>
+        <div class="text-lg font-bold text-gray-900">
+          <%= number_with_delimiter(@events_used) %> / <%= number_with_delimiter(@event_quota) %>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:events), 100].min %>%"></div>
+        </div>
+        <div class="text-xs text-gray-500 mt-1"><%= @events_remaining %> remaining</div>
+      </div>
+
+      <!-- AI Summaries -->
+      <div class="bg-white rounded-lg p-3 border border-indigo-100">
+        <div class="text-xs font-medium text-gray-500 mb-1">AI Summaries</div>
+        <div class="text-lg font-bold text-gray-900">
+          <%= @ai_summaries_used %> / <%= @ai_summaries_quota %>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:ai_summaries), 100].min %>%"></div>
+        </div>
+        <div class="text-xs text-gray-500 mt-1"><%= @ai_summaries_remaining %> remaining</div>
+      </div>
+
+      <!-- Pull Requests -->
+      <div class="bg-white rounded-lg p-3 border border-indigo-100">
+        <div class="text-xs font-medium text-gray-500 mb-1">Pull Requests</div>
+        <div class="text-lg font-bold text-gray-900">
+          <%= @pull_requests_used %> / <%= @pull_requests_quota %>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:pull_requests), 100].min %>%"></div>
+        </div>
+        <div class="text-xs text-gray-500 mt-1"><%= @pull_requests_remaining %> remaining</div>
+      </div>
+
+      <!-- Uptime Monitors -->
+      <div class="bg-white rounded-lg p-3 border border-indigo-100">
+        <div class="text-xs font-medium text-gray-500 mb-1">Uptime Monitors</div>
+        <div class="text-lg font-bold text-gray-900">
+          <%= @uptime_monitors_used %> / <%= @uptime_monitors_quota %>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:uptime_monitors), 100].min %>%"></div>
+        </div>
+        <div class="text-xs text-gray-500 mt-1"><%= @uptime_monitors_remaining %> remaining</div>
+      </div>
+
+      <!-- Status Pages -->
+      <div class="bg-white rounded-lg p-3 border border-indigo-100">
+        <div class="text-xs font-medium text-gray-500 mb-1">Status Pages</div>
+        <div class="text-lg font-bold text-gray-900">
+          <%= @status_pages_used %> / <%= @status_pages_quota %>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:status_pages), 100].min %>%"></div>
+        </div>
+        <div class="text-xs text-gray-500 mt-1"><%= @status_pages_remaining %> remaining</div>
+      </div>
+    </div>
   </div>
 <% end %>
 
-<div class="space-y-6 mx-auto" style="width: 70%">
+<div class="space-y-8 mx-auto" style="width: 85%">
+  <!-- Pricing Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Free Plan -->
     <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
-      <h3 class="text-xl font-semibold">Developer</h3>
+      <h3 class="text-xl font-semibold">Free</h3>
       <div class="mt-2">
-        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$25</span>
+        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$0</span>
         <span class="text-sm text-gray-500">/mo</span>
-        <span class="ml-2 inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">$250/yr</span>
       </div>
-      <p class="text-gray-600 mt-1">50k events</p>
+      <p class="text-gray-600 mt-1">Perfect for getting started</p>
       <ul class="mt-4 space-y-2 text-sm text-gray-700">
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>APM & error monitoring</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Alerts & dashboards</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Basic usage quotas</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>3,000 errors/month</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 AI summaries</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 pull requests</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>1 uptime monitor</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>1 status page</span></li>
       </ul>
       <div class="mt-auto pt-4">
-        <%= button_to (@account&.current_plan == 'developer' ? "Current plan: Developer" : "Choose Developer"),
+        <%= button_to (@account&.current_plan == 'free' ? "Current plan" : "Choose Free"),
               checkouts_path,
-              params: { plan: "developer", interval: "month", ai: false },
+              params: { plan: "free", interval: "month", ai: false },
               data: { turbo: false }, method: :post,
-              class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
+              class: "w-full bg-gray-600 text-white py-2 rounded-md hover:bg-gray-700 transition-colors" %>
       </div>
     </div>
 
+    <!-- Team Plan -->
     <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col ring-2 ring-indigo-500/20 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
-      <h3 class="text-xl font-semibold">Team</h3>
-      <div class="mt-2">
-        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$80</span>
-        <span class="text-sm text-gray-500">/mo</span>
-        <span class="ml-2 inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">$490/yr</span>
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold">Team</h3>
+        <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">Popular</span>
       </div>
-      <p class="text-gray-600 mt-1">100k events</p>
+      <div class="mt-2">
+        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$29</span>
+        <span class="text-sm text-gray-500">/mo</span>
+      </div>
+      <p class="text-gray-600 mt-1">For growing teams</p>
       <ul class="mt-4 space-y-2 text-sm text-gray-700">
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Everything in Developer</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Advanced alerts & automations</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Higher usage quotas</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50 AI summaries</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>10 pull requests</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 uptime monitors</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>1 status page</span></li>
       </ul>
       <div class="mt-auto pt-4">
-        <%= button_to (@account&.current_plan == 'team' ? "Current plan: Team" : "Choose Team"),
+        <%= button_to (@account&.current_plan == 'team' ? "Current plan" : "Choose Team"),
               checkouts_path,
               params: { plan: "team", interval: "month", ai: false },
               data: { turbo: false }, method: :post,
@@ -74,25 +140,78 @@
       </div>
     </div>
 
-      <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
-        <h3 class="text-xl font-semibold">Enterprise</h3>
-        <div class="mt-2">
-          <span class="text-3xl font-extrabold tracking-tight text-gray-900">$900</span>
-          <span class="text-sm text-gray-500">/mo</span>
-          <span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">$9,000/yr</span>
-        </div>
-        <ul class="mt-4 space-y-2 text-sm text-gray-700">
-          <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Custom quotas & SLAs</span></li>
-          <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Priority support</span></li>
-          <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg><span>Security reviews & SSO</span></li>
-        </ul>
-        <div class="mt-auto pt-4">
-          <%= button_to (@account&.current_plan == 'enterprise' ? "Current plan: Enterprise" : "Talk to sales"),
-                "mailto:sales@activerabbit.ai",
-                method: :get, data: { turbo: false },
-                class: "w-full bg-gray-900 text-white py-2 rounded-md hover:bg-gray-800" %>
-        </div>
+    <!-- Business Plan -->
+    <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
+      <h3 class="text-xl font-semibold">Business</h3>
+      <div class="mt-2">
+        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$80</span>
+        <span class="text-sm text-gray-500">/mo</span>
       </div>
+      <p class="text-gray-600 mt-1">For production workloads</p>
+      <ul class="mt-4 space-y-2 text-sm text-gray-700">
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>100 AI summaries</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>20 pull requests</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 uptime monitors</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>1 status page</span></li>
+      </ul>
+      <div class="mt-auto pt-4">
+        <%= button_to (@account&.current_plan == 'business' ? "Current plan" : "Choose Business"),
+              checkouts_path,
+              params: { plan: "business", interval: "month", ai: false },
+              data: { turbo: false }, method: :post,
+              class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Comparison Table -->
+  <div class="mt-12">
+    <h3 class="text-2xl font-bold text-gray-900 mb-6">Usage Limits</h3>
+    <div class="overflow-hidden border border-gray-200 rounded-lg">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feature</th>
+            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Free</th>
+            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Business</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Error Tracking</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">3,000 errors/mo</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50K errors/mo</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50K errors/mo</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">AI Summaries</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">100</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Pull Requests</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">10</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">20</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Uptime Monitoring</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 monitor</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5 monitors</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5 monitors</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Status Pages</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 status page</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 status page</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 status page</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <%= render "shared/upgrade_modal", account: @account if @account %>

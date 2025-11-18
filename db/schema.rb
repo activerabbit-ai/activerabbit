@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -30,6 +30,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
     t.integer "events_used_in_period", default: 0, null: false
     t.string "overage_subscription_item_id"
     t.string "ai_overage_subscription_item_id"
+    t.jsonb "last_quota_alert_sent_at"
     t.index ["name"], name: "index_accounts_on_name"
   end
 
@@ -111,6 +112,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
     t.datetime "updated_at", null: false
     t.index ["account_id", "day"], name: "index_daily_event_counts_on_account_id_and_day", unique: true
     t.index ["account_id"], name: "index_daily_event_counts_on_account_id"
+  end
+
+  create_table "daily_resource_usages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.date "day", null: false
+    t.integer "errors_count"
+    t.integer "ai_summaries_count"
+    t.integer "pull_requests_count"
+    t.integer "uptime_monitors_count"
+    t.integer "status_pages_count"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "day"], name: "index_daily_resource_usages_on_account_id_and_day", unique: true
   end
 
   create_table "events", force: :cascade do |t|
@@ -447,6 +461,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_24_093700) do
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
   add_foreign_key "daily_event_counts", "accounts"
+  add_foreign_key "daily_resource_usages", "accounts"
   add_foreign_key "events", "accounts"
   add_foreign_key "events", "issues"
   add_foreign_key "events", "projects"
