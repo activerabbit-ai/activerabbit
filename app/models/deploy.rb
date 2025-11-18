@@ -19,11 +19,11 @@ class Deploy < ApplicationRecord
   end
 
   def errors_count
-    events.where(level: %w[error fatal]).count
+    events.count
   end
 
   def errors_per_hour
-    return 0 if duration_seconds.nil? || duration_seconds == 0
+    return 0 if duration_seconds.nil? || duration_seconds.zero?
     (errors_count / (duration_seconds / 3600.0)).round(2)
   end
 

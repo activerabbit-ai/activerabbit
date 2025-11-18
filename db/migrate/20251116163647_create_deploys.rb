@@ -6,7 +6,7 @@ class CreateDeploys < ActiveRecord::Migration[8.0]
       t.references :user, foreign_key: true
       t.references :account, null: false, foreign_key: true
 
-      t.integer :status, default: 0, null: false
+      t.string :status
 
       t.datetime :started_at, null: false
       t.datetime :finished_at
