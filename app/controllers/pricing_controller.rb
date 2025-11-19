@@ -8,7 +8,7 @@ class PricingController < ApplicationController
 
     if @account
       # Event/Error tracking usage
-      @event_quota = (@account.event_quota.presence || @account.event_quota_value || 0).to_i
+      @event_quota = @account.event_quota_value
       @events_used = @account.events_used_in_billing_period
       @events_remaining = [@event_quota - @events_used, 0].max
 
@@ -31,6 +31,11 @@ class PricingController < ApplicationController
       @status_pages_quota = @account.status_pages_quota
       @status_pages_used = @account.status_pages_used
       @status_pages_remaining = [@status_pages_quota - @status_pages_used, 0].max
+
+      # Projects usage
+      @projects_quota = @account.projects_quota
+      @projects_used = @account.projects_used
+      @projects_remaining = [@projects_quota - @projects_used, 0].max
     end
 
     if (pay_sub = @account&.active_subscription_record)

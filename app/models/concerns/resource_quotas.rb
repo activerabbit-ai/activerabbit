@@ -15,25 +15,28 @@ module ResourceQuotas
   # Plan-based quota definitions
   PLAN_QUOTAS = {
     free: {
-      events: 3_000,
+      events: 10_000,
       ai_summaries: 5,
       pull_requests: 5,
       uptime_monitors: 0,
-      status_pages: 0
+      status_pages: 0,
+      projects: 1
     },
     team: {
       events: 50_000,
       ai_summaries: 50,
       pull_requests: 10,
       uptime_monitors: 5,
-      status_pages: 1
+      status_pages: 1,
+      projects: 10
     },
     business: {
       events: 50_000,
       ai_summaries: 100,
       pull_requests: 20,
       uptime_monitors: 5,
-      status_pages: 1
+      status_pages: 1,
+      projects: 50
     }
   }.freeze
 
@@ -45,7 +48,6 @@ module ResourceQuotas
   # ============================================================================
 
   def event_quota_value
-    return event_quota if respond_to?(:event_quota) && event_quota.present?
     quota_for_resource(:events)
   end
 
@@ -63,6 +65,10 @@ module ResourceQuotas
 
   def status_pages_quota
     quota_for_resource(:status_pages)
+  end
+
+  def projects_quota
+    quota_for_resource(:projects)
   end
 
   # ============================================================================
@@ -115,6 +121,13 @@ module ResourceQuotas
     projects.where("settings->>'status_page_enabled' = 'true'").count
   end
 
+  def projects_used
+    # Handle ActsAsTenant scoping
+    ActsAsTenant.without_tenant do
+      Project.where(account_id: id).count
+    end
+  end
+
   # ============================================================================
   # QUOTA CHECKING METHODS - Check if usage is within quota
   # ============================================================================
@@ -163,7 +176,7 @@ module ResourceQuotas
   #   #   ...
   #   # }
   def usage_summary
-    %i[events ai_summaries pull_requests uptime_monitors status_pages].each_with_object({}) do |resource, hash|
+    %i[events ai_summaries pull_requests uptime_monitors status_pages projects].each_with_object({}) do |resource, hash|
       quota = quota_for_resource_by_type(resource)
       used = usage_for_resource(resource)
 
@@ -204,6 +217,8 @@ module ResourceQuotas
       uptime_monitors_used
     when :status_pages
       status_pages_used
+    when :projects
+      projects_used
     else
       0
     end
@@ -225,6 +240,8 @@ module ResourceQuotas
       uptime_monitors_quota
     when :status_pages
       status_pages_quota
+    when :projects
+      projects_quota
     else
       0
     end

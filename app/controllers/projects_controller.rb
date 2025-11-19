@@ -2,6 +2,7 @@ class ProjectsController < ApplicationController
   layout "admin"
   before_action :authenticate_user!
   before_action :set_project, only: [:show, :edit, :update, :destroy, :regenerate_token]
+  before_action :check_project_quota, only: [:new, :create]
 
   def index
     # Show all projects for the current account
@@ -85,5 +86,12 @@ class ProjectsController < ApplicationController
 
   def project_params
     params.require(:project).permit(:name, :description, :environment, :active, :url, :tech_stack, settings: {})
+  end
+
+  def check_project_quota
+    return if current_account.within_quota?(:projects)
+
+    flash[:alert] = "You've reached your project limit (#{current_account.projects_quota} projects on #{current_account.current_plan.titleize} plan). Please upgrade your plan to add more projects."
+    redirect_to pricing_path
   end
 end

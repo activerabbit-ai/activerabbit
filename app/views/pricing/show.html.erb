@@ -176,6 +176,32 @@
             </div>
           </div>
         </div>
+
+        <!-- Projects -->
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-green-500">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Projects</h3>
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Used:</span>
+              <span class="font-bold text-gray-900"><%= @projects_used %></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Quota:</span>
+              <span class="font-medium text-gray-700"><%= @projects_quota %></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
+              <div class="bg-green-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:projects), 100].min %>%"></div>
+            </div>
+            <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:projects) >= 90 ? '#ef4444' : @account.usage_percentage(:projects) >= 80 ? '#f59e0b' : '#10b981' %>">
+              <%= @account.usage_percentage(:projects).round(1) %>%
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Status Message -->
@@ -229,7 +255,8 @@
       </div>
       <p class="text-gray-600 mt-1">Perfect for getting started</p>
       <ul class="mt-4 space-y-2 text-sm text-gray-700">
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>3,000 errors/month</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>1 project</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>10,000 errors/month</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 AI summaries</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 pull requests</span></li>
       </ul>
@@ -262,6 +289,7 @@
       </div>
       <p class="text-gray-600 mt-1">For growing teams</p>
       <ul class="mt-4 space-y-2 text-sm text-gray-700">
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>10 projects</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50 AI summaries</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>10 pull requests</span></li>
@@ -286,6 +314,7 @@
       </div>
       <p class="text-gray-600 mt-1">For production workloads</p>
       <ul class="mt-4 space-y-2 text-sm text-gray-700">
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50 projects</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>100 AI summaries</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>20 pull requests</span></li>
@@ -317,30 +346,36 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Projects</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 project</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">10 projects</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50 projects</td>
+          </tr>
+          <tr class="bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Error Tracking</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">3,000 errors/mo</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">10,000 errors/mo</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50K errors/mo</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50K errors/mo</td>
           </tr>
-          <tr class="bg-gray-50">
+          <tr>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">AI Summaries</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">100</td>
           </tr>
-          <tr>
+          <tr class="bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Pull Requests</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">10</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">20</td>
           </tr>
-          <tr class="bg-gray-50">
+          <tr>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Uptime Monitoring</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">0 monitor</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5 monitors</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5 monitors</td>
           </tr>
-          <tr>
+          <tr class="bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Status Pages</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">0 status page</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 status page</td>
