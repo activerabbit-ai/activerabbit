@@ -223,4 +223,3 @@ RSpec.describe "Pricing", type: :request do
     end
   end
 end
-

@@ -40,10 +40,10 @@ class QuotaAlertJob < ApplicationJob
 
     # Determine alert level
     level = case percentage
-            when 80...90 then "80_percent"
-            when 90...100 then "90_percent"
-            else "exceeded"
-            end
+    when 80...90 then "80_percent"
+    when 90...100 then "90_percent"
+    else "exceeded"
+    end
 
     # Check if we should send an alert
     if should_send_alert?(level, last_sent_at, last_level, percentage)
@@ -112,4 +112,3 @@ class QuotaAlertJob < ApplicationJob
     end
   end
 end
-

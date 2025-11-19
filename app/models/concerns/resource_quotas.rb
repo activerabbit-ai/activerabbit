@@ -256,4 +256,3 @@ module ResourceQuotas
     event_usage_period_end || Time.current.end_of_month
   end
 end
-

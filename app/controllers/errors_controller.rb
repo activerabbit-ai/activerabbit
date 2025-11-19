@@ -186,11 +186,11 @@ class ErrorsController < ApplicationController
         format.turbo_stream do
           error_url = if @current_project
                         "/#{@current_project.slug}/errors/#{@issue.id}"
-                      elsif @project
+          elsif @project
                         project_error_path(@project, @issue)
-                      else
+          else
                         error_path(@issue)
-                      end
+          end
 
           # Check if it's from the detail page or list page
           if params[:from_list]

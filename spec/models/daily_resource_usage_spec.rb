@@ -267,4 +267,3 @@ RSpec.describe DailyResourceUsage, type: :model do
     end
   end
 end
-
