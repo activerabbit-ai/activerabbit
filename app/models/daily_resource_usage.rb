@@ -65,4 +65,3 @@ class DailyResourceUsage < ApplicationRecord
       uptime_monitors_count.to_i + status_pages_count.to_i
   end
 end
-
