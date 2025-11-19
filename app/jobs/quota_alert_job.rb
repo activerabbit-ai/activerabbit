@@ -27,7 +27,10 @@ class QuotaAlertJob < ApplicationJob
   end
 
   def check_resource_quota(account, resource_type)
-    percentage = account.usage_percentage(resource_type)
+    # Wrap in ActsAsTenant.without_tenant to access tenant-scoped models
+    percentage = ActsAsTenant.without_tenant do
+      account.usage_percentage(resource_type)
+    end
     return if percentage < 80 # No alert needed if under 80%
 
     resource_key = resource_type.to_s

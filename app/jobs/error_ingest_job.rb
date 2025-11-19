@@ -46,7 +46,7 @@ class ErrorIngestJob
     # Generate AI summary once for a new issue (check quota first)
     if issue && issue.ai_summary.blank? && issue.count <= 1
       account = issue.account
-      
+
       # Check if account is within quota (or log warning if over)
       if account && !account.within_quota?(:ai_summaries)
         Rails.logger.warn("[Quota] AI summary skipped for issue #{issue.id} - account #{account.id} over quota")

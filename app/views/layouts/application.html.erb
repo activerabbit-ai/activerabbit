@@ -31,6 +31,9 @@
       <p class="alert"><%= alert %></p>
     <% end %>
 
+    <!-- Billing/Trial Warning Banner -->
+    <%= render "shared/billing_banner" %>
+
     <!-- Quota Warning Banners -->
     <% if user_signed_in? %>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">

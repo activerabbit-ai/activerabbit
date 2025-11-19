@@ -18,8 +18,8 @@ module ResourceQuotas
       events: 3_000,
       ai_summaries: 5,
       pull_requests: 5,
-      uptime_monitors: 1,
-      status_pages: 1
+      uptime_monitors: 0,
+      status_pages: 0
     },
     team: {
       events: 50_000,
