@@ -19,14 +19,18 @@ require "sidekiq-cron"
 if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::Boolean.new.cast(ENV["DISABLE_SIDEKIQ_CRON"]) && !Rails.env.test?
   jobs = {
     "report_usage_daily" => {
-      "cron" => "0 1 * * *",
+      "cron" => "0 1 * * *",  # Daily at 1:00 AM - aggregate usage
       "class" => "ReportUsageDailyLoader"
+    },
+    "quota_alerts_daily" => {
+      "cron" => "0 10 * * *",  # Daily at 10:00 AM - send quota alerts
+      "class" => "QuotaAlertJob"
     }
   }
 
   begin
     Sidekiq::Cron::Job.load_from_hash(jobs)
-  rescue RedisClient::BaseError => e
+  rescue StandardError => e
     Rails.logger.warn("[Sidekiq::Cron] Skipping job load: #{e.class}: #{e.message}")
   end
 end

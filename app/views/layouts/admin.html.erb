@@ -57,13 +57,7 @@
             Dashboard
           <% end %>
 
-          <%= link_to base_deploys_path,
-              class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_deploys_path)}" do %>
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-            </svg>
-            Deploys
-          <% end %>
+
 
           <%= link_to base_errors_path,
               class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_errors_path)}" do %>
@@ -100,7 +94,13 @@
           <% end %>
 <%
 =end%>
-
+          <%= link_to base_deploys_path,
+              class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_deploys_path)}" do %>
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            Deploys
+          <% end %>
           <div class="border-t border-gray-700 my-4"></div>
 
 
@@ -114,6 +114,14 @@
             </svg>
             Settings
           <% end %>
+
+          <%= link_to usage_path,
+              class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(usage_path)}" do %>
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Usage
+          <% end %>
         </nav>
 
         <!-- Persistent Subscription Promo Box at bottom of sidebar -->
@@ -124,8 +132,7 @@
           <% if current_account&.trial_ends_at && current_account.trial_ends_at > Time.current %>
             <% days_left = (current_account.trial_ends_at.to_date - Date.current).to_i %>
           <% end %>
-          <%= link_to pricing_path,
-              class: "mt-2 inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 cursor-pointer space-x-2" do %>
+          <%= link_to plan_path, class: "mt-2 inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 cursor-pointer space-x-2" do %>
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l6-6 4 4 8-8" />
             </svg>
@@ -213,7 +220,7 @@
               </button>
 
               <!-- Subscription CTA -->
-              <%= link_to "Subscription", pricing_path,
+              <%= link_to "Subscription", plan_path,
                   class: "px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700" %>
 
               <!-- User Avatar and Menu -->

@@ -255,6 +255,13 @@ class ErrorsController < ApplicationController
     project_scope = @current_project || @project
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
 
+    # Check quota and show warning
+    account = current_user&.account
+    if account && account.should_warn_before_action?(:pull_requests)
+      warning_msg = account.quota_warning_message(:pull_requests)
+      flash.now[:warning] = warning_msg if warning_msg
+    end
+
     pr_service = GithubPrService.new(project_scope || @issue.project)
     result = pr_service.create_pr_for_issue(@issue)
 
@@ -275,6 +282,17 @@ class ErrorsController < ApplicationController
         issue_pr_urls[@issue.id.to_s] = result[:pr_url]
         settings["issue_pr_urls"] = issue_pr_urls
         pr_project.update(settings: settings)
+      end
+
+      # Track PR creation for usage monitoring
+      account = current_user&.account || pr_project&.account
+      if account && current_user
+        AiRequest.create!(
+          account: account,
+          user: current_user,
+          request_type: "pull_request",
+          occurred_at: Time.current
+        )
       end
 
       # Open PR in the new tab by redirecting directly to GitHub

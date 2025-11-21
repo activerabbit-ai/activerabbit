@@ -108,7 +108,8 @@ Rails.application.routes.draw do
   mount Pay::Engine, at: "/payments", as: :pay_engine
 
   # Pricing & billing
-  get "pricing", to: "pricing#show", as: :pricing
+  get "plan", to: "pricing#show", as: :plan
+  get "usage", to: "pricing#usage", as: :usage
   resources :checkouts, only: :create
   resources :billing_portal, only: :create
   post "/webhooks/stripe", to: "webhooks#stripe"

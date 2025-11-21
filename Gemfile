@@ -102,4 +102,7 @@ group :development do
   gem "web-console"
   gem "bullet", "~> 7.2", require: false
   gem "rack-mini-profiler", "~> 3.3"
+
+  # Preview emails in browser
+  gem "letter_opener"
 end

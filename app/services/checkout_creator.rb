@@ -4,7 +4,7 @@ class CheckoutCreator
   def initialize(user:, account:, plan:, interval:, ai: false)
     @user = user
     @account = account
-    @plan = plan # "developer"|"team"
+    @plan = plan # "team"|"business"
     @interval = interval # "month"|"year"
     @ai = ActiveModel::Type::Boolean.new.cast(ai)
   end
@@ -62,13 +62,11 @@ class CheckoutCreator
 
   def price_for_plan(plan, interval)
     case [plan, interval]
-    when ["developer", "month"] then ENV.fetch("STRIPE_PRICE_DEV_MONTHLY")
-    when ["developer", "year"]  then ENV.fetch("STRIPE_PRICE_DEV_ANNUAL")
     when ["team", "month"]      then ENV.fetch("STRIPE_PRICE_TEAM_MONTHLY")
-    when ["team", "year"]       then ENV.fetch("STRIPE_PRICE_TEAM_ANNUAL")
-    when ["enterprise", "month"] then ENV.fetch("STRIPE_PRICE_ENT_MONTHLY")
-    when ["enterprise", "year"]  then ENV.fetch("STRIPE_PRICE_ENT_ANNUAL")
-    else raise ArgumentError, "unknown plan/interval"
+    when ["team", "year"]       then ENV.fetch("STRIPE_PRICE_TEAM_ANNUAL", ENV["STRIPE_PRICE_TEAM_MONTHLY"])
+    when ["business", "month"]  then ENV.fetch("STRIPE_PRICE_BUSINESS_MONTHLY")
+    when ["business", "year"]   then ENV.fetch("STRIPE_PRICE_BUSINESS_ANNUAL", ENV["STRIPE_PRICE_BUSINESS_MONTHLY"])
+    else raise ArgumentError, "unknown plan/interval: #{plan}/#{interval}"
     end
   end
 
