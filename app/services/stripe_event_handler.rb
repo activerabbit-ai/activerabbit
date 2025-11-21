@@ -153,9 +153,8 @@ class StripeEventHandler
 
   def base_plan_price_ids
     [
-      ENV["STRIPE_PRICE_DEV_MONTHLY"], ENV["STRIPE_PRICE_DEV_ANNUAL"],
       ENV["STRIPE_PRICE_TEAM_MONTHLY"], ENV["STRIPE_PRICE_TEAM_ANNUAL"],
-      ENV["STRIPE_PRICE_ENT_MONTHLY"], ENV["STRIPE_PRICE_ENT_ANNUAL"]
+      ENV["STRIPE_PRICE_BUSINESS_MONTHLY"], ENV["STRIPE_PRICE_BUSINESS_ANNUAL"]
     ].compact
   end
 
@@ -165,22 +164,19 @@ class StripeEventHandler
 
   def plan_interval_from_price(price_id)
     case price_id
-    when ENV["STRIPE_PRICE_DEV_MONTHLY"] then ["developer", "month"]
-    when ENV["STRIPE_PRICE_DEV_ANNUAL"] then ["developer", "year"]
     when ENV["STRIPE_PRICE_TEAM_MONTHLY"] then ["team", "month"]
     when ENV["STRIPE_PRICE_TEAM_ANNUAL"] then ["team", "year"]
-    when ENV["STRIPE_PRICE_ENT_MONTHLY"] then ["enterprise", "month"]
-    when ENV["STRIPE_PRICE_ENT_ANNUAL"] then ["enterprise", "year"]
+    when ENV["STRIPE_PRICE_BUSINESS_MONTHLY"] then ["business", "month"]
+    when ENV["STRIPE_PRICE_BUSINESS_ANNUAL"] then ["business", "year"]
     else [nil, nil]
     end
   end
 
   def quota_for(plan)
     case plan
-    when "developer" then 50_000
-    when "team" then 100_000
-    when "enterprise" then 5_000_000
-    else 50_000
+    when "team" then 50_000
+    when "business" then 50_000
+    else 10_000 # free plan default
     end
   end
 end

@@ -124,7 +124,7 @@
           <% if current_account&.trial_ends_at && current_account.trial_ends_at > Time.current %>
             <% days_left = (current_account.trial_ends_at.to_date - Date.current).to_i %>
           <% end %>
-          <%= link_to pricing_path,
+          <%= link_to plan_path,
               class: "mt-2 inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 cursor-pointer space-x-2" do %>
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l6-6 4 4 8-8" />
@@ -213,7 +213,7 @@
               </button>
 
               <!-- Subscription CTA -->
-              <%= link_to "Subscription", pricing_path,
+              <%= link_to "Subscription", plan_path,
                   class: "px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700" %>
 
               <!-- User Avatar and Menu -->

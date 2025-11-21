@@ -133,7 +133,7 @@ class ApplicationController < ActionController::Base
     # Show on every page until plan is upgraded
     message = current_account.quota_exceeded_flash_message
     if message
-      flash.now[:alert] = view_context.link_to(message, pricing_path, class: "underline hover:text-red-800").html_safe
+      flash.now[:alert] = view_context.link_to(message, plan_path, class: "underline hover:text-red-800").html_safe
     end
   end
 

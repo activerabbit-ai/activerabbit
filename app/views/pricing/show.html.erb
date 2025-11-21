@@ -20,69 +20,6 @@
               method: :post, data: { turbo: false }, class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
       </div>
     </div>
-
-    <!-- Usage Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
-      <!-- Error Tracking -->
-      <div class="bg-white rounded-lg p-3 border border-indigo-100">
-        <div class="text-xs font-medium text-gray-500 mb-1">Error Tracking</div>
-        <div class="text-lg font-bold text-gray-900">
-          <%= number_with_delimiter(@events_used) %> / <%= number_with_delimiter(@event_quota) %>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:events), 100].min %>%"></div>
-        </div>
-        <div class="text-xs text-gray-500 mt-1"><%= @events_remaining %> remaining</div>
-      </div>
-
-      <!-- AI Summaries -->
-      <div class="bg-white rounded-lg p-3 border border-indigo-100">
-        <div class="text-xs font-medium text-gray-500 mb-1">AI Summaries</div>
-        <div class="text-lg font-bold text-gray-900">
-          <%= @ai_summaries_used %> / <%= @ai_summaries_quota %>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:ai_summaries), 100].min %>%"></div>
-        </div>
-        <div class="text-xs text-gray-500 mt-1"><%= @ai_summaries_remaining %> remaining</div>
-      </div>
-
-      <!-- Pull Requests -->
-      <div class="bg-white rounded-lg p-3 border border-indigo-100">
-        <div class="text-xs font-medium text-gray-500 mb-1">Pull Requests</div>
-        <div class="text-lg font-bold text-gray-900">
-          <%= @pull_requests_used %> / <%= @pull_requests_quota %>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:pull_requests), 100].min %>%"></div>
-        </div>
-        <div class="text-xs text-gray-500 mt-1"><%= @pull_requests_remaining %> remaining</div>
-      </div>
-
-      <!-- Uptime Monitors -->
-      <div class="bg-white rounded-lg p-3 border border-indigo-100">
-        <div class="text-xs font-medium text-gray-500 mb-1">Uptime Monitors</div>
-        <div class="text-lg font-bold text-gray-900">
-          <%= @uptime_monitors_used %> / <%= @uptime_monitors_quota %>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:uptime_monitors), 100].min %>%"></div>
-        </div>
-        <div class="text-xs text-gray-500 mt-1"><%= @uptime_monitors_remaining %> remaining</div>
-      </div>
-
-      <!-- Status Pages -->
-      <div class="bg-white rounded-lg p-3 border border-indigo-100">
-        <div class="text-xs font-medium text-gray-500 mb-1">Status Pages</div>
-        <div class="text-lg font-bold text-gray-900">
-          <%= @status_pages_used %> / <%= @status_pages_quota %>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-          <div class="bg-indigo-600 h-2 rounded-full" style="width: <%= [@account.usage_percentage(:status_pages), 100].min %>%"></div>
-        </div>
-        <div class="text-xs text-gray-500 mt-1"><%= @status_pages_remaining %> remaining</div>
-      </div>
-    </div>
   </div>
 <% end %>
 

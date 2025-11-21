@@ -92,6 +92,6 @@ class ProjectsController < ApplicationController
     return if current_account.within_quota?(:projects)
 
     flash[:alert] = "You've reached your project limit (#{current_account.projects_quota} projects on #{current_account.current_plan.titleize} plan). Please upgrade your plan to add more projects."
-    redirect_to pricing_path
+    redirect_to plan_path
   end
 end
