@@ -5,10 +5,10 @@ class DeploysController < ApplicationController
   before_action :set_project, if: -> { params[:project_id] }
 
   def index
-    project_scope = @current_project || @project
+    @project_scope = @current_project || @project
 
-    if project_scope
-      @deploys = project_scope.deploys
+    if @project_scope
+      @deploys = @project_scope.deploys
                               .includes(:release, :user)
                               .recent
     else

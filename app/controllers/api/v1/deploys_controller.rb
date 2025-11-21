@@ -14,11 +14,13 @@ class Api::V1::DeploysController < Api::BaseController
       release.save!
     end
 
+    user = User.find_by!(email: params[:user])
+
     deploy = Deploy.create!(
       account: project.account,
       project: project,
       release: release,
-      user: params[:user],
+      user: user,
       status: params[:status],
       started_at: params[:started_at],
       finished_at: params[:finished_at]

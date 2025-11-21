@@ -5,8 +5,8 @@
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
     <h3 class="text-lg font-medium text-gray-900">Recent Deployments</h3>
-    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-      Deploy Now
+    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium" command="show-modal" commandfor="deploy">
+      Deploy Config
     </button>
   </div>
   <div class="overflow-hidden">
@@ -54,3 +54,5 @@
     </table>
   </div>
 </div>
+
+<%= render 'deploys_config' %>
