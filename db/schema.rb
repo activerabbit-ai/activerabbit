@@ -114,6 +114,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
     t.index ["account_id"], name: "index_daily_event_counts_on_account_id"
   end
 
+  create_table "deploys", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "release_id", null: false
+    t.bigint "user_id"
+    t.bigint "account_id", null: false
+    t.string "status"
+    t.datetime "started_at", null: false
+    t.datetime "finished_at"
+    t.jsonb "metadata"
+    t.jsonb "errors_metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_deploys_on_account_id"
+    t.index ["project_id"], name: "index_deploys_on_project_id"
+    t.index ["release_id"], name: "index_deploys_on_release_id"
+    t.index ["user_id"], name: "index_deploys_on_user_id"
+  end
+
   create_table "daily_resource_usages", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.date "day", null: false
@@ -147,8 +165,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
     t.string "server_name"
     t.string "request_id"
     t.bigint "account_id", null: false
+    t.bigint "deploy_id"
     t.index ["account_id", "project_id"], name: "index_events_on_account_id_and_project_id"
     t.index ["account_id"], name: "index_events_on_account_id"
+    t.index ["deploy_id"], name: "index_events_on_deploy_id"
     t.index ["environment"], name: "index_events_on_environment"
     t.index ["exception_class"], name: "index_events_on_exception_class"
     t.index ["issue_id"], name: "index_events_on_issue_id"
@@ -461,8 +481,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
   add_foreign_key "daily_event_counts", "accounts"
+  add_foreign_key "deploys", "accounts"
+  add_foreign_key "deploys", "projects"
+  add_foreign_key "deploys", "releases"
+  add_foreign_key "deploys", "users"
   add_foreign_key "daily_resource_usages", "accounts"
   add_foreign_key "events", "accounts"
+  add_foreign_key "events", "deploys"
   add_foreign_key "events", "issues"
   add_foreign_key "events", "projects"
   add_foreign_key "events", "releases"

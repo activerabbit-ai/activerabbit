@@ -5,8 +5,8 @@
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
     <h3 class="text-lg font-medium text-gray-900">Recent Deployments</h3>
-    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-      Deploy Now
+    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium" command="show-modal" commandfor="deploy">
+      Deploy Config
     </button>
   </div>
   <div class="overflow-hidden">
@@ -14,27 +14,39 @@
       <thead class="bg-gray-50">
         <tr>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deployed</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Errors</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Errors per hour</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
         <% @deploys.each do |deploy| %>
           <tr>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              <%= deploy[:version] %>
+              <%= deploy.release.version %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <%= deploy.user&.email || "—" %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= deploy[:status] == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                <%= deploy[:status].capitalize %>
+                <%= deploy.status.capitalize %>
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <%= deploy[:duration] %>
+              <%= deploy.duration_seconds %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <%= time_ago_in_words(deploy[:deployed_at]) %> ago
+              <%= time_ago_in_words(deploy.started_at) %> ago
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <%= deploy.errors_count %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <%= deploy.errors_per_hour %>
             </td>
           </tr>
         <% end %>
@@ -42,3 +54,5 @@
     </table>
   </div>
 </div>
+
+<%= render 'deploys_config' %>

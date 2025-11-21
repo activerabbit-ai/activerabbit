@@ -136,6 +136,8 @@ Rails.application.routes.draw do
           post :trigger_regression_check
         end
       end
+
+      resources :deploys, only: [:create]
     end
   end
 
