@@ -128,7 +128,7 @@ module QuotaWarnings
       return nil if exceeded.empty?
 
       resource_names = exceeded.map { |r| r[:name] }.join(", ")
-      "You've exceeded your quota for #{resource_names}. View pricing"
+      "You've exceeded your quota for #{resource_names}. View plan"
     end
   end
 end

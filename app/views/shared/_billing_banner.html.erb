@@ -1,11 +1,11 @@
 <% if defined?(current_user) && current_user && current_user.account %>
   <% account = current_user.account %>
   <% suppress_once = session[:suppress_billing_banner] == true %>
-  <% 
+  <%
     # Valid plans that don't need trial/subscription warnings
     valid_plans = ['free', 'team', 'business']
     has_chosen_plan = valid_plans.include?(account.current_plan.to_s.downcase)
-    
+
     # Show banner only if: trial ended, no subscription, hasn't chosen a plan
     needs_subscription = !account.on_trial? && !account.active_subscription? && !has_chosen_plan && !suppress_once
   %>
@@ -21,7 +21,7 @@
           </p>
         </div>
         <div>
-          <%= link_to "Choose a plan", pricing_path,
+          <%= link_to "Choose a plan", plan_path,
                 class: "inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" %>
         </div>
       </div>
