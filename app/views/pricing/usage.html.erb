@@ -21,9 +21,9 @@
           View Plans
         <% end %>
         <%= button_to "View Invoices", billing_portal_index_path,
-              method: :post, data: { turbo: false }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>
+              method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>
         <%= button_to "Manage Plan", billing_portal_index_path,
-              method: :post, data: { turbo: false }, class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
+              method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
       </div>
     </div>
   </div>
