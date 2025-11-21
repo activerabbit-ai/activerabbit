@@ -1,9 +1,14 @@
 class ReportUsageJob < ApplicationJob
   queue_as :default
 
-  def perform(account_id:)
+  def perform(account_id:, day: Date.current)
     account = Account.find_by(id: account_id)
     return unless account
+
+    # Aggregate daily resource usage
+    DailyResourceUsage.aggregate_for_account_and_day(account_id, day)
+
+    # Report to Stripe if needed
     UsageReporter.new(account:).report_daily!
     report_ai_overage!(account)
   end

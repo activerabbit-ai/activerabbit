@@ -43,11 +43,18 @@ class ErrorIngestJob
 
     # Check if this error should trigger an alert
     issue = event.issue
-    # Generate AI summary once for a new issue
+    # Generate AI summary once for a new issue (check quota first)
     if issue && issue.ai_summary.blank? && issue.count <= 1
-      ai = AiSummaryService.new(issue: issue, sample_event: event).call
-      if ai[:summary].present?
-        issue.update(ai_summary: ai[:summary], ai_summary_generated_at: Time.current)
+      account = issue.account
+
+      # Check if account is within quota (or log warning if over)
+      if account && !account.within_quota?(:ai_summaries)
+        Rails.logger.warn("[Quota] AI summary skipped for issue #{issue.id} - account #{account.id} over quota")
+      elsif account
+        ai = AiSummaryService.new(issue: issue, sample_event: event).call
+        if ai[:summary].present?
+          issue.update(ai_summary: ai[:summary], ai_summary_generated_at: Time.current)
+        end
       end
     end
     if issue && should_alert_for_issue?(issue)
