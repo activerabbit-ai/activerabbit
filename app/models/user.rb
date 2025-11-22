@@ -2,7 +2,8 @@ class User < ApplicationRecord
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
-         :recoverable, :rememberable, :validatable, :trackable
+         :recoverable, :rememberable, :validatable, :trackable,
+         :omniauthable, omniauth_providers: %i[github google_oauth2]
 
   # Billing handled per User (one Stripe customer per user)
   pay_customer
@@ -25,19 +26,42 @@ class User < ApplicationRecord
     Project.where(user_id: id).count == 0
   end
 
+  def self.from_omniauth(auth)
+    auth_email = auth.info.email
+
+    user = find_by(provider: auth.provider, uid: auth.uid)
+
+    if user.nil? && auth_email.present?
+      user = find_by(email: auth_email)
+
+      if user.present?
+        user.update_columns(provider: auth.provider, uid: auth.uid)
+        return user
+      end
+    end
+
+    user || find_or_initialize_by(provider: auth.provider, uid: auth.uid) do |new_user|
+      new_user.email = auth_email
+      new_user.password = SecureRandom.hex(20)
+      new_user.name = auth.info.name if new_user.respond_to?(:name)
+
+      new_user.save
+    end
+  end
+
   private
 
   def ensure_account_exists
     return if account.present?
 
-    # Create account before user validation/creation
-    self.account = Account.create!(
-      name: "#{email.split('@').first.humanize}'s Account",
-      trial_ends_at: Rails.configuration.x.trial_days.days.from_now,
-      current_plan: "team",
-      billing_interval: "month",
-      event_quota: 100_000,
-      events_used_in_period: 0
-    )
+    self.account = Account.find_or_create_by!(
+      name: "#{email.split('@').first.humanize}'s Account"
+    ) do |a|
+      a.trial_ends_at = Rails.configuration.x.trial_days.days.from_now
+      a.current_plan = "team"
+      a.billing_interval = "month"
+      a.event_quota = 100_000
+      a.events_used_in_period = 0
+    end
   end
 end

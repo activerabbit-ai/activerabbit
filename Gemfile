@@ -17,6 +17,8 @@ gem "stimulus-rails"
 
 # Authentication
 gem "devise"
+gem 'omniauth-github'
+gem 'omniauth-google-oauth2'
 
 # Background jobs
 gem "sidekiq"
