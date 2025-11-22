@@ -513,9 +513,9 @@ DEPENDENCIES
   importmap-rails
   jwt (~> 2.8)
   kamal
+  letter_opener
   omniauth-github
   omniauth-google-oauth2
-  letter_opener
   pagy (~> 9.0)
   pay (~> 8.0)
   pg (~> 1.1)
