@@ -78,6 +78,23 @@ class ErrorsController < ApplicationController
   def show
     project_scope = @current_project || @project
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
+
+    # Calculate impact metrics
+    @unique_users_24h = @issue.unique_users_affected_24h
+    @events_24h = @issue.events_last_24h
+    @primary_environment = @issue.primary_environment
+    @current_release = @issue.current_release
+    @impact_percentage = @issue.impact_percentage_24h
+
+    # Get most common HTTP method
+    @common_method = @issue.events.where.not(request_method: nil)
+                           .group(:request_method)
+                           .order('count_id DESC')
+                           .limit(1)
+                           .count(:id)
+                           .keys
+                           .first
+
     events_scope = @issue.events
 
     # Simple filters for Samples table

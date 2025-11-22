@@ -10,14 +10,17 @@
 
     <%= yield :head %>
 
-    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
-    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+    <%# Favicons %>
+    <link rel="icon" type="image/x-icon" href="<%= asset_path('faviicons/favicon.ico') %>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<%= asset_path('faviicons/favicon-32.png') %>">
+    <link rel="icon" type="image/png" sizes="16x16" href="<%= asset_path('faviicons/favicon-16.png') %>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= asset_path('faviicons/favicon-512.png') %>">
 
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <%# remove the old icon links
+    <%# <link rel="icon" href="/icon.png" type="image/png">
+    <%# <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <%# <link rel="apple-touch-icon" href="/icon.png"> %>
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>

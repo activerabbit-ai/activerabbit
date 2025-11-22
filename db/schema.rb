@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_18_185653) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -114,6 +114,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
     t.index ["account_id"], name: "index_daily_event_counts_on_account_id"
   end
 
+  create_table "daily_resource_usages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.date "day", null: false
+    t.integer "errors_count"
+    t.integer "ai_summaries_count"
+    t.integer "pull_requests_count"
+    t.integer "uptime_monitors_count"
+    t.integer "status_pages_count"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "day"], name: "index_daily_resource_usages_on_account_id_and_day", unique: true
+  end
+
   create_table "deploys", force: :cascade do |t|
     t.bigint "project_id", null: false
     t.bigint "release_id", null: false
@@ -130,19 +143,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
     t.index ["project_id"], name: "index_deploys_on_project_id"
     t.index ["release_id"], name: "index_deploys_on_release_id"
     t.index ["user_id"], name: "index_deploys_on_user_id"
-  end
-
-  create_table "daily_resource_usages", force: :cascade do |t|
-    t.bigint "account_id", null: false
-    t.date "day", null: false
-    t.integer "errors_count"
-    t.integer "ai_summaries_count"
-    t.integer "pull_requests_count"
-    t.integer "uptime_monitors_count"
-    t.integer "status_pages_count"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["account_id", "day"], name: "index_daily_resource_usages_on_account_id_and_day", unique: true
   end
 
   create_table "events", force: :cascade do |t|
@@ -481,11 +481,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_17_225147) do
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
   add_foreign_key "daily_event_counts", "accounts"
+  add_foreign_key "daily_resource_usages", "accounts"
   add_foreign_key "deploys", "accounts"
   add_foreign_key "deploys", "projects"
   add_foreign_key "deploys", "releases"
   add_foreign_key "deploys", "users"
-  add_foreign_key "daily_resource_usages", "accounts"
   add_foreign_key "events", "accounts"
   add_foreign_key "events", "deploys"
   add_foreign_key "events", "issues"

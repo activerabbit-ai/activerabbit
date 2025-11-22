@@ -26,13 +26,14 @@
 
 <!-- Error Header -->
 <div class="bg-white rounded-lg shadow mb-6">
-  <div class="px-6 py-4 border-b border-gray-200">
+  <!-- Main Header Bar -->
+  <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
     <div class="flex items-start justify-between">
-      <div class="flex items-start">
+      <div class="flex items-start flex-1">
         <div class="flex-shrink-0">
           <div class="w-4 h-4 rounded-full <%= @issue.status == 'open' ? 'bg-red-400' : @issue.status == 'wip' ? 'bg-yellow-400' : 'bg-green-400' %> mt-1"></div>
         </div>
-        <div class="ml-3">
+        <div class="ml-3 flex-1">
           <h1 class="text-xl font-semibold text-gray-900">
             <%= @issue.exception_class %>
             <% if @events.first&.context&.dig('error_type') %>
@@ -55,7 +56,7 @@
         </div>
       </div>
 
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-4 ml-4">
         <% error_url = if @current_project
                          "/#{@current_project.slug}/errors/#{@issue.id}"
                        elsif @project
@@ -65,16 +66,53 @@
                        end %>
         <%= render "errors/status_dropdown", issue: @issue, error_url: error_url %>
 
-        <div class="text-right">
-          <div class="text-lg font-semibold text-gray-900"><%= @issue.count %></div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@issue.count) %></div>
           <div class="text-xs text-gray-500">occurrences</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Actions -->
-  <div class="px-6 py-4 bg-gray-50">
+  <!-- Impact Metrics Bar -->
+  <div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-6 text-sm">
+        <div>
+          <span class="text-gray-500">Seen:</span>
+          <span class="ml-2 font-semibold text-gray-900"><%= number_with_delimiter(@issue.count) %> times</span>
+        </div>
+        <div>
+          <span class="text-gray-500">Last 24h:</span>
+          <span class="ml-2 font-semibold text-gray-900"><%= @events_24h %> occurrences</span>
+        </div>
+        <% if @unique_users_24h > 0 %>
+          <div class="flex items-center">
+            <svg class="w-4 h-4 mr-1 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+            </svg>
+            <span class="text-gray-500">Unique users:</span>
+            <span class="ml-2 font-semibold text-red-600"><%= @unique_users_24h %></span>
+          </div>
+        <% end %>
+        <% if @impact_percentage > 0 %>
+          <div class="flex items-center">
+            <svg class="w-4 h-4 mr-1 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-gray-500">Impact:</span>
+            <span class="ml-2 font-semibold text-orange-600">~<%= @impact_percentage %>%</span>
+            <span class="ml-1 text-xs text-gray-500">of all requests</span>
+          </div>
+        <% end %>
+      </div>
+
+      <% if @events.first&.context&.dig('error', 'severity') %>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold <%= @events.first.context['error']['severity'] == 'error' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' %>">
+          <%= @events.first.context['error']['severity'].upcase %>
+        </span>
+      <% end %>
+    </div>
   </div>
 </div>
 
@@ -176,6 +214,20 @@ end %>
       <div class="bg-gray-50 rounded p-3 mb-4">
         <code class="text-sm text-gray-800"><%= @issue.controller_action %></code>
       </div>
+
+      <% if @common_method.present? %>
+        <div class="text-xs text-gray-500 mb-2"><strong>Method:</strong></div>
+        <div class="bg-gray-50 rounded p-3 mb-4">
+          <code class="text-sm text-gray-800"><%= @common_method %></code>
+        </div>
+      <% end %>
+
+      <% if @issue.full_url.present? %>
+        <div class="text-xs text-gray-500 mb-2"><strong>Full URL:</strong></div>
+        <div class="bg-gray-50 rounded p-3 mb-4">
+          <code class="text-sm text-indigo-600 break-all"><%= @issue.full_url %></code>
+        </div>
+      <% end %>
 
       <% if @events.first&.context&.dig('error', 'backtrace_preview') %>
         <div class="text-xs text-gray-500 mb-2"><strong>Backtrace Preview (important frames):</strong></div>
