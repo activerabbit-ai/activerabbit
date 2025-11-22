@@ -10,9 +10,12 @@
 
     <%= yield :head %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <%# Favicons %>
+    <link rel="icon" type="image/x-icon" href="<%= asset_path('faviicons/favicon.ico') %>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<%= asset_path('faviicons/favicon-32.png') %>">
+    <link rel="icon" type="image/png" sizes="16x16" href="<%= asset_path('faviicons/favicon-16.png') %>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= asset_path('faviicons/favicon-512.png') %>">
+
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
