@@ -1,5 +1,10 @@
 class Account < ApplicationRecord
   # Billing is managed per User (team unlock). Account holds entitlements.
+
+  # Concerns
+  include ResourceQuotas
+  include QuotaWarnings
+
   # Validations
   validates :name, presence: true, uniqueness: true
 
@@ -30,20 +35,6 @@ class Account < ApplicationRecord
 
   def active_subscription?
     active_subscription_record.present?
-  end
-
-  def event_quota_value
-    return event_quota if respond_to?(:event_quota) && event_quota.present?
-    case current_plan
-    when "team" then 100_000
-    else 50_000
-    end
-  end
-
-  def events_used_in_billing_period
-    start_at = event_usage_period_start || Time.current.beginning_of_month
-    end_at   = event_usage_period_end || Time.current.end_of_month
-    Event.where(account_id: id).where(occurred_at: start_at..end_at).count
   end
 
   # Account-wide Slack notification settings

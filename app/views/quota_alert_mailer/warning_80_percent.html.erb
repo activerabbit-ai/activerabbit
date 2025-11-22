@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+    }
+    .content {
+      background: #f9fafb;
+      padding: 30px;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+    }
+    .alert-box {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .stats {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+    .stat-label {
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .stat-value {
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e5e7eb;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .button {
+      display: inline-block;
+      background: #4f46e5;
+      color: white;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="margin: 0; font-size: 24px;">⚠️ Usage Alert</h1>
+    <p style="margin: 10px 0 0 0; opacity: 0.9;">You're approaching your <%= @resource_name %> limit</p>
+  </div>
+
+  <div class="content">
+    <div class="alert-box">
+      <h2 style="margin-top: 0; color: #92400e;">
+        You've used <%= @percentage.round %>% of your <%= @resource_name %> quota
+      </h2>
+      <p style="margin-bottom: 0; color: #78350f;">
+        Your current plan: <strong><%= @account.current_plan.titleize %></strong>
+      </p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-row">
+        <span class="stat-label">Quota</span>
+        <span class="stat-value"><%= number_with_delimiter(@quota) %></span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Used</span>
+        <span class="stat-value"><%= number_with_delimiter(@used) %></span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Remaining</span>
+        <span class="stat-value"><%= number_with_delimiter(@remaining) %></span>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: <%= [@percentage, 100].min %>%">
+        <%= @percentage.round %>%
+      </div>
+    </div>
+
+    <h3>What happens next?</h3>
+    <p>
+      Once you reach 100% of your quota, you may want to consider upgrading your plan to continue using <%= @resource_name %> without interruption.
+    </p>
+
+    <div style="text-align: center;">
+      <a href="<%= @upgrade_url %>" class="button">
+        View Plans & Upgrade
+      </a>
+    </div>
+
+    <h3>Current Usage Period</h3>
+    <p>
+      <% if @account.event_usage_period_start && @account.event_usage_period_end %>
+        <%= @account.event_usage_period_start.strftime("%B %d, %Y") %> - <%= @account.event_usage_period_end.strftime("%B %d, %Y") %>
+      <% else %>
+        <%= Time.current.beginning_of_month.strftime("%B %d, %Y") %> - <%= Time.current.end_of_month.strftime("%B %d, %Y") %>
+      <% end %>
+    </p>
+
+    <div class="footer">
+      <p>
+        <strong>ActiveRabbit</strong><br>
+        AI-Powered Error Tracking & APM for Rails
+      </p>
+      <p style="font-size: 12px; color: #9ca3af;">
+        You received this email because you're the owner of <%= @account.name %>.<br>
+        To manage your notification preferences, visit your account settings.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+
