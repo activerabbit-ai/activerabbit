@@ -86,6 +86,79 @@ class Issue < ApplicationRecord
     events.where("created_at > ?", 24.hours.ago).count
   end
 
+  # Unique users affected (last 24h)
+  def unique_users_affected_24h
+    events.where("occurred_at > ?", 24.hours.ago)
+          .where.not(user_id_hash: nil)
+          .distinct
+          .count(:user_id_hash)
+  end
+
+  # Most common environment
+  def primary_environment
+    events.where.not(environment: nil)
+          .group(:environment)
+          .order("count_id DESC")
+          .limit(1)
+          .count(:id)
+          .keys
+          .first || "production"
+  end
+
+  # Most recent release version
+  def current_release
+    events.where.not(release_version: nil)
+          .order(occurred_at: :desc)
+          .limit(1)
+          .pluck(:release_version)
+          .first || "unknown"
+  end
+
+  # Impact percentage (errors in last 24h / total requests in last 24h)
+  # Note: This requires tracking total requests, which we'll estimate from all events
+  def impact_percentage_24h
+    return 0.0 if project.nil?
+
+    error_count = events_last_24h
+    return 0.0 if error_count.zero?
+
+    # Get total events for the project in last 24h as a proxy for total requests
+    total_events = ActsAsTenant.without_tenant do
+      Event.where(project_id: project.id)
+           .where("occurred_at > ?", 24.hours.ago)
+           .count
+    end
+
+    return 0.0 if total_events.zero?
+
+    ((error_count.to_f / total_events.to_f) * 100).round(2)
+  end
+
+  # Construct full URL from most recent event
+  def full_url
+    recent_event = events.order(occurred_at: :desc).first
+    return nil unless recent_event
+
+    # Get data from event or context
+    ctx = recent_event.context || {}
+    req = (ctx['request'] || ctx[:request] || {})
+
+    host = recent_event.server_name || req['server_name'] || req[:server_name]
+    port = req['server_port'] || req[:server_port]
+    path = recent_event.request_path || req['request_path'] || req[:request_path]
+
+    return nil if host.blank? || path.blank?
+
+    # Determine scheme (https if port 443, otherwise http)
+    scheme = (port.to_s == '443') ? 'https' : 'http'
+
+    # Build URL
+    url = "#{scheme}://#{host}"
+    url += ":#{port}" if port.present? && !['80', '443'].include?(port.to_s)
+    url += path
+    url
+  end
+
   def self.ransackable_attributes(auth_object = nil)
     ["account_id", "ai_summary", "ai_summary_generated_at", "closed_at",
     "controller_action", "count", "created_at", "exception_class",
