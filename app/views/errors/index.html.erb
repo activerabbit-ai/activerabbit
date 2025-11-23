@@ -4,7 +4,8 @@
 
 <!-- Summary Stats -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-  <div class="bg-white rounded-lg shadow p-6">
+  <!-- Total Errors -->
+  <%= link_to errors_index_path, class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
     <div class="flex items-center">
       <div class="flex-shrink-0">
         <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -18,9 +19,10 @@
         <p class="text-2xl font-semibold text-gray-900"><%= @total_errors %></p>
       </div>
     </div>
-  </div>
+  <% end %>
 
-  <div class="bg-white rounded-lg shadow p-6">
+  <!-- Open Issues -->
+  <%= link_to errors_index_path(filter: "open"), class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
     <div class="flex items-center">
       <div class="flex-shrink-0">
         <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -34,25 +36,27 @@
         <p class="text-2xl font-semibold text-gray-900"><%= @open_errors %></p>
       </div>
     </div>
-  </div>
+  <% end %>
 
-  <div class="bg-white rounded-lg shadow p-6">
+  <!-- Closed Issues -->
+  <%= link_to errors_index_path(filter: "closed"), class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
     <div class="flex items-center">
       <div class="flex-shrink-0">
         <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
           <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
         </div>
       </div>
       <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Events Total</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@total_events) %></p>
+        <p class="text-sm font-medium text-gray-500">Closed</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @resolved_errors %></p>
       </div>
     </div>
-  </div>
+  <% end %>
 
-  <div class="bg-white rounded-lg shadow p-6">
+  <!-- Recent (24h) -->
+  <%= link_to errors_index_path(filter: "recent"), class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
     <div class="flex items-center">
       <div class="flex-shrink-0">
         <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -66,7 +70,7 @@
         <p class="text-2xl font-semibold text-gray-900"><%= @recent_errors %></p>
       </div>
     </div>
-  </div>
+  <% end %>
 </div>
 
 <!-- Errors List / Graph Toggle -->
@@ -76,7 +80,7 @@
       <h3 class="text-lg font-medium text-gray-900 whitespace-nowrap">🐰 Captured Errors</h3>
 
       <div class="flex-1 flex justify-center">
-        <%= search_form_for @q, url: errors_path, method: :get, html: { class: "w-full flex justify-end mr-2" } do |f| %>
+        <%= search_form_for @q, url: errors_index_path, method: :get, html: { class: "w-full flex justify-end mr-2" } do |f| %>
           <div class="relative w-64">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
                  xmlns="http://www.w3.org/2000/svg" fill="none"

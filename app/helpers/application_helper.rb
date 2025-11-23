@@ -11,4 +11,15 @@ module ApplicationHelper
     controller_path.include?("project_settings") ||
     controller_path.include?("account_settings")
   end
+
+  # Unified helper for errors index path that respects project scoping (global, project_id, or slug)
+  def errors_index_path(options = {})
+    if defined?(@current_project) && @current_project
+      project_slug_errors_path(@current_project.slug, options)
+    elsif defined?(@project) && @project
+      project_errors_path(@project, options)
+    else
+      errors_path(options)
+    end
+  end
 end

@@ -69,9 +69,9 @@
                 class: "w-full bg-gray-400 text-white py-2 rounded-md cursor-not-allowed" %>
         <% else %>
           <%= button_to "Choose Free",
-                checkouts_path,
+              checkouts_path,
                 params: { plan: "free" },
-                data: { turbo: false }, method: :post,
+              data: { turbo: false }, method: :post,
                 class: "w-full bg-gray-600 text-white py-2 rounded-md hover:bg-gray-700 transition-colors" %>
         <% end %>
       </div>
@@ -102,28 +102,28 @@
     </div>
 
     <!-- Business Plan -->
-    <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
+      <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
       <h3 class="text-xl font-semibold">Business</h3>
-      <div class="mt-2">
+        <div class="mt-2">
         <span class="text-3xl font-extrabold tracking-tight text-gray-900">$199</span>
-        <span class="text-sm text-gray-500">/mo</span>
-      </div>
+          <span class="text-sm text-gray-500">/mo</span>
+        </div>
       <p class="text-gray-600 mt-1">For teams that need more scale</p>
-      <ul class="mt-4 space-y-2 text-sm text-gray-700">
+        <ul class="mt-4 space-y-2 text-sm text-gray-700">
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Up to 50 projects</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>100 AI summaries</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>20 pull requests</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 uptime monitors, 1 status page</span></li>
-      </ul>
-      <div class="mt-auto pt-4">
+        </ul>
+        <div class="mt-auto pt-4">
         <%= button_to (@account&.current_plan == 'business' ? "Current Plan" : "Choose Business"),
               checkouts_path,
               params: { plan: "business", interval: "month" },
               data: { turbo: false }, method: :post,
               class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
+        </div>
       </div>
-    </div>
   </div>
 
   <!-- Feature Comparison Table -->

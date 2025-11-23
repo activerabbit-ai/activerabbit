@@ -9,6 +9,17 @@ class ErrorsController < ApplicationController
 
     # Get all issues (errors) ordered by most recent, including resolved ones
     base_scope = project_scope ? project_scope.issues : Issue
+
+    # Quick filters from summary cards
+    case params[:filter]
+    when "open"
+      base_scope = base_scope.open
+    when "closed"
+      base_scope = base_scope.closed
+    when "recent"
+      base_scope = base_scope.where("last_seen_at > ?", 24.hours.ago)
+    end
+
     @q = base_scope.ransack(params[:q])
     scoped_issues = @q.result.includes(:project).recent
 
@@ -20,13 +31,11 @@ class ErrorsController < ApplicationController
       @open_errors = project_scope.issues.open.count
       @resolved_errors = project_scope.issues.closed.count
       @recent_errors = project_scope.issues.where("last_seen_at > ?", 24.hours.ago).count
-      @total_events = project_scope.events.count
     else
       @total_errors = Issue.count
       @open_errors = Issue.open.count
       @resolved_errors = Issue.closed.count
       @recent_errors = Issue.where("last_seen_at > ?", 24.hours.ago).count
-      @total_events = Event.count
     end
 
     # Optional: build graph data across all errors
@@ -78,6 +87,11 @@ class ErrorsController < ApplicationController
   def show
     project_scope = @current_project || @project
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
+
+    # Neighbouring issues for quick navigation
+    issue_scope = project_scope ? project_scope.issues : Issue
+    @prev_issue = issue_scope.where("id < ?", @issue.id).order(id: :desc).first
+    @next_issue = issue_scope.where("id > ?", @issue.id).order(id: :asc).first
 
     # Calculate impact metrics
     @unique_users_24h = @issue.unique_users_affected_24h
