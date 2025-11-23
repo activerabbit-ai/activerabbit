@@ -13,7 +13,7 @@ class ErrorsController < ApplicationController
     # Quick filters from summary cards
     case params[:filter]
     when "open"
-      base_scope = base_scope.open
+      base_scope = base_scope.wip
     when "closed"
       base_scope = base_scope.closed
     when "recent"
@@ -28,12 +28,12 @@ class ErrorsController < ApplicationController
     # Get summary stats scoped to current project or global
     if project_scope
       @total_errors = project_scope.issues.count
-      @open_errors = project_scope.issues.open.count
+      @open_errors = project_scope.issues.wip.count
       @resolved_errors = project_scope.issues.closed.count
       @recent_errors = project_scope.issues.where("last_seen_at > ?", 24.hours.ago).count
     else
       @total_errors = Issue.count
-      @open_errors = Issue.open.count
+      @open_errors = Issue.wip.count
       @resolved_errors = Issue.closed.count
       @recent_errors = Issue.where("last_seen_at > ?", 24.hours.ago).count
     end

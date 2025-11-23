@@ -76,7 +76,21 @@ class PerformanceController < ApplicationController
       @list_rows = []
       if @rollups.exists?
         # Summarize by target from rollups
-        @rollups.group_by(&:target).each do |target, rows|
+        rollup_groups = @rollups.group_by(&:target)
+
+        # Optional: filter to only "slow" actions when requested
+        if params[:filter] == "slow"
+          slow_targets = rollup_groups.select do |_target, rows|
+            avg_ms = rows.map(&:avg_duration_ms).compact
+            p95_ms = rows.map(&:p95_duration_ms).compact
+            avg_val = avg_ms.any? ? (avg_ms.sum / avg_ms.size.to_f).round(1) : nil
+            p95_val = p95_ms.any? ? (p95_ms.sum / p95_ms.size.to_f).round(1) : nil
+            (avg_val || 0) > 1000 || (p95_val || 0) > 1500
+          end
+          rollup_groups = slow_targets
+        end
+
+        rollup_groups.each do |target, rows|
           total_requests_t = rows.sum(&:request_count)
           total_errors_t = rows.sum(&:error_count)
           avg_ms = rows.map(&:avg_duration_ms).compact
@@ -112,7 +126,23 @@ class PerformanceController < ApplicationController
         window_start = @hours_back.hours.ago
         events = PerformanceEvent.where(project: project_scope)
                                  .where("occurred_at > ?", window_start)
-        events.group_by(&:target).each do |target, evts|
+
+        event_groups = events.group_by(&:target)
+
+        # Optional: filter to only "slow" actions when requested
+        if params[:filter] == "slow"
+          event_groups = event_groups.select do |_target, evts|
+            durations = evts.map(&:duration_ms).compact
+            avg_val = durations.any? ? (durations.sum / durations.size.to_f) : nil
+            p95_val = if durations.any?
+                        idx = (0.95 * (durations.size - 1)).round
+                        durations[idx]
+                      end
+            (avg_val || 0) > 1000 || (p95_val || 0) > 1500
+          end
+        end
+
+        event_groups.each do |target, evts|
           durations = evts.map(&:duration_ms).compact.sort
           avg_val = durations.any? ? (durations.sum / durations.size.to_f) : nil
           p95_val = if durations.any?

@@ -46,7 +46,16 @@
     </div>
   </div>
 
-  <div class="bg-white rounded-lg shadow p-6">
+  <%= link_to(
+        if @current_project
+          project_slug_performance_path(@current_project.slug, filter: "slow")
+        elsif @project
+          project_performance_path(@project, filter: "slow")
+        else
+          performance_path(filter: "slow")
+        end,
+        class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors"
+      ) do %>
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-gray-600">Slow Requests</p>
@@ -58,7 +67,7 @@
         </svg>
       </div>
     </div>
-  </div>
+  <% end %>
 </div>
 
 <!-- Performance Issues Table / Graph Toggle -->

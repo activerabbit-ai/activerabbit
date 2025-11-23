@@ -23,41 +23,38 @@
     </li>
   </ol>
 
-  <% if @prev_issue || @next_issue %>
-    <div class="inline-flex items-center space-x-2 text-sm">
-      <% if @prev_issue %>
-        <% prev_url = if @current_project
-                        "/#{@current_project.slug}/errors/#{@prev_issue.id}"
-                      elsif @project
-                        project_error_path(@project, @prev_issue)
-                      else
-                        error_path(@prev_issue)
-                      end %>
-        <%= link_to prev_url, class: "inline-flex items-center px-2 py-1 rounded-md text-gray-600 hover:text-indigo-700 hover:bg-gray-100" do %>
-          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M12.707 14.707a1 1 0 01-1.414 0L7.586 11.414a2 2 0 010-2.828L11.293 4.88a1 1 0 111.414 1.415L9.414 10l3.293 3.293a1 1 0 010 1.414z" clip-rule="evenodd"></path>
-          </svg>
-          Prev error
-        <% end %>
-      <% end %>
+  <div class="inline-flex items-center space-x-2 text-sm">
+    <% prev_issue = @prev_issue || @issue %>
+    <% next_issue = @next_issue || @issue %>
 
-      <% if @next_issue %>
-        <% next_url = if @current_project
-                        "/#{@current_project.slug}/errors/#{@next_issue.id}"
-                      elsif @project
-                        project_error_path(@project, @next_issue)
-                      else
-                        error_path(@next_issue)
-                      end %>
-        <%= link_to next_url, class: "inline-flex items-center px-2 py-1 rounded-md text-gray-600 hover:text-indigo-700 hover:bg-gray-100" do %>
-          Next error
-          <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M7.293 4.293a1 1 0 011.414 0L12.414 8a2 2 0 010 2.828l-3.707 3.707a1 1 0 01-1.414-1.415L10.586 10 7.293 6.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-          </svg>
-        <% end %>
-      <% end %>
-    </div>
-  <% end %>
+    <% prev_url = if @current_project
+                    "/#{@current_project.slug}/errors/#{prev_issue.id}"
+                  elsif @project
+                    project_error_path(@project, prev_issue)
+                  else
+                    error_path(prev_issue)
+                  end %>
+    <%= link_to prev_url, class: "inline-flex items-center px-2 py-1 rounded-md text-gray-600 hover:text-indigo-700 hover:bg-gray-100" do %>
+      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M12.707 14.707a1 1 0 01-1.414 0L7.586 11.414a2 2 0 010-2.828L11.293 4.88a1 1 0 111.414 1.415L9.414 10l3.293 3.293a1 1 0 010 1.414z" clip-rule="evenodd"></path>
+      </svg>
+      Prev error
+    <% end %>
+
+    <% next_url = if @current_project
+                    "/#{@current_project.slug}/errors/#{next_issue.id}"
+                  elsif @project
+                    project_error_path(@project, next_issue)
+                  else
+                    error_path(next_issue)
+                  end %>
+    <%= link_to next_url, class: "inline-flex items-center px-2 py-1 rounded-md text-gray-600 hover:text-indigo-700 hover:bg-gray-100" do %>
+      Next error
+      <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M7.293 4.293a1 1 0 011.414 0L12.414 8a2 2 0 010 2.828l-3.707 3.707a1 1 0 01-1.414-1.415L10.586 10 7.293 6.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+      </svg>
+    <% end %>
+  </div>
 </nav>
 
 <!-- Error Header -->
