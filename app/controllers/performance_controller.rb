@@ -137,7 +137,7 @@ class PerformanceController < ApplicationController
             p95_val = if durations.any?
                         idx = (0.95 * (durations.size - 1)).round
                         durations[idx]
-                      end
+            end
             (avg_val || 0) > 1000 || (p95_val || 0) > 1500
           end
         end

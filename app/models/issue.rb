@@ -141,20 +141,20 @@ class Issue < ApplicationRecord
 
     # Get data from event or context
     ctx = recent_event.context || {}
-    req = (ctx['request'] || ctx[:request] || {})
+    req = (ctx["request"] || ctx[:request] || {})
 
-    host = recent_event.server_name || req['server_name'] || req[:server_name]
-    port = req['server_port'] || req[:server_port]
-    path = recent_event.request_path || req['request_path'] || req[:request_path]
+    host = recent_event.server_name || req["server_name"] || req[:server_name]
+    port = req["server_port"] || req[:server_port]
+    path = recent_event.request_path || req["request_path"] || req[:request_path]
 
     return nil if host.blank? || path.blank?
 
     # Determine scheme (https if port 443, otherwise http)
-    scheme = (port.to_s == '443') ? 'https' : 'http'
+    scheme = (port.to_s == "443") ? "https" : "http"
 
     # Build URL
     url = "#{scheme}://#{host}"
-    url += ":#{port}" if port.present? && !['80', '443'].include?(port.to_s)
+    url += ":#{port}" if port.present? && !["80", "443"].include?(port.to_s)
     url += path
     url
   end
