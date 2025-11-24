@@ -81,16 +81,18 @@
     <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col ring-2 ring-indigo-500/20 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
       <h3 class="text-xl font-semibold">Team</h3>
       <div class="mt-2">
-        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$79</span>
+        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$29</span>
         <span class="text-sm text-gray-500">/mo</span>
       </div>
       <p class="text-gray-600 mt-1">For growing engineering teams</p>
       <ul class="mt-4 space-y-2 text-sm text-gray-700">
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Up to 10 projects</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Unlimited projects</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50 AI summaries</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>10 pull requests</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>250 AI summaries</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>250 pull requests</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 uptime monitors, 1 status page</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Slack notifications</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Unlimited users</span></li>
       </ul>
       <div class="mt-auto pt-4">
         <%= button_to (@account&.current_plan == 'team' ? "Current Plan" : "Choose Team"),
@@ -105,16 +107,18 @@
       <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
       <h3 class="text-xl font-semibold">Business</h3>
         <div class="mt-2">
-        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$199</span>
+        <span class="text-3xl font-extrabold tracking-tight text-gray-900">$80</span>
           <span class="text-sm text-gray-500">/mo</span>
         </div>
       <p class="text-gray-600 mt-1">For teams that need more scale</p>
         <ul class="mt-4 space-y-2 text-sm text-gray-700">
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Up to 50 projects</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Unlimited projects</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>50,000 errors/month</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>100 AI summaries</span></li>
-        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>20 pull requests</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>100 pull requests</span></li>
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>5 uptime monitors, 1 status page</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Slack notifications</span></li>
+        <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Unlimited users</span></li>
         </ul>
         <div class="mt-auto pt-4">
         <%= button_to (@account&.current_plan == 'business' ? "Current Plan" : "Choose Business"),
@@ -143,8 +147,14 @@
           <tr>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Projects</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 project</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">10 projects</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50 projects</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Unlimited projects</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Unlimited projects</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Users</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">1 user</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Unlimited users</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Unlimited users</td>
           </tr>
           <tr>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Error Tracking</td>
@@ -155,14 +165,14 @@
           <tr class="bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">AI Summaries</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">50</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">100</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">250</td>
           </tr>
           <tr>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Pull Requests</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">5</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">10</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">20</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">100</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">250</td>
           </tr>
           <tr class="bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Uptime Monitoring</td>

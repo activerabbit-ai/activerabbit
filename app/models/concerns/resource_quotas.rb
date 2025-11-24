@@ -24,16 +24,16 @@ module ResourceQuotas
     },
     team: {
       events: 50_000,
-      ai_summaries: 50,
-      pull_requests: 10,
+      ai_summaries: 100,
+      pull_requests: 100,
       uptime_monitors: 5,
       status_pages: 1,
       projects: 10
     },
     business: {
       events: 50_000,
-      ai_summaries: 100,
-      pull_requests: 20,
+      ai_summaries: 250,
+      pull_requests: 250,
       uptime_monitors: 5,
       status_pages: 1,
       projects: 50
