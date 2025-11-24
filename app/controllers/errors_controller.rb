@@ -89,7 +89,7 @@ class ErrorsController < ApplicationController
     # Get most common HTTP method
     @common_method = @issue.events.where.not(request_method: nil)
                            .group(:request_method)
-                           .order('count_id DESC')
+                           .order("count_id DESC")
                            .limit(1)
                            .count(:id)
                            .keys
