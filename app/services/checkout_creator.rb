@@ -14,7 +14,39 @@ class CheckoutCreator
     Stripe.api_key = ENV["STRIPE_SECRET_KEY"] if Stripe.api_key.nil? || Stripe.api_key.to_s.strip.empty?
     ensure_pay_customer!
 
-    session = Stripe::Checkout::Session.create(
+    session = create_checkout_session!
+
+    Result.new(session.url)
+  end
+
+  private
+
+  def ensure_pay_customer!
+    @user.set_payment_processor :stripe if @user.payment_processor.blank?
+    if @user.payment_processor.processor_id.blank?
+      recreate_stripe_customer!
+    end
+  end
+
+  def recreate_stripe_customer!
+    stripe_customer = Stripe::Customer.create(
+      email: @user.email,
+      metadata: { user_id: @user.id, account_id: @account.id }
+    )
+    @user.payment_processor.update!(processor_id: stripe_customer.id)
+  end
+
+  def build_line_items
+    items = [{ price: price_for_plan(@plan, @interval), quantity: 1 }]
+    if @ai
+      items << { price: ai_base_price, quantity: 1 }
+      items << { price: ENV.fetch("STRIPE_PRICE_AI_OVERAGE_METERED"), quantity: 1 }
+    end
+    items
+  end
+
+  def create_checkout_session!
+    Stripe::Checkout::Session.create(
       mode: "subscription",
       customer: @user.payment_processor.processor_id,
       payment_method_collection: "if_required", # do NOT require card for free trial
@@ -34,30 +66,34 @@ class CheckoutCreator
       },
       line_items: build_line_items
     )
-
-    Result.new(session.url)
-  end
-
-  private
-
-  def ensure_pay_customer!
-    @user.set_payment_processor :stripe if @user.payment_processor.blank?
-    if @user.payment_processor.processor_id.blank?
-      stripe_customer = Stripe::Customer.create(
-        email: @user.email,
-        metadata: { user_id: @user.id, account_id: @account.id }
+  rescue Stripe::InvalidRequestError => e
+    # Recover from stale / deleted Stripe customers, then retry once
+    if e.message&.include?("No such customer")
+      Rails.logger.warn "Stripe customer missing for user #{@user.id}, recreating: #{e.message}"
+      recreate_stripe_customer!
+      Stripe::Checkout::Session.create(
+        mode: "subscription",
+        customer: @user.payment_processor.processor_id,
+        payment_method_collection: "if_required",
+        success_url: success_url,
+        cancel_url: cancel_url,
+        allow_promotion_codes: true,
+        client_reference_id: @account.id,
+        automatic_tax: { enabled: false },
+        tax_id_collection: { enabled: false },
+        subscription_data: {
+          metadata: {
+            account_id: @account.id,
+            plan: @plan,
+            interval: @interval,
+            ai: @ai
+          }
+        },
+        line_items: build_line_items
       )
-      @user.payment_processor.update!(processor_id: stripe_customer.id)
+    else
+      raise
     end
-  end
-
-  def build_line_items
-    items = [{ price: price_for_plan(@plan, @interval), quantity: 1 }]
-    if @ai
-      items << { price: ai_base_price, quantity: 1 }
-      items << { price: ENV.fetch("STRIPE_PRICE_AI_OVERAGE_METERED"), quantity: 1 }
-    end
-    items
   end
 
   def price_for_plan(plan, interval)
