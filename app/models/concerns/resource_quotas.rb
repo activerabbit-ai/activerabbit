@@ -24,7 +24,7 @@ module ResourceQuotas
     },
     team: {
       events: 50_000,
-      ai_summaries: 100,
+      ai_summaries: 300,
       pull_requests: 100,
       uptime_monitors: 5,
       status_pages: 1,
@@ -32,7 +32,7 @@ module ResourceQuotas
     },
     business: {
       events: 50_000,
-      ai_summaries: 250,
+      ai_summaries: 500,
       pull_requests: 250,
       uptime_monitors: 5,
       status_pages: 1,
