@@ -131,8 +131,11 @@
   config.enable_performance_monitoring = true
   config.enable_n_plus_one_detection = true
   config.enable_pii_scrubbing = true
+  
+  <-- To enable ActiveRabbit to track your deployments -->
+  config.revision = ENV["APP_REVISION"] || `git rev-parse HEAD`.chomp
 
-  config.ignore_404 = false
+  config.enable_404 = false
 end</code></pre>
       </div>
 

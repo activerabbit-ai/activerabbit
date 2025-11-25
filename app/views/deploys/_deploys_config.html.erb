@@ -9,29 +9,45 @@
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
               <h3 id="deploy-title" class="text-lg font-semibold text-gray-900">Deploy Config</h3>
               <div class="mt-2">
-                <p class="text-sm text-gray-500">To enable ActiveRabbit to track your deployments, copy this snippet to your CI file:</p>
+                <p class="text-sm text-gray-500">To enable ActiveRabbit to track your deployments, copy this snippet to your config/initializers/activerabbit.rb:</p>
 
                 <div class="relative mt-2 bg-gray-100 rounded text-sm overflow-x-auto p-4">
                   <!-- Copy button -->
-                  <button id="copy-btn" onclick="copyDeployCode()"
+                  <button id="copy-config-btn" onclick="copyConfigDeployCode()"
                           class="absolute top-2 right-2 bg-gray-200 hover:bg-gray-300 text-xs px-2 py-1 rounded">Copy</button>
-                  <span id="copy-indicator" class="absolute top-2 right-16 text-xs text-green-600 hidden">Copied!</span>
+                  <span id="copy-config-indicator" class="absolute top-2 right-16 text-xs text-green-600 hidden">Copied!</span>
+
+                  <!-- Code block -->
+                  <pre id="deploy-config-code" class="whitespace-pre-wrap text-xs">
+# Example for config/initializers/activerabbit.rb
+config.revision = ENV["APP_REVISION"] || `git rev-parse HEAD`.chomp
+                  </pre>
+                </div>
+              </div>
+              <div class="mt-2">
+                <p class="text-sm text-gray-500">Or you can copy this snippet to your CI file:</p>
+
+                <div class="relative mt-2 bg-gray-100 rounded text-sm overflow-x-auto p-4">
+                  <!-- Copy button -->
+                  <button id="copy-ci-btn" onclick="copyCIDeployCode()"
+                          class="absolute top-2 right-2 bg-gray-200 hover:bg-gray-300 text-xs px-2 py-1 rounded">Copy</button>
+                  <span id="copy-ci-indicator" class="absolute top-2 right-16 text-xs text-green-600 hidden">Copied!</span>
 
                   <!-- Code block -->
                   <pre id="deploy-ci-code" class="whitespace-pre-wrap text-xs">
-                    # Example for GitHub Actions
-                    - name: Notify ActiveRabbit Deploy
-                      run: |
-                        curl -X POST https://app.activerabbit.ai/api/v1/deploys \
-                          -H "Content-Type: application/json" \
-                          -H "X-Project-Token: ${{ secrets.PROJECT_TOKEN }}" \
-                          -d '{
-                            "project_slug": "<%= @project_scope.slug %>",
-                            "version": "${{ github.sha }}",
-                            "environment": "<%= @project_scope.environment %>",
-                            "started_at": "${{ steps.deploy-started-at }}",
-                            "finished_at": "${{ steps.deploy-finished-at }}"
-                          }'
+# Example for GitHub Actions
+- name: Notify ActiveRabbit Deploy
+  run: |
+    curl -X POST https://app.activerabbit.ai/api/v1/deploys \
+      -H "Content-Type: application/json" \
+      -H "X-Project-Token: ${{ secrets.PROJECT_TOKEN }}" \
+      -d '{
+        "project_slug": "<%= @project_scope.slug %>",
+        "version": "${{ github.sha }}",
+        "environment": "<%= @project_scope.environment %>",
+        "started_at": "${{ steps.deploy-started-at }}",
+        "finished_at": "${{ steps.deploy-finished-at }}"
+      }'
                   </pre>
                 </div>
               </div>
@@ -51,10 +67,18 @@
 </el-dialog>
 
 <script>
-  function copyDeployCode() {
+  function copyCIDeployCode() {
     const code = document.getElementById('deploy-ci-code').innerText;
     navigator.clipboard.writeText(code).then(() => {
-      const indicator = document.getElementById('copy-indicator');
+      const indicator = document.getElementById('copy-ci-indicator');
+      indicator.classList.remove('hidden');
+      setTimeout(() => indicator.classList.add('hidden'), 2000);
+    });
+  }
+  function copyConfigDeployCode() {
+    const code = document.getElementById('deploy-config-code').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+      const indicator = document.getElementById('copy-config-indicator');
       indicator.classList.remove('hidden');
       setTimeout(() => indicator.classList.add('hidden'), 2000);
     });
