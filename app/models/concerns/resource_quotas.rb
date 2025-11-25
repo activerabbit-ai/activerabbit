@@ -15,7 +15,7 @@ module ResourceQuotas
   # Plan-based quota definitions
   PLAN_QUOTAS = {
     free: {
-      events: 10_000,
+      events: 5_000,
       ai_summaries: 5,
       pull_requests: 5,
       uptime_monitors: 0,
