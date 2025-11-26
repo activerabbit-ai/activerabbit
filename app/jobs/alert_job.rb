@@ -122,22 +122,30 @@ class AlertJob
   end
 
   def send_performance_alert(alert_rule, payload, notification)
-    event = Event.find(payload["event_id"])
+    event = ActsAsTenant.without_tenant do
+      PerformanceEvent.unscoped.find_by(id: payload["event_id"])
+    end
 
-    if notification.notification_type == "slack"
-      # Try account-level notification first, then fall back to project-level test
-      if send_account_slack_notification(alert_rule.project.account, :performance, event, payload)
-        Rails.logger.info "Sent account-level performance alert for event #{event.id}"
-      elsif alert_rule.project.slack_configured?
-        slack_service = SlackNotificationService.new(alert_rule.project)
-        slack_service.send_performance_alert(event, payload)
-        Rails.logger.info "Sent project-level performance alert for event #{event.id}"
+    unless event
+      Rails.logger.warn "Event not found with id=#{payload['event_id']}, skipping performance alert"
+      return
+    end
+
+    ActsAsTenant.with_tenant(alert_rule.project.account) do
+      if notification.notification_type == "slack"
+        if send_account_slack_notification(alert_rule.project.account, :performance, event, payload)
+          Rails.logger.info "Sent account-level performance alert for event #{event.id}"
+        elsif alert_rule.project.slack_configured?
+          slack_service = SlackNotificationService.new(alert_rule.project)
+          slack_service.send_performance_alert(event, payload)
+          Rails.logger.info "Sent project-level performance alert for event #{event.id}"
+        else
+          Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
+          send_email_alert(alert_rule, "Performance Alert", build_performance_email(event, payload))
+        end
       else
-        Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
         send_email_alert(alert_rule, "Performance Alert", build_performance_email(event, payload))
       end
-    else
-      send_email_alert(alert_rule, "Performance Alert", build_performance_email(event, payload))
     end
   end
 
@@ -373,7 +381,7 @@ class AlertJob
 
       Project: #{event.project.name}
       Response Time: #{payload['duration_ms']}ms
-      Endpoint: #{payload['controller_action'] || 'Unknown'}
+      Endpoint: #{payload['target'] || 'Unknown'}
       Environment: #{event.environment}
       Occurred At: #{event.occurred_at}
 

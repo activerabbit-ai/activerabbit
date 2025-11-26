@@ -37,6 +37,6 @@ class IssueAlertJob
   end
 
   def mark_redis_key(key)
-    REDIS.set(key, true, ex: 7.days.to_i)
+    REDIS.set(key, true, ex: 3.days.to_i)
   end
 end
