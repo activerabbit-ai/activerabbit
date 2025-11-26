@@ -125,7 +125,7 @@ class AlertJob
     event = Event.find(payload["event_id"])
 
     if notification.notification_type == "slack"
-      # Try account-level notification first, then fall back to project-level
+      # Try account-level notification first, then fall back to project-level test
       if send_account_slack_notification(alert_rule.project.account, :performance, event, payload)
         Rails.logger.info "Sent account-level performance alert for event #{event.id}"
       elsif alert_rule.project.slack_configured?
