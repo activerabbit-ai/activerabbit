@@ -4,39 +4,53 @@ class AlertJob
   sidekiq_options queue: :alerts, retry: 3
 
   def perform(alert_rule_id, alert_type, payload)
-    alert_rule = AlertRule.find(alert_rule_id)
-    project = alert_rule.project
-
-    # Create notification record
-    notification = AlertNotification.create!(
-      alert_rule: alert_rule,
-      project: project,
-      notification_type: determine_notification_type(alert_rule),
-      payload: payload,
-      status: "pending"
-    )
-
-    begin
-      case alert_type
-      when "error_frequency"
-        send_error_frequency_alert(alert_rule, payload, notification)
-      when "performance_regression"
-        send_performance_alert(alert_rule, payload, notification)
-      when "n_plus_one"
-        send_n_plus_one_alert(alert_rule, payload, notification)
-      when "new_issue"
-        send_new_issue_alert(alert_rule, payload, notification)
-      else
-        raise "Unknown alert type: #{alert_type}"
+    # Find alert_rule and project without tenant
+    alert_rule = nil
+    project = nil
+    ActsAsTenant.without_tenant do
+      alert_rule = AlertRule.find(alert_rule_id)
+      project = alert_rule.project
+    end
+    issue = nil
+    if payload["issue_id"]
+      ActsAsTenant.without_tenant do
+        issue = Issue.find(payload["issue_id"])
       end
+    end
 
-      notification.mark_sent!
-      Rails.logger.info "Alert sent successfully: #{alert_type} for project #{project.slug}"
+    ActsAsTenant.with_tenant(project.account) do
+      # Create notification record
+      notification = AlertNotification.create!(
+        alert_rule: alert_rule,
+        project: project,
+        account_id: project.account.id,
+        notification_type: determine_notification_type(alert_rule),
+        payload: payload,
+        status: "pending"
+      )
 
-    rescue => e
-      notification.mark_failed!(e.message)
-      Rails.logger.error "Failed to send alert: #{e.message}"
-      raise e
+      begin
+        case alert_type
+        when "error_frequency"
+          send_error_frequency_alert(alert_rule, issue, payload, notification)
+        when "performance_regression"
+          send_performance_alert(alert_rule, payload, notification)
+        when "n_plus_one"
+          send_n_plus_one_alert(alert_rule, payload, notification)
+        when "new_issue"
+          send_new_issue_alert(alert_rule, payload, notification)
+        else
+          raise "Unknown alert type: #{alert_type}"
+        end
+
+        notification.mark_sent!
+        Rails.logger.info "Alert sent successfully: #{alert_type} for project #{project.slug}"
+
+      rescue => e
+        notification.mark_failed!(e.message)
+        Rails.logger.error "Failed to send alert: #{e.message}"
+        raise e
+      end
     end
   end
 
@@ -88,23 +102,22 @@ class AlertJob
     false
   end
 
-  def send_error_frequency_alert(alert_rule, payload, notification)
-    issue = Issue.find(payload["issue_id"])
-
-    if notification.notification_type == "slack"
-      # Try account-level notification first, then fall back to project-level
-      if send_account_slack_notification(alert_rule.project.account, :error_frequency, issue, payload)
-        Rails.logger.info "Sent account-level error frequency alert for issue #{issue.id}"
-      elsif alert_rule.project.slack_configured?
-        slack_service = SlackNotificationService.new(alert_rule.project)
-        slack_service.send_error_frequency_alert(issue, payload)
-        Rails.logger.info "Sent project-level error frequency alert for issue #{issue.id}"
+  def send_error_frequency_alert(alert_rule, issue, payload, notification)
+    ActsAsTenant.with_tenant(alert_rule.project.account) do
+      if notification.notification_type == "slack"
+        if send_account_slack_notification(alert_rule.project.account, :error_frequency, issue, payload)
+          Rails.logger.info "Sent account-level error frequency alert for issue #{issue.id}"
+        elsif alert_rule.project.slack_configured?
+          slack_service = SlackNotificationService.new(alert_rule.project)
+          slack_service.send_error_frequency_alert(issue, payload)
+          Rails.logger.info "Sent project-level error frequency alert for issue #{issue.id}"
+        else
+          Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}, sending email"
+          send_email_alert(alert_rule, "Error Frequency Alert", build_error_frequency_email(issue, payload))
+        end
       else
-        Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
         send_email_alert(alert_rule, "Error Frequency Alert", build_error_frequency_email(issue, payload))
       end
-    else
-      send_email_alert(alert_rule, "Error Frequency Alert", build_error_frequency_email(issue, payload))
     end
   end
 
@@ -147,22 +160,27 @@ class AlertJob
   end
 
   def send_new_issue_alert(alert_rule, payload, notification)
-    issue = Issue.find(payload["issue_id"])
+    issue = nil
+    ActsAsTenant.without_tenant do
+      issue = Issue.find(payload["issue_id"])
+    end
 
-    if notification.notification_type == "slack"
-      # Try account-level notification first, then fall back to project-level
-      if send_account_slack_notification(alert_rule.project.account, :new_issue, issue)
-        Rails.logger.info "Sent account-level new issue alert for issue #{issue.id}"
-      elsif alert_rule.project.slack_configured?
-        slack_service = SlackNotificationService.new(alert_rule.project)
-        slack_service.send_new_issue_alert(issue)
-        Rails.logger.info "Sent project-level new issue alert for issue #{issue.id}"
+    ActsAsTenant.with_tenant(alert_rule.project.account) do
+      if notification.notification_type == "slack"
+        # Try account-level notification first, then fall back to project-level
+        if send_account_slack_notification(alert_rule.project.account, :new_issue, issue)
+          Rails.logger.info "Sent account-level new issue alert for issue #{issue.id}"
+        elsif alert_rule.project.slack_configured?
+          slack_service = SlackNotificationService.new(alert_rule.project)
+          slack_service.send_new_issue_alert(issue)
+          Rails.logger.info "Sent project-level new issue alert for issue #{issue.id}"
+        else
+          Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}, sending email"
+          send_email_alert(alert_rule, "New Issue Alert", build_new_issue_email(issue))
+        end
       else
-        Rails.logger.warn "No Slack configuration found for project #{alert_rule.project.id}"
         send_email_alert(alert_rule, "New Issue Alert", build_new_issue_email(issue))
       end
-    else
-      send_email_alert(alert_rule, "New Issue Alert", build_new_issue_email(issue))
     end
   end
 
@@ -309,7 +327,7 @@ class AlertJob
             },
             {
               title: "Exception",
-              value: issue.exception_type,
+              value: issue.exception_class,
               short: true
             },
             {
@@ -339,8 +357,8 @@ class AlertJob
       Controller/Action: #{issue.controller_action || 'Unknown'}
 
       Issue Details:
-      - Exception Type: #{issue.exception_type}
-      - Message: #{issue.message}
+      - Exception Type: #{issue.exception_class}
+      - Message: #{issue.sample_message}
       - First Seen: #{issue.first_seen_at}
       - Last Seen: #{issue.last_seen_at}
       - Total Count: #{issue.count}
@@ -385,7 +403,7 @@ class AlertJob
       New issue detected in your application.
 
       Project: #{issue.project.name}
-      Exception: #{issue.exception_type}
+      Exception: #{issue.exception_class}
       Message: #{issue.message}
       Location: #{issue.controller_action || issue.request_path || 'Unknown'}
       First Seen: #{issue.first_seen_at}

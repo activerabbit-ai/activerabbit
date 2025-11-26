@@ -222,7 +222,7 @@ class Api::V1::EventsController < Api::BaseController
     }
   end
 
-    def validate_error_payload!(payload)
+  def validate_error_payload!(payload)
     errors = []
 
     errors << "exception_class is required" if payload[:exception_class].blank?

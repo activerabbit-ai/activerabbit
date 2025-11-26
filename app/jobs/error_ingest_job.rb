@@ -58,7 +58,7 @@ class ErrorIngestJob
       end
     end
     if issue && should_alert_for_issue?(issue)
-      IssueAlertJob.perform_async(issue.id)
+      IssueAlertJob.perform_async(issue.id, issue.project.account_id)
     end
 
     Rails.logger.info "Processed error event for project #{project.slug}: #{event.id}"
