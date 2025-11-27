@@ -54,8 +54,15 @@ class User < ApplicationRecord
   def ensure_account_exists
     return if account.present?
 
+    base_name =
+      if email.present?
+        "#{email.split('@').first.humanize}'s Account"
+      else
+        "New Account #{SecureRandom.hex(4)}"
+      end
+
     self.account = Account.find_or_create_by!(
-      name: "#{email.split('@').first.humanize}'s Account"
+      name: base_name
     ) do |a|
       a.trial_ends_at = Rails.configuration.x.trial_days.days.from_now
       a.current_plan = "team"
