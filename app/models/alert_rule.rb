@@ -39,13 +39,13 @@ class AlertRule < ApplicationRecord
     project.alert_rules.active.for_type("performance_regression").each do |rule|
       next unless event.duration_ms && event.duration_ms >= rule.threshold_value
 
-      key = "#{event.controller_action}:#{event.environment}"
+      key = "#{event.target}:#{event.environment}"
       next if alert_in_cooldown?(rule, key)
 
       AlertJob.perform_async(rule.id, "performance_regression", {
         event_id: event.id,
         duration_ms: event.duration_ms,
-        controller_action: event.controller_action
+        target: event.target
       })
 
       set_alert_cooldown(rule, key)

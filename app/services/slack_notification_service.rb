@@ -14,7 +14,7 @@ class SlackNotificationService
     return unless configured?
 
     message = build_error_frequency_message(issue, payload)
-    send_notification(message)
+    send_notification(message, @project)
   end
 
   def send_performance_alert(event, payload)
@@ -47,9 +47,9 @@ class SlackNotificationService
 
   private
 
-  def send_notification(message)
+  def send_notification(message, project = @project)
     notifier = Slack::Notifier.new(@webhook_url) do
-      defaults channel: slack_channel,
+      defaults channel: project.settings&.dig("slack_channel"),
                username: "ActiveRabbit",
                icon_emoji: ":rabbit:"
     end
