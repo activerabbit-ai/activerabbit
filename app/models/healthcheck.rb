@@ -1,5 +1,6 @@
 class Healthcheck < ApplicationRecord
   belongs_to :project
+  belongs_to :account
 
   validates :name, presence: true
   validates :check_type, inclusion: { in: %w[http database redis sidekiq custom] }

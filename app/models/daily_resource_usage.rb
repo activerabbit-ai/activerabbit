@@ -55,7 +55,7 @@ class DailyResourceUsage < ApplicationRecord
           "COALESCE(MAX(uptime_monitors_count), 0) as max_uptime_monitors",
           "COALESCE(MAX(status_pages_count), 0) as max_status_pages"
         )
-        .first
+        # .first
     end
   end
 
