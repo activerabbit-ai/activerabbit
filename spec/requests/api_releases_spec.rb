@@ -1,8 +1,14 @@
 require 'rails_helper'
 
 RSpec.describe 'API::V1::Releases', type: :request do
-  let(:user) { create(:user) }
-  let(:project) { create(:project, user: user, account: user.account) }
+
+  let(:account) { create(:account) }
+  let(:user) do
+    create(:user, account: account).tap do |u|
+      u.update_column(:account_id, account.id) if u.account_id != account.id
+    end
+  end
+  let(:project) { create(:project, user: user, account: account) }
   let(:token) { create(:api_token, project: project, account: user.account) }
   let(:headers) { { 'CONTENT_TYPE' => 'application/json', 'X-Project-Token' => token.token } }
 
@@ -28,7 +34,7 @@ RSpec.describe 'API::V1::Releases', type: :request do
       get '/api/v1/releases', headers: headers
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
-      expect(json.first['version']).to eq('v1')
+      expect(json['data'].first['version']).to eq('v1')
     end
   end
 
@@ -38,7 +44,7 @@ RSpec.describe 'API::V1::Releases', type: :request do
       get "/api/v1/releases/#{rel.id}", headers: headers
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
-      expect(json['version']).to eq('v2')
+      expect(json['data']['version']).to eq('v2')
     end
   end
 

@@ -36,8 +36,8 @@ RSpec.describe ResourceQuotas, type: :model do
     context "when on free plan" do
       before { account.current_plan = "free" }
 
-      it "returns 3,000" do
-        expect(account.event_quota_value).to eq(3_000)
+      it "returns 5,000" do
+        expect(account.event_quota_value).to eq(5_000)
       end
     end
 
@@ -52,8 +52,8 @@ RSpec.describe ResourceQuotas, type: :model do
     context "when on business plan" do
       before { account.current_plan = "business" }
 
-      it "returns 50,000" do
-        expect(account.event_quota_value).to eq(50_000)
+      it "returns 1,000,000" do
+        expect(account.event_quota_value).to eq(1_000_000)
       end
     end
 
@@ -61,7 +61,7 @@ RSpec.describe ResourceQuotas, type: :model do
       before { account.current_plan = "unknown" }
 
       it "defaults to free plan quota" do
-        expect(account.event_quota_value).to eq(3_000)
+        expect(account.event_quota_value).to eq(5_000)
       end
     end
 
@@ -84,14 +84,14 @@ RSpec.describe ResourceQuotas, type: :model do
       expect(account.ai_summaries_quota).to eq(5)
     end
 
-    it "returns 50 for team plan" do
+    it "returns 300 for team plan" do
       account.current_plan = "team"
-      expect(account.ai_summaries_quota).to eq(50)
+      expect(account.ai_summaries_quota).to eq(300)
     end
 
-    it "returns 100 for business plan" do
+    it "returns 500 for business plan" do
       account.current_plan = "business"
-      expect(account.ai_summaries_quota).to eq(100)
+      expect(account.ai_summaries_quota).to eq(500)
     end
   end
 
@@ -101,22 +101,22 @@ RSpec.describe ResourceQuotas, type: :model do
       expect(account.pull_requests_quota).to eq(5)
     end
 
-    it "returns 10 for team plan" do
+    it "returns 100 for team plan" do
       account.current_plan = "team"
-      expect(account.pull_requests_quota).to eq(10)
+      expect(account.pull_requests_quota).to eq(100)
     end
 
-    it "returns 20 for business plan" do
+    it "returns 250 for business plan" do
       account.current_plan = "business"
-      expect(account.pull_requests_quota).to eq(20)
+      expect(account.pull_requests_quota).to eq(250)
     end
   end
 
   describe "#uptime_monitors_quota" do
     it "returns correct quota for each plan" do
       {
-        "free" => 1,
-        "team" => 5,
+        "free" => 0,
+        "team" => 20,
         "business" => 5
       }.each do |plan, expected_quota|
         account.current_plan = plan
@@ -126,10 +126,16 @@ RSpec.describe ResourceQuotas, type: :model do
   end
 
   describe "#status_pages_quota" do
-    it "returns 1 for all plans" do
+    it "returns correct quota for each plan" do
       %w[free team business].each do |plan|
         account.current_plan = plan
-        expect(account.status_pages_quota).to eq(1)
+        expected =
+          case plan
+          when "free" then 0
+          when "team" then 5
+          when "business" then 1
+          end
+        expect(account.status_pages_quota).to eq(expected)
       end
     end
   end
@@ -158,7 +164,7 @@ RSpec.describe ResourceQuotas, type: :model do
 
     context "when at quota limit" do
       before do
-        allow(account).to receive(:ai_summaries_used_in_period).and_return(50)
+        allow(account).to receive(:ai_summaries_used_in_period).and_return(300)
       end
 
       it "returns false" do
@@ -190,7 +196,7 @@ RSpec.describe ResourceQuotas, type: :model do
 
     context "when usage is 50%" do
       before do
-        allow(account).to receive(:ai_summaries_used_in_period).and_return(25)
+        allow(account).to receive(:ai_summaries_used_in_period).and_return(150)
       end
 
       it "returns 50.0" do
@@ -210,7 +216,7 @@ RSpec.describe ResourceQuotas, type: :model do
 
     context "when usage is over 100%" do
       before do
-        allow(account).to receive(:ai_summaries_used_in_period).and_return(75)
+        allow(account).to receive(:ai_summaries_used_in_period).and_return(450)
       end
 
       it "returns percentage over 100" do
@@ -247,14 +253,14 @@ RSpec.describe ResourceQuotas, type: :model do
 
     it "returns a hash with all resource types" do
       summary = account.usage_summary
-      expect(summary.keys).to contain_exactly(:events, :ai_summaries, :pull_requests, :uptime_monitors, :status_pages)
+      expect(summary.keys).to contain_exactly(:events, :ai_summaries, :pull_requests, :uptime_monitors, :status_pages, :projects)
     end
 
     it "includes quota for each resource" do
       summary = account.usage_summary
       expect(summary[:events][:quota]).to eq(50_000)
-      expect(summary[:ai_summaries][:quota]).to eq(50)
-      expect(summary[:pull_requests][:quota]).to eq(10)
+      expect(summary[:ai_summaries][:quota]).to eq(300)
+      expect(summary[:pull_requests][:quota]).to eq(100)
     end
 
     it "includes used count for each resource" do
@@ -267,15 +273,15 @@ RSpec.describe ResourceQuotas, type: :model do
     it "calculates remaining for each resource" do
       summary = account.usage_summary
       expect(summary[:events][:remaining]).to eq(40_000)
-      expect(summary[:ai_summaries][:remaining]).to eq(25)
-      expect(summary[:pull_requests][:remaining]).to eq(7)
+      expect(summary[:ai_summaries][:remaining]).to eq(275)
+      expect(summary[:pull_requests][:remaining]).to eq(97)
     end
 
     it "includes percentage for each resource" do
       summary = account.usage_summary
       expect(summary[:events][:percentage]).to eq(20.0)
-      expect(summary[:ai_summaries][:percentage]).to eq(50.0)
-      expect(summary[:pull_requests][:percentage]).to eq(30.0)
+      expect(summary[:ai_summaries][:percentage]).to eq(8.33)
+      expect(summary[:pull_requests][:percentage]).to eq(3.0)
     end
 
     it "includes within_quota flag for each resource" do
@@ -287,7 +293,7 @@ RSpec.describe ResourceQuotas, type: :model do
 
     context "when over quota" do
       before do
-        allow(account).to receive(:ai_summaries_used_in_period).and_return(60)
+        allow(account).to receive(:ai_summaries_used_in_period).and_return(350)
       end
 
       it "shows remaining as 0" do

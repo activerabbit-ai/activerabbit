@@ -1,13 +1,16 @@
 require 'rails_helper'
+require 'ostruct'
 
 RSpec.describe CheckoutCreator do
-  let(:account) { User.create!(email: 'buyer@example.com', password: 'Password1!').account }
+  let(:user) { User.create!(email: 'buyer@example.com', password: 'Password1!') }
+  let(:account) { user.account }
 
   before do
     allow(Stripe::Checkout::Session).to receive(:create).and_return(OpenStruct.new(url: 'https://stripe.example/session'))
-    allow_any_instance_of(Account).to receive_message_chain(:payment_processor, :processor_id).and_return('cus_123')
-    allow_any_instance_of(Account).to receive_message_chain(:payment_processor, :customer).and_return(true)
-    allow_any_instance_of(Account).to receive(:set_payment_processor).and_return(true)
+    # Stub Pay::Customer on the user, since CheckoutCreator talks to @user.payment_processor
+    pay_customer = Pay::Customer.create!(owner: user, processor: "stripe", processor_id: "cus_123")
+    allow(user).to receive(:payment_processor).and_return(pay_customer)
+    allow(user).to receive(:set_payment_processor).with(:stripe).and_return(pay_customer)
     ENV['STRIPE_PRICE_DEV_MONTHLY'] = 'price_dev_m'
     ENV['STRIPE_PRICE_DEV_ANNUAL']  = 'price_dev_y'
     ENV['STRIPE_PRICE_TEAM_MONTHLY'] = 'price_team_m'
@@ -21,12 +24,12 @@ RSpec.describe CheckoutCreator do
   end
 
   it 'uses AI monthly price when interval is month' do
-    described_class.new(account: account, plan: 'team', interval: 'month', ai: true).call
+    described_class.new(user: user, account: account, plan: 'team', interval: 'month', ai: true).call
     expect(Stripe::Checkout::Session).to have_received(:create).with(hash_including(line_items: array_including(include(price: 'price_ai_m'))))
   end
 
   it 'uses AI annual price when interval is year' do
-    described_class.new(account: account, plan: 'team', interval: 'year', ai: true).call
+    described_class.new(user: user, account: account, plan: 'team', interval: 'year', ai: true).call
     expect(Stripe::Checkout::Session).to have_received(:create).with(hash_including(line_items: array_including(include(price: 'price_ai_y'))))
   end
 end

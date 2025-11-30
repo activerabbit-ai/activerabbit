@@ -18,7 +18,6 @@ RSpec.describe Project, type: :model do
 
   describe 'validations' do
     it { is_expected.to validate_presence_of(:name) }
-    it { is_expected.to validate_presence_of(:slug) }
     it { is_expected.to validate_presence_of(:environment) }
     it { is_expected.to validate_presence_of(:url) }
 
@@ -27,6 +26,13 @@ RSpec.describe Project, type: :model do
       expect(project).not_to be_valid
       project.url = 'https://example.com'
       expect(project).to be_valid
+    end
+
+    it 'generates slug from name when slug is not provided' do
+      project.slug = nil
+      project.name = 'My Test Project'
+      project.valid?
+      expect(project.slug).to eq('my-test-project')
     end
   end
 

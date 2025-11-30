@@ -286,10 +286,11 @@
       </div>
       <h3 class="text-lg font-medium text-gray-900 mb-2">No errors captured yet</h3>
       <p class="text-gray-500 mb-4">ActiveRabbit is monitoring your applications. Errors will appear here when they occur.</p>
-      <div class="text-sm text-gray-400">
-        <p>Try triggering some test errors:</p>
-        <code class="bg-gray-100 px-2 py-1 rounded">curl http://localhost:3001/test/exception</code>
-      </div>
+      <% if Rails.env.development? %>
+        <p class="text-xs text-gray-400 mt-4 font-mono">
+          Debug: Issues: <%= @issues.size %>, Total: <%= @total_errors %>, Project: <%= @current_project&.name %>
+        </p>
+      <% end %>
     </div>
   <% end %>
 </div>

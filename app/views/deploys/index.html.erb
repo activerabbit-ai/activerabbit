@@ -9,6 +9,7 @@
       Deploy Config
     </button>
   </div>
+
   <div class="overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
@@ -23,30 +24,44 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <% @deploys.each do |deploy| %>
+        <% if @deploys.any? %>
+          <% @deploys.each do |deploy| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <%= deploy.release.version %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <%= deploy.user&.email || "—" %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= deploy[:status] == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                  <%= deploy.status.capitalize %>
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= deploy.duration_seconds %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= time_ago_in_words(deploy.started_at) %> ago
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <%= deploy.errors_count %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <%= deploy.errors_per_hour %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
           <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              <%= deploy.release.version %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              <%= deploy.user&.email || "—" %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= deploy[:status] == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                <%= deploy.status.capitalize %>
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <%= deploy.duration_seconds %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <%= time_ago_in_words(deploy.started_at) %> ago
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              <%= deploy.errors_count %>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              <%= deploy.errors_per_hour %>
+            <td colspan="7" class="px-6 py-12 text-center">
+              <div class="mx-auto">
+                <div class="w-12 h-12 mx-auto mb-4 text-gray-400">
+                  🚢
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No deploys captured yet</h3>
+                <p class="text-gray-500 mb-4">ActiveRabbit is monitoring your applications. Deployments will appear here when they occur.</p>
+              </div>
             </td>
           </tr>
         <% end %>

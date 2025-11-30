@@ -291,8 +291,11 @@
     <% end %>
   <% elsif @project || @current_project %>
     <div class="p-12 text-center">
-      <h3 class="text-lg font-medium text-gray-900 mb-2">No performance rows available</h3>
-      <p class="text-gray-500">Send data or wait for rollups to populate.</p>
+      <div class="w-12 h-12 mx-auto mb-4 text-gray-400">
+        🚀
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No performance data yet</h3>
+      <p class="text-gray-500 mb-4">ActiveRabbit is monitoring your applications. Performance data will appear here once your app starts sending metrics.</p>
     </div>
   <% elsif @projects && @projects.any? %>
     <!-- Global Projects Performance Table -->
@@ -385,10 +388,6 @@
       </div>
       <h3 class="text-lg font-medium text-gray-900 mb-2">No performance data yet</h3>
       <p class="text-gray-500 mb-4">ActiveRabbit is monitoring your applications. Performance data will appear here once your app starts sending metrics.</p>
-      <div class="text-sm text-gray-400">
-        <p>Try triggering some test performance data:</p>
-        <code class="bg-gray-100 px-2 py-1 rounded">curl http://localhost:3001/test/performance</code>
-      </div>
     </div>
   <% end %>
 </div>

@@ -1,8 +1,14 @@
 require 'rails_helper'
 
 RSpec.describe 'API::V1::Events', type: :request do
-  let(:user) { create(:user) }
-  let(:project) { create(:project, user: user, account: user.account) }
+
+  let(:account) { create(:account) }
+  let(:user) do
+    create(:user, account: account).tap do |u|
+      u.update_column(:account_id, account.id) if u.account_id != account.id
+    end
+  end
+  let(:project) { create(:project, user: user, account: account) }
   let(:token) { create(:api_token, project: project, account: user.account) }
   let(:headers) { { 'CONTENT_TYPE' => 'application/json', 'X-Project-Token' => token.token } }
 
