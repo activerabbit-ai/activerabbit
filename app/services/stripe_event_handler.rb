@@ -123,12 +123,14 @@ class StripeEventHandler
       pay_sub = Pay::Subscription.find_or_initialize_by(customer_id: pay_customer.id, processor_id: sub_id)
       pay_sub.name = pay_sub.name.presence || "default"
       pay_sub.processor_plan = base_price_id || pay_sub.processor_plan
-      quantity = if items.first.respond_to?(:quantity)
-        items.first.quantity
-                 else
-        items.first && items.first["quantity"]
-      end || 1
-      pay_sub.quantity = quantity
+
+      first_item = items.first
+      quantity = if first_item.respond_to?(:quantity)
+                   first_item.quantity
+      else
+                   first_item && first_item["quantity"]
+      end
+      pay_sub.quantity = quantity || 1
       pay_sub.status = sub.respond_to?(:status) ? sub.status : sub["status"]
       pay_sub.current_period_start = current_period_start
       pay_sub.current_period_end = current_period_end
