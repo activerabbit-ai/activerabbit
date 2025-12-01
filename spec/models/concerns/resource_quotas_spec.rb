@@ -52,8 +52,8 @@ RSpec.describe ResourceQuotas, type: :model do
     context "when on business plan" do
       before { account.current_plan = "business" }
 
-      it "returns 1,000,000" do
-        expect(account.event_quota_value).to eq(1_000_000)
+      it "returns 100,000" do
+        expect(account.event_quota_value).to eq(100_000)
       end
     end
 

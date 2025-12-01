@@ -21,7 +21,7 @@ class Project < ApplicationRecord
   validates :environment, presence: true
   validates :url, presence: true, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), message: "must be a valid URL" }
 
-  before_validation :generate_slug, if: -> { slug.blank? && name.present? }
+  before_validation :generate_slug, if: -> { slug.nil? && name.present? }
 
   scope :active, -> { where(active: true) }
 

@@ -48,6 +48,7 @@ class DailyResourceUsage < ApplicationRecord
     # Get aggregated usage for a specific billing period
     def usage_for_period(account_id, start_date, end_date)
       where(account_id: account_id, day: start_date..end_date)
+        .reorder(nil)
         .select(
           "COALESCE(SUM(errors_count), 0) as total_errors",
           "COALESCE(SUM(ai_summaries_count), 0) as total_ai_summaries",
@@ -55,7 +56,7 @@ class DailyResourceUsage < ApplicationRecord
           "COALESCE(MAX(uptime_monitors_count), 0) as max_uptime_monitors",
           "COALESCE(MAX(status_pages_count), 0) as max_status_pages"
         )
-        # .first
+        .take
     end
   end
 

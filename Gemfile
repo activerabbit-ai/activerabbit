@@ -90,6 +90,7 @@ group :development, :test do
 
   # RSpec testing framework
   gem "rspec-rails", "~> 6.0"
+  gem "rails-controller-testing"
   gem "factory_bot_rails"
   gem "faker"
   gem "shoulda-matchers"

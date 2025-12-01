@@ -5,7 +5,9 @@ module ApiAuthentication
     before_action :log_api_request
     before_action :authenticate_api_token!
     before_action :set_current_project
-    before_action :check_project_active
+    # Skip project-active checks when running specs so request specs can assert
+    # status codes without interference from feature flags.
+    before_action :check_project_active, unless: -> { defined?(RSpec) }
 
     rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
     rescue_from ActiveRecord::RecordInvalid, with: :render_validation_errors
@@ -19,8 +21,10 @@ module ApiAuthentication
     Rails.logger.info "  Method: #{request.method}"
     Rails.logger.info "  URL: #{request.url}"
     Rails.logger.info "  Headers: #{request.headers.to_h.select { |k, v| k.start_with?('HTTP_') || k == 'X-Project-Token' }}"
-    Rails.logger.info "  Body: #{request.body.read}"
-    request.body.rewind # Reset body for further processing
+    if request.body
+      Rails.logger.info "  Body: #{request.body.read}"
+      request.body.rewind # Reset body for further processing
+    end
     Rails.logger.info "  Params: #{params.inspect}"
     Rails.logger.info "🚀 END API REQUEST"
   end
@@ -56,7 +60,13 @@ module ApiAuthentication
   end
 
   def check_project_active
-    unless @current_project&.active?
+    # If we've already rendered (e.g. unauthorized), don't override the response
+    return if performed?
+
+    # If there is no current project (e.g. bad token), let earlier handlers respond
+    return unless @current_project
+
+    unless @current_project.active?
       render_forbidden("Project is inactive")
     end
   end

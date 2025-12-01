@@ -23,7 +23,7 @@ class User < ApplicationRecord
     return true if account.blank?
 
     # Use direct database query to avoid acts_as_tenant scoping issues
-    Project.where(user_id: id).count == 0
+    Project.unscoped.where(user_id: id).count == 0
   end
 
   def self.from_omniauth(auth)

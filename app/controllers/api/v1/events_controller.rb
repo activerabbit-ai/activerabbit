@@ -58,7 +58,7 @@ class Api::V1::EventsController < Api::BaseController
     Rails.logger.info "Sanitized payload: #{payload.inspect}"
 
     # Validate required fields
-    validate_performance_payload!(payload)
+    return unless validate_performance_payload!(payload)
 
     # Process in background
     # Ensure payload is JSON-serializable by converting to hash and stringifying

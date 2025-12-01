@@ -340,12 +340,12 @@ class AlertJob
             },
             {
               title: "Message",
-              value: issue.message.truncate(200),
+              value: (issue.sample_message || "No message").truncate(200),
               short: false
             },
             {
               title: "Location",
-              value: issue.controller_action || issue.request_path || "Unknown",
+              value: issue.controller_action || issue.top_frame || "Unknown",
               short: true
             }
           ],
@@ -412,8 +412,8 @@ class AlertJob
 
       Project: #{issue.project.name}
       Exception: #{issue.exception_class}
-      Message: #{issue.message}
-      Location: #{issue.controller_action || issue.request_path || 'Unknown'}
+      Message: #{issue.sample_message}
+      Location: #{issue.controller_action || issue.top_frame || 'Unknown'}
       First Seen: #{issue.first_seen_at}
 
       Please investigate this new error.

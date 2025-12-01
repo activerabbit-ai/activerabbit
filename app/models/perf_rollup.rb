@@ -12,9 +12,7 @@ class PerfRollup < ApplicationRecord
   scope :for_timerange, ->(start_time, end_time) { where(timestamp: start_time..end_time) }
   scope :for_target, ->(target) { where(target: target) }
 
-    def self.rollup_minute_data!
-    require "HDRHistogram"
-
+  def self.rollup_minute_data!
     # Process performance events from the last 2 minutes to handle any delays
     start_time = 2.minutes.ago.beginning_of_minute
     end_time = 1.minute.ago.end_of_minute
@@ -38,17 +36,11 @@ class PerfRollup < ApplicationRecord
       durations = events.pluck(:duration_ms).compact
       next if durations.empty?
 
-      # Create HDR histogram for accurate percentiles
-      histogram = HDRHistogram.new(1, 60_000, 3) # 1ms to 60s, 3 significant digits
-
-      durations.each do |duration|
-        histogram.record_value([duration.to_i, 1].max) # Minimum 1ms
-      end
-
-      # Calculate percentiles from histogram
-      p50 = histogram.value_at_percentile(50.0)
-      p95 = histogram.value_at_percentile(95.0)
-      p99 = histogram.value_at_percentile(99.0)
+      # Calculate percentiles using simple percentile helper
+      sorted = durations.sort
+      p50 = percentile(sorted, 50.0)
+      p95 = percentile(sorted, 95.0)
+      p99 = percentile(sorted, 99.0)
 
       # Count errors that occurred in the same timeframe
       error_count = Event.joins(:issue)
@@ -73,10 +65,10 @@ class PerfRollup < ApplicationRecord
         p50_duration_ms: p50,
         p95_duration_ms: p95,
         p99_duration_ms: p99,
-        min_duration_ms: histogram.min,
-        max_duration_ms: histogram.max,
+        min_duration_ms: sorted.min,
+        max_duration_ms: sorted.max,
         error_count: error_count,
-        hdr_histogram: histogram.serialize
+        hdr_histogram: nil
       )
 
       rollup.save!

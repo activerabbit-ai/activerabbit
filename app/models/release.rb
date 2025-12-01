@@ -17,6 +17,7 @@ class Release < ApplicationRecord
   def self.create_from_deploy(project:, version:, environment:, metadata: {})
     release = create!(
       project: project,
+      account: project.account,
       version: version,
       environment: environment,
       deployed_at: Time.current,

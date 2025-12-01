@@ -49,17 +49,47 @@ class StripeEventHandler
     return unless account
 
     sub = @data
-    trial_end = Time.at(sub.trial_end) if sub.respond_to?(:trial_end) && sub.trial_end
-    current_period_start = Time.at(sub.current_period_start) if sub.respond_to?(:current_period_start) && sub.current_period_start
-    current_period_end   = Time.at(sub.current_period_end) if sub.respond_to?(:current_period_end) && sub.current_period_end
+    # Support both real Stripe::Subscription objects and Hash payloads from tests
+    trial_end_val = if sub.respond_to?(:trial_end)
+      sub.trial_end
+    else
+      sub["trial_end"]
+    end
+    current_period_start_val = if sub.respond_to?(:current_period_start)
+      sub.current_period_start
+    else
+      sub["current_period_start"]
+    end
+    current_period_end_val = if sub.respond_to?(:current_period_end)
+      sub.current_period_end
+    else
+      sub["current_period_end"]
+    end
 
-    items = (sub.respond_to?(:items) && sub.items.respond_to?(:data)) ? sub.items.data : []
-    base_item = items.find { |i| base_plan_price_ids.include?(i.price&.id) }
-    ai_item   = items.find { |i| ai_price_ids.include?(i.price&.id) }
-    overage_item = items.find { |i| i.price&.id == ENV["STRIPE_PRICE_OVERAGE_METERED"] }
-    ai_overage_item = items.find { |i| i.price&.id == ENV["STRIPE_PRICE_AI_OVERAGE_METERED"] }
+    trial_end = Time.at(trial_end_val) if trial_end_val
+    current_period_start = Time.at(current_period_start_val) if current_period_start_val
+    current_period_end   = Time.at(current_period_end_val) if current_period_end_val
 
-    plan, interval = plan_interval_from_price(base_item&.price&.id)
+    items = if sub.respond_to?(:items) && sub.items.respond_to?(:data)
+      sub.items.data
+    else
+      Array(sub["items"] && sub["items"]["data"])
+    end
+    base_item = items.find { |i| base_plan_price_ids.include?(i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) }
+    ai_item   = items.find { |i| ai_price_ids.include?(i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) }
+    overage_item = items.find do |i|
+      (i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) == ENV["STRIPE_PRICE_OVERAGE_METERED"]
+    end
+    ai_overage_item = items.find do |i|
+      (i.respond_to?(:price) ? i.price&.id : i.dig("price", "id")) == ENV["STRIPE_PRICE_AI_OVERAGE_METERED"]
+    end
+
+    base_price_id = if base_item.respond_to?(:price)
+      base_item.price&.id
+    else
+      base_item && base_item.dig("price", "id")
+    end
+    plan, interval = plan_interval_from_price(base_price_id)
 
     account.update!(
       trial_ends_at: trial_end,
@@ -69,22 +99,46 @@ class StripeEventHandler
       event_quota: quota_for(plan || account.current_plan),
       event_usage_period_start: current_period_start,
       event_usage_period_end: current_period_end,
-      overage_subscription_item_id: overage_item&.id,
-      ai_overage_subscription_item_id: ai_overage_item&.id
+      overage_subscription_item_id: if overage_item.respond_to?(:id)
+        overage_item.id
+      else
+        overage_item && overage_item["id"]
+      end,
+      ai_overage_subscription_item_id: if ai_overage_item.respond_to?(:id)
+        ai_overage_item.id
+      else
+        ai_overage_item && ai_overage_item["id"]
+      end
     )
 
     # Ensure Pay subscription record exists/updated so UI can detect active status
-    if (pay_customer = Pay::Customer.find_by(processor: "stripe", processor_id: sub.customer))
-      pay_sub = Pay::Subscription.find_or_initialize_by(customer_id: pay_customer.id, processor_id: sub.id)
+    sub_customer_id = if sub.respond_to?(:customer)
+      sub.customer
+    else
+      sub["customer"]
+    end
+
+    if (pay_customer = Pay::Customer.find_by(processor: "stripe", processor_id: sub_customer_id))
+      sub_id = sub.respond_to?(:id) ? sub.id : sub["id"]
+      pay_sub = Pay::Subscription.find_or_initialize_by(customer_id: pay_customer.id, processor_id: sub_id)
       pay_sub.name = pay_sub.name.presence || "default"
-      pay_sub.processor_plan = base_item&.price&.id || pay_sub.processor_plan
-      quantity = items.first&.quantity || 1
+      pay_sub.processor_plan = base_price_id || pay_sub.processor_plan
+      quantity = if items.first.respond_to?(:quantity)
+        items.first.quantity
+      else
+        items.first && items.first["quantity"]
+      end || 1
       pay_sub.quantity = quantity
-      pay_sub.status = sub.status
+      pay_sub.status = sub.respond_to?(:status) ? sub.status : sub["status"]
       pay_sub.current_period_start = current_period_start
       pay_sub.current_period_end = current_period_end
       pay_sub.trial_ends_at = trial_end
-      pay_sub.ends_at = Time.at(sub.ended_at) if sub.respond_to?(:ended_at) && sub.ended_at
+      ended_at_val = if sub.respond_to?(:ended_at)
+        sub.ended_at
+      else
+        sub["ended_at"]
+      end
+      pay_sub.ends_at = Time.at(ended_at_val) if ended_at_val
       pay_sub.save!
     end
   end

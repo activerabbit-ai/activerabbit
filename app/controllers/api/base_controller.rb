@@ -9,6 +9,13 @@ class Api::BaseController < ActionController::API
   # Payload size limiting (10MB max)
   before_action :check_payload_size
 
+  rescue_from ActionDispatch::Http::Parameters::ParseError do |e|
+    render json: {
+      error: "bad_request",
+      message: "Invalid request parameters: #{e.message}"
+    }, status: :bad_request
+  end
+
   private
 
   def json_request?

@@ -4,7 +4,7 @@ class Api::V1::ReleasesController < Api::BaseController
     payload = sanitize_release_payload(params)
 
     # Validate required fields
-    validate_release_payload!(payload)
+    return unless validate_release_payload!(payload)
 
     # Check if release already exists
     existing_release = @current_project.releases.find_by(

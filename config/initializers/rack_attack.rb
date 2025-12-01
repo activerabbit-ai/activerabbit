@@ -132,7 +132,11 @@ class Rack::Attack
   end
 end
 
-# Enable Rack::Attack in all environments except test
+# Enable Rack::Attack only in environments where we actually want the
+# protection layer (production / staging). Keep it disabled in development
+# and test (including Docker rspec runs) to avoid interfering with specs.
 Rails.application.configure do
-  config.middleware.use Rack::Attack unless Rails.env.test?
+  if Rails.env.production? || Rails.env.staging?
+    config.middleware.use Rack::Attack
+  end
 end

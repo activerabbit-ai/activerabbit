@@ -26,12 +26,12 @@ module ResourceQuotas
       events: 50_000,
       ai_summaries: 300,
       pull_requests: 100,
-      uptime_monitors: 5,
-      status_pages: 1,
+      uptime_monitors: 20,
+      status_pages: 5,
       projects: 10
     },
     business: {
-      events: 50_000,
+      events: 100_000,
       ai_summaries: 500,
       pull_requests: 250,
       uptime_monitors: 5,
