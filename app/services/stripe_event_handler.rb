@@ -101,14 +101,14 @@ class StripeEventHandler
       event_usage_period_end: current_period_end,
       overage_subscription_item_id: if overage_item.respond_to?(:id)
         overage_item.id
-      else
+                                    else
         overage_item && overage_item["id"]
-      end,
+                                    end,
       ai_overage_subscription_item_id: if ai_overage_item.respond_to?(:id)
         ai_overage_item.id
-      else
+                                       else
         ai_overage_item && ai_overage_item["id"]
-      end
+                                       end
     )
 
     # Ensure Pay subscription record exists/updated so UI can detect active status
@@ -125,7 +125,7 @@ class StripeEventHandler
       pay_sub.processor_plan = base_price_id || pay_sub.processor_plan
       quantity = if items.first.respond_to?(:quantity)
         items.first.quantity
-      else
+                 else
         items.first && items.first["quantity"]
       end || 1
       pay_sub.quantity = quantity

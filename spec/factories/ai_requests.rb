@@ -6,5 +6,3 @@ FactoryBot.define do
     occurred_at { Time.current }
   end
 end
-
-

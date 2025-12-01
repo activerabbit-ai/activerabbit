@@ -1,7 +1,6 @@
 require 'rails_helper'
 
 RSpec.describe 'BillingGuard access', type: :request do
-
   let(:account) { create(:account) }
   let(:user) do
     create(:user, account: account).tap do |u|

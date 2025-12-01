@@ -1,7 +1,8 @@
 class Api::V1::DeploysController < Api::BaseController
   # POST api/v1/deploys
   def create
-    project = Project.find_by!(slug: params[:project_slug])
+    project = Project.find_by(slug: params[:project_slug])
+    return render_not_found unless project
 
     # Find or create release
     release = project.releases.find_or_initialize_by(
@@ -14,7 +15,8 @@ class Api::V1::DeploysController < Api::BaseController
       release.save!
     end
 
-    user = User.find_by!(email: params[:user])
+    user = User.find_by(email: params[:user])
+    return render_not_found unless user
 
     deploy = Deploy.create!(
       account: project.account,

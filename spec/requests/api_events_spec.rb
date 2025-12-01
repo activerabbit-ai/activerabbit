@@ -1,7 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'API::V1::Events', type: :request do
-
+RSpec.describe 'API::V1::Events', type: :request, api: true do
   let(:account) { create(:account) }
   let(:user) do
     create(:user, account: account).tap do |u|

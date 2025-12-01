@@ -3,7 +3,6 @@
 require "rails_helper"
 
 RSpec.describe "Pricing", type: :request do
-
   let(:account) { create(:account) }
   let(:user) do
     create(:user, account: account).tap do |u|
@@ -145,7 +144,7 @@ RSpec.describe "Pricing", type: :request do
         account.update!(current_plan: "business")
         get plan_path
 
-        expect(assigns(:event_quota)).to eq(1_000_000)
+        expect(assigns(:event_quota)).to eq(100_000)
         # Business plan quotas updated
         expect(assigns(:ai_summaries_quota)).to eq(500)
         expect(assigns(:pull_requests_quota)).to eq(250)

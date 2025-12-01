@@ -12,5 +12,3 @@ FactoryBot.define do
     config { { "url" => "https://example.com", "timeout" => 5 } }
   end
 end
-
-
