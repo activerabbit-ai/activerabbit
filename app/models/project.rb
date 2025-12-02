@@ -75,6 +75,20 @@ class Project < ApplicationRecord
     ])
   end
 
+  # Computed health status used for UI:
+  # - If an explicit health_status has been set (via uptime checks), use it.
+  # - Otherwise, if we have seen at least one issue or event for this project,
+  #   treat it as "healthy" instead of "unknown".
+  def computed_health_status
+    return health_status if health_status.present?
+
+    if issues.exists? || events.exists?
+      "healthy"
+    else
+      "unknown"
+    end
+  end
+
   def update_health_status!(healthcheck_results)
     critical_count = healthcheck_results.count { |r| r[:status] == "critical" }
     warning_count = healthcheck_results.count { |r| r[:status] == "warning" }

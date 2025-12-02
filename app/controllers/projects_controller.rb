@@ -15,16 +15,21 @@ class ProjectsController < ApplicationController
       @project_stats[project.id] = {
         issues_count: project.issues.open.count,
         events_today: project.events.where("created_at > ?", 24.hours.ago).count,
-        health_status: project.health_status
+        health_status: project.computed_health_status
       }
     end
   end
 
   def show
-    @recent_issues = @project.issues.recent.limit(10)
-    @recent_events = @project.events.recent.limit(20)
     @api_tokens = @project.api_tokens.order(:created_at)
     @alert_rules = @project.alert_rules.order(:name)
+
+    # Summary stats (to mirror dashboard card details)
+    @project_stats = {
+      open_issues: @project.issues.open.count,
+      events_today: @project.events.where("occurred_at > ?", 24.hours.ago).count,
+      events_total: @project.events.count
+    }
 
     # Performance metrics for last 24 hours
     @performance_stats = @project.perf_rollups

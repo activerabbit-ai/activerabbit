@@ -109,7 +109,11 @@
             <div>
               <% dot_class = stats[:issues_count].to_i > 0 ? 'bg-green-500' : 'bg-gray-300' %>
               <div class="flex items-center space-x-2">
-                <h3 class="text-lg font-semibold text-gray-900"><%= project.name %></h3>
+                <h3 class="text-lg font-semibold">
+                  <%= link_to project.name,
+                              project_path(project),
+                              class: "text-indigo-600 hover:text-indigo-800 transition-colors" %>
+                </h3>
                 <span class="inline-block w-2 h-2 rounded-full <%= dot_class %>"></span>
               </div>
               <div class="text-sm text-gray-500">

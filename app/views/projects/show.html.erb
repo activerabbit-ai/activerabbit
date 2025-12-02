@@ -19,192 +19,90 @@
     <div class="flex space-x-3">
       <%= link_to "Settings", project_settings_path(@project),
           class: "bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors" %>
-      <%= link_to "Regenerate Token", regenerate_token_project_path(@project),
-          method: :post,
-          data: { confirm: "This will invalidate the current API token. Continue?" },
-          class: "bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors" %>
     </div>
   </div>
 </div>
 
-<!-- Project Stats -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center">
-      <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-        </svg>
+<!-- Project Overview + Quick Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+  <!-- Overview -->
+  <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Project Overview</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
+      <div class="space-y-2">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Open Issues</span>
+          <span class="font-medium text-gray-900"><%= @project_stats[:open_issues] %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Events Today</span>
+          <span class="font-medium text-gray-900"><%= @project_stats[:events_today] %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Events Total</span>
+          <span class="font-medium text-gray-900"><%= number_with_delimiter(@project_stats[:events_total]) %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Status</span>
+          <span class="font-medium <%= @project.active? ? 'text-green-600' : 'text-red-600' %>">
+            <%= @project.active? ? "Active" : "Inactive" %>
+          </span>
+        </div>
       </div>
-      <div class="ml-4">
-        <p class="text-2xl font-bold text-gray-900"><%= @project.issues.open.count %></p>
-        <p class="text-gray-600">Open Issues</p>
+      <div class="space-y-2">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Tech Stack</span>
+          <span class="font-medium text-gray-900">
+            <%= @project.tech_stack.present? ? @project.tech_stack.humanize : "Not specified" %>
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Environment</span>
+          <span class="font-medium text-gray-900">
+            <%= @project.environment.present? ? @project.environment.capitalize : "Not specified" %>
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Created</span>
+          <span class="font-medium text-gray-900"><%= @project.created_at.strftime("%b %d, %Y") %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Health Status</span>
+          <span class="font-medium text-gray-900"><%= @project.computed_health_status.capitalize %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Avg Response (24h)</span>
+          <% avg_response = @performance_stats.values.sum / [@performance_stats.size, 1].max %>
+          <span class="font-medium text-gray-900"><%= avg_response.round(0) %>ms</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center">
-      <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-        </svg>
-      </div>
-      <div class="ml-4">
-        <p class="text-2xl font-bold text-gray-900"><%= @project.events.where('created_at > ?', 24.hours.ago).count %></p>
-        <p class="text-gray-600">Events Today</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center">
-      <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
-      <div class="ml-4">
-        <p class="text-2xl font-bold text-gray-900"><%= @project.health_status.capitalize %></p>
-        <p class="text-gray-600">Health Status</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center">
-      <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
-      <div class="ml-4">
-        <% avg_response = @performance_stats.values.sum / [@performance_stats.size, 1].max %>
-        <p class="text-2xl font-bold text-gray-900"><%= avg_response.round(0) %>ms</p>
-        <p class="text-gray-600">Avg Response</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <!-- Quick Actions -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
     <div class="space-y-3">
-      <%= link_to project_issues_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
-        <svg class="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-        </svg>
-        <span class="text-sm font-medium">View Issues</span>
+      <%= link_to project_issues_path(@project),
+                  class: "w-full inline-flex items-center justify-between px-4 py-2 rounded-md border border-red-200 bg-red-50 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors" do %>
+        <span>View Issues</span>
+        <span class="text-xs text-red-600"><%= @project_stats[:open_issues] %> open</span>
       <% end %>
 
-      <%= link_to project_events_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
-        <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-        </svg>
-        <span class="text-sm font-medium">View Events</span>
+      <%= link_to project_events_path(@project),
+                  class: "w-full inline-flex items-center justify-between px-4 py-2 rounded-md border border-blue-200 bg-blue-50 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors" do %>
+        <span>View Events</span>
+        <span class="text-xs text-blue-600"><%= number_with_delimiter(@project_stats[:events_total]) %> total</span>
       <% end %>
 
-      <%= link_to project_performance_path(@project), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors" do %>
-        <svg class="w-5 h-5 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-        </svg>
-        <span class="text-sm font-medium">Performance</span>
-      <% end %>
-    </div>
-  </div>
-
-
-  <!-- Alert Rules -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900">Alert Rules</h3>
-      <%= link_to project_alert_rules_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
-        Manage →
-      <% end %>
-    </div>
-    <div class="space-y-2">
-      <% @alert_rules.limit(3).each do |rule| %>
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-700"><%= rule.name %></span>
-          <span class="px-2 py-1 text-xs font-medium rounded-full <%= rule.enabled? ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' %>">
-            <%= rule.enabled? ? 'On' : 'Off' %>
-          </span>
-        </div>
-      <% end %>
-      <% if @alert_rules.count > 3 %>
-        <p class="text-xs text-gray-500">+ <%= @alert_rules.count - 3 %> more</p>
+      <%= link_to project_performance_path(@project),
+                  class: "w-full inline-flex items-center justify-between px-4 py-2 rounded-md border border-purple-200 bg-purple-50 text-sm font-medium text-purple-700 hover:bg-purple-100 transition-colors" do %>
+        <span>Performance</span>
+        <% avg_response = @performance_stats.values.sum / [@performance_stats.size, 1].max %>
+        <span class="text-xs text-purple-600"><%= avg_response.round(0) %>ms avg</span>
       <% end %>
     </div>
   </div>
 </div>
 
-<!-- Recent Activity -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <!-- Recent Issues -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900">Recent Issues</h3>
-      <%= link_to project_issues_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
-        View All →
-      <% end %>
-    </div>
-    <div class="space-y-3">
-      <% @recent_issues.each do |issue| %>
-        <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
-          <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
-          <div class="flex-1 min-w-0">
-            <%= link_to project_issue_path(@project, issue), class: "block" do %>
-              <p class="text-sm font-medium text-gray-900 truncate"><%= issue.exception_class %></p>
-              <p class="text-xs text-gray-500 truncate"><%= issue.sample_message %></p>
-              <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(issue.last_seen_at) %> ago</p>
-            <% end %>
-          </div>
-          <span class="text-xs text-gray-500"><%= issue.count %></span>
-        </div>
-      <% end %>
-
-      <% if @recent_issues.empty? %>
-        <p class="text-sm text-gray-500 text-center py-4">No recent issues</p>
-      <% end %>
-    </div>
-  </div>
-
-  <!-- Recent Events -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900">Recent Events</h3>
-      <%= link_to project_events_path(@project), class: "text-sm text-indigo-600 hover:text-indigo-500" do %>
-        View All →
-      <% end %>
-    </div>
-    <div class="space-y-3">
-      <% @recent_events.each do |event| %>
-        <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
-          <% if event.event_type == 'error' %>
-            <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
-          <% else %>
-            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-          <% end %>
-          <div class="flex-1 min-w-0">
-            <%= link_to project_event_path(@project, event), class: "block" do %>
-              <p class="text-sm font-medium text-gray-900 capitalize"><%= event.event_type %></p>
-              <p class="text-xs text-gray-500 truncate"><%= event.controller_action || event.request_path %></p>
-              <p class="text-xs text-gray-400 mt-1"><%= time_ago_in_words(event.occurred_at) %> ago</p>
-            <% end %>
-          </div>
-          <% if event.duration_ms %>
-            <span class="text-xs text-gray-500"><%= event.duration_ms.round(0) %>ms</span>
-          <% end %>
-        </div>
-      <% end %>
-
-      <% if @recent_events.empty? %>
-        <p class="text-sm text-gray-500 text-center py-4">No recent events</p>
-      <% end %>
-    </div>
-  </div>
-</div>
-
-
+<!-- Recent Activity section removed (Recent Issues / Recent Events) -->
