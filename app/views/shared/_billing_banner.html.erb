@@ -2,13 +2,39 @@
   <% account = current_user.account %>
   <% suppress_once = session[:suppress_billing_banner] == true %>
   <%
-    # Valid plans that don't need trial/subscription warnings
+    # Valid plans that don't need generic "choose a plan" warning
     valid_plans = ['free', 'team', 'business']
     has_chosen_plan = valid_plans.include?(account.current_plan.to_s.downcase)
 
-    # Show banner only if: trial ended, no subscription, hasn't chosen a plan
-    needs_subscription = !account.on_trial? && !account.active_subscription? && !has_chosen_plan && !suppress_once
+    # Trial state
+    trial_active = account.on_trial?
+    trial_days_left =
+      if account.trial_ends_at
+        [(account.trial_ends_at.to_date - Date.current).to_i, 0].max
+      end
+
+    # Show upgrade banner only if: trial ended, no subscription, hasn't chosen a plan
+    needs_subscription = !trial_active && !account.active_subscription? && !has_chosen_plan && !suppress_once
   %>
+
+  <% if trial_active %>
+    <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mx-6 mt-4 rounded">
+      <div class="flex items-start justify-between">
+        <div class="flex items-start">
+          <svg class="h-5 w-5 text-indigo-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="ml-3 text-sm text-indigo-900">
+            You’re on the <strong><%= account.effective_plan_name %></strong> trial
+            <% if trial_days_left %>
+              – <%= trial_days_left %> day<%= "s" unless trial_days_left == 1 %> left.
+            <% end %>
+          </p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <% if needs_subscription %>
     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mx-6 mt-4 rounded">
       <div class="flex items-start justify-between">
@@ -27,9 +53,9 @@
       </div>
     </div>
   <% end %>
+
   <% if suppress_once %>
     <% session.delete(:suppress_billing_banner) %>
   <% end %>
 <% end %>
-
 

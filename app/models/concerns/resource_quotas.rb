@@ -71,6 +71,14 @@ module ResourceQuotas
     quota_for_resource(:projects)
   end
 
+  # Human-readable effective plan name, taking trials into account.
+  #
+  # Example:
+  #   account.effective_plan_name # => "Team"
+  def effective_plan_name
+    effective_plan_key.to_s.titleize
+  end
+
   # ============================================================================
   # USAGE TRACKING METHODS - Return current usage for each resource type
   # ============================================================================
@@ -197,7 +205,7 @@ module ResourceQuotas
   # @param resource_key [Symbol] resource key from PLAN_QUOTAS
   # @return [Integer] quota value
   def quota_for_resource(resource_key)
-    plan_key = normalized_plan_key
+    plan_key = effective_plan_key
     PLAN_QUOTAS.dig(plan_key, resource_key) || PLAN_QUOTAS.dig(DEFAULT_PLAN, resource_key) || 0
   end
 
@@ -250,6 +258,15 @@ module ResourceQuotas
   # Normalize the current plan to a symbol key for PLAN_QUOTAS lookup
   #
   # @return [Symbol] :free, :team, or :business
+  def effective_plan_key
+    # During trial we treat the account as on the Team plan, regardless of
+    # what current_plan string is stored. This ensures quotas and messaging
+    # match the product behavior: "14‑day Team trial".
+    return :team if respond_to?(:on_trial?) && on_trial?
+
+    normalized_plan_key
+  end
+
   def normalized_plan_key
     return DEFAULT_PLAN unless respond_to?(:current_plan)
 
