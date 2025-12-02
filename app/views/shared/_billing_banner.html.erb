@@ -2,10 +2,6 @@
   <% account = current_user.account %>
   <% suppress_once = session[:suppress_billing_banner] == true %>
   <%
-    # Valid plans that don't need generic "choose a plan" warning
-    valid_plans = ['free', 'team', 'business']
-    has_chosen_plan = valid_plans.include?(account.current_plan.to_s.downcase)
-
     # Trial state
     trial_active = account.on_trial?
     trial_days_left =
@@ -13,8 +9,9 @@
         [(account.trial_ends_at.to_date - Date.current).to_i, 0].max
       end
 
-    # Show upgrade banner only if: trial ended, no subscription, hasn't chosen a plan
-    needs_subscription = !trial_active && !account.active_subscription? && !has_chosen_plan && !suppress_once
+    # Show upgrade banner when trial ended and there is no active subscription
+    # (prompt user to choose Free or subscribe to a paid plan)
+    needs_subscription = !trial_active && !account.active_subscription? && !suppress_once
   %>
 
   <% if trial_active %>
@@ -43,7 +40,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p class="ml-3 text-sm text-yellow-800">
-            Your trial ended. Please choose a plan to continue.
+            Your trial ended. Choose the Free plan or subscribe to Team to continue.
           </p>
         </div>
         <div>

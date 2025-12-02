@@ -200,7 +200,7 @@ module ResourceQuotas
 
   private
 
-  # Get quota for a specific resource based on current plan
+  # Get quota for a specific resource based on current plan / trial state
   #
   # @param resource_key [Symbol] resource key from PLAN_QUOTAS
   # @return [Integer] quota value
@@ -255,21 +255,23 @@ module ResourceQuotas
     end
   end
 
-  # Normalize the current plan to a symbol key for PLAN_QUOTAS lookup
-  #
-  # @return [Symbol] :free, :team, or :business
   def effective_plan_key
     # During trial we treat the account as on the Team plan, regardless of
     # what current_plan string is stored. This ensures quotas and messaging
     # match the product behavior: "14‑day Team trial".
-    return :team if respond_to?(:on_trial?) && on_trial?
+    return :team if on_trial?
+
+    # After trial ends, if there is no active subscription, treat the account
+    # as on the Free plan until the user explicitly chooses/activates a plan.
+    return :free unless active_subscription?
 
     normalized_plan_key
   end
 
+  # Normalize the current plan to a symbol key for PLAN_QUOTAS lookup
+  #
+  # @return [Symbol] :free, :team, or :business
   def normalized_plan_key
-    return DEFAULT_PLAN unless respond_to?(:current_plan)
-
     plan = current_plan.to_s.downcase.strip
     plan_sym = plan.to_sym
 
