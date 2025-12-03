@@ -23,7 +23,8 @@ class ErrorsController < ApplicationController
     @q = base_scope.ransack(params[:q])
     scoped_issues = @q.result.includes(:project).recent
 
-    @pagy, @issues = pagy(scoped_issues, limit: 50)
+    # Show the last 25 issues by default (was 50)
+    @pagy, @issues = pagy(scoped_issues, limit: 25)
 
     # Get summary stats scoped to current project or global
     if project_scope

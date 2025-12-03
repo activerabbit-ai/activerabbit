@@ -681,7 +681,7 @@ class PerformanceController < ApplicationController
     @recent_events = project_scope.events
                              .where("payload->>'sql_queries' IS NOT NULL")
                              .where("created_at > ?", 7.days.ago)
-                             .limit(50)
+                             .limit(25)
   end
 
   def create_pr
