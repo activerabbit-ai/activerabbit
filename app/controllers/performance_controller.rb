@@ -191,8 +191,8 @@ class PerformanceController < ApplicationController
         @list_rows.reverse! if sort_dir == "desc"
       end
 
-      # Paginate list_rows (array pagination)
-      @pagy, @list_rows = pagy_array(@list_rows, limit: 50)
+      # Paginate list_rows (array pagination) - show 25 per page
+      @pagy, @list_rows = pagy_array(@list_rows, limit: 25)
 
       # Optional Graph (counts over time) for Performance Events
       if params[:tab] == "graph"
