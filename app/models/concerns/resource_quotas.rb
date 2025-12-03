@@ -260,11 +260,6 @@ module ResourceQuotas
     # what current_plan string is stored. This ensures quotas and messaging
     # match the product behavior: "14‑day Team trial".
     return :team if on_trial?
-
-    # After trial ends, if there is no active subscription, treat the account
-    # as on the Free plan until the user explicitly chooses/activates a plan.
-    return :free unless active_subscription?
-
     normalized_plan_key
   end
 

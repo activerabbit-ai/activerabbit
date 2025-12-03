@@ -48,7 +48,6 @@ RSpec.describe ResourceQuotas, type: :model do
   describe "#effective_plan_key and #effective_plan_name" do
     it "uses team plan for quotas when account is on trial" do
       account.trial_flag = true
-      account.active_subscription_flag = false
 
       expect(account.send(:effective_plan_key)).to eq(:team)
       expect(account.effective_plan_name).to eq("Team")
@@ -56,20 +55,8 @@ RSpec.describe ResourceQuotas, type: :model do
       expect(account.event_quota_value).to eq(ResourceQuotas::PLAN_QUOTAS[:team][:events])
     end
 
-    it "uses free plan when trial ended and there is no active subscription" do
+    it "falls back to normalized plan key when not on trial" do
       account.trial_flag = false
-      account.active_subscription_flag = false
-      account.current_plan = "team" # still stored as team
-
-      expect(account.send(:effective_plan_key)).to eq(:free)
-      expect(account.effective_plan_name).to eq("Free")
-      expect(account.projects_quota).to eq(ResourceQuotas::PLAN_QUOTAS[:free][:projects])
-      expect(account.event_quota_value).to eq(ResourceQuotas::PLAN_QUOTAS[:free][:events])
-    end
-
-    it "falls back to normalized plan key when not on trial and has active subscription" do
-      account.trial_flag = false
-      account.active_subscription_flag = true
       account.current_plan = "free"
 
       expect(account.send(:effective_plan_key)).to eq(:free)
