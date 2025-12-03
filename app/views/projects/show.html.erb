@@ -27,25 +27,50 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
   <!-- Overview -->
   <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Project Overview</h2>
+    <h2 class="text-lg font-semibold text-gray-900 mb-2">Project Overview</h2>
+    <p class="text-sm text-gray-500 mb-4">
+      Snapshot of errors, traffic, and health for this project.
+    </p>
+
+    <% avg_response = @performance_stats.values.sum / [@performance_stats.size, 1].max %>
+
+    <!-- Top stats row (like dashboard cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+      <div class="bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+        <p class="text-xs font-medium text-red-700">Open Issues</p>
+        <p class="mt-1 text-xl font-semibold text-gray-900"><%= @project_stats[:open_issues] %></p>
+      </div>
+      <div class="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+        <p class="text-xs font-medium text-blue-700">Events Today</p>
+        <p class="mt-1 text-xl font-semibold text-gray-900"><%= @project_stats[:events_today] %></p>
+      </div>
+      <div class="bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">
+        <p class="text-xs font-medium text-purple-700">Events Total</p>
+        <p class="mt-1 text-xl font-semibold text-gray-900"><%= number_with_delimiter(@project_stats[:events_total]) %></p>
+      </div>
+      <div class="bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+        <p class="text-xs font-medium text-green-700">Avg Response (24h)</p>
+        <p class="mt-1 text-xl font-semibold text-gray-900"><%= avg_response.round(0) %>ms</p>
+      </div>
+    </div>
+
+    <!-- Detail rows -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
       <div class="space-y-2">
-        <div class="flex justify-between">
-          <span class="text-gray-600">Open Issues</span>
-          <span class="font-medium text-gray-900"><%= @project_stats[:open_issues] %></span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-600">Events Today</span>
-          <span class="font-medium text-gray-900"><%= @project_stats[:events_today] %></span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-600">Events Total</span>
-          <span class="font-medium text-gray-900"><%= number_with_delimiter(@project_stats[:events_total]) %></span>
-        </div>
         <div class="flex justify-between">
           <span class="text-gray-600">Status</span>
           <span class="font-medium <%= @project.active? ? 'text-green-600' : 'text-red-600' %>">
             <%= @project.active? ? "Active" : "Inactive" %>
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Health Status</span>
+          <span class="font-medium text-gray-900"><%= @project.computed_health_status.capitalize %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Environment</span>
+          <span class="font-medium text-gray-900">
+            <%= @project.environment.present? ? @project.environment.capitalize : "Not specified" %>
           </span>
         </div>
       </div>
@@ -57,23 +82,14 @@
           </span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-600">Environment</span>
-          <span class="font-medium text-gray-900">
-            <%= @project.environment.present? ? @project.environment.capitalize : "Not specified" %>
-          </span>
-        </div>
-        <div class="flex justify-between">
           <span class="text-gray-600">Created</span>
           <span class="font-medium text-gray-900"><%= @project.created_at.strftime("%b %d, %Y") %></span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-600">Health Status</span>
-          <span class="font-medium text-gray-900"><%= @project.computed_health_status.capitalize %></span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-600">Avg Response (24h)</span>
-          <% avg_response = @performance_stats.values.sum / [@performance_stats.size, 1].max %>
-          <span class="font-medium text-gray-900"><%= avg_response.round(0) %>ms</span>
+          <span class="text-gray-600">URL</span>
+          <span class="font-medium text-gray-900 truncate max-w-xs">
+            <%= @project.url %>
+          </span>
         </div>
       </div>
     </div>
