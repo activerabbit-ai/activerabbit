@@ -52,14 +52,26 @@
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Used:</span>
+              <span class="text-gray-600">Used (billing period):</span>
               <span class="font-bold text-gray-900"><%= number_with_delimiter(@events_used) %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Quota:</span>
               <span class="font-medium text-gray-700"><%= number_with_delimiter(@event_quota) %></span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Last 30 days:</span>
+              <span><%= number_with_delimiter(@events_last_30_days) %></span>
+            </div>
+            <% if @account.on_trial? && @free_plan_usage.present? %>
+              <div class="flex justify-between text-xs mt-1">
+                <span class="text-gray-500">Free plan limit:</span>
+                <span class="<%= @events_used > @free_plan_usage[:events][:quota] ? 'text-red-600 font-semibold' : 'text-gray-700' %>">
+                  <%= number_with_delimiter(@free_plan_usage[:events][:quota]) %>
+                </span>
+              </div>
+            <% end %>
+            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
               <div class="bg-indigo-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:events), 100].min %>%"></div>
             </div>
             <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:events) >= 90 ? '#ef4444' : @account.usage_percentage(:events) >= 80 ? '#f59e0b' : '#10b981' %>">
@@ -78,14 +90,26 @@
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Used:</span>
+              <span class="text-gray-600">Used (billing period):</span>
               <span class="font-bold text-gray-900"><%= @ai_summaries_used %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Quota:</span>
               <span class="font-medium text-gray-700"><%= @ai_summaries_quota %></span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Last 30 days:</span>
+              <span><%= number_with_delimiter(@ai_summaries_last_30_days) %></span>
+            </div>
+            <% if @account.on_trial? && @free_plan_usage.present? %>
+              <div class="flex justify-between text-xs mt-1">
+                <span class="text-gray-500">Free plan limit:</span>
+                <span class="<%= @ai_summaries_used > @free_plan_usage[:ai_summaries][:quota] ? 'text-red-600 font-semibold' : 'text-gray-700' %>">
+                  <%= @free_plan_usage[:ai_summaries][:quota] %>
+                </span>
+              </div>
+            <% end %>
+            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
               <div class="bg-purple-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:ai_summaries), 100].min %>%"></div>
             </div>
             <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:ai_summaries) >= 90 ? '#ef4444' : @account.usage_percentage(:ai_summaries) >= 80 ? '#f59e0b' : '#10b981' %>">
@@ -104,14 +128,26 @@
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Used:</span>
+              <span class="text-gray-600">Used (billing period):</span>
               <span class="font-bold text-gray-900"><%= @pull_requests_used %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Quota:</span>
               <span class="font-medium text-gray-700"><%= @pull_requests_quota %></span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Last 30 days:</span>
+              <span><%= number_with_delimiter(@pull_requests_last_30_days) %></span>
+            </div>
+            <% if @account.on_trial? && @free_plan_usage.present? %>
+              <div class="flex justify-between text-xs mt-1">
+                <span class="text-gray-500">Free plan limit:</span>
+                <span class="<%= @pull_requests_used > @free_plan_usage[:pull_requests][:quota] ? 'text-red-600 font-semibold' : 'text-gray-700' %>">
+                  <%= @free_plan_usage[:pull_requests][:quota] %>
+                </span>
+              </div>
+            <% end %>
+            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
               <div class="bg-pink-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:pull_requests), 100].min %>%"></div>
             </div>
             <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:pull_requests) >= 90 ? '#ef4444' : @account.usage_percentage(:pull_requests) >= 80 ? '#f59e0b' : '#10b981' %>">
@@ -140,8 +176,31 @@
             <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
               <div class="bg-green-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:projects), 100].min %>%"></div>
             </div>
+            <% if @account.on_trial? && @free_plan_usage.present? %>
+              <div class="flex justify-between text-xs mt-1">
+                <span class="text-gray-500">Free plan limit:</span>
+                <span class="<%= @projects_used > @free_plan_usage[:projects][:quota] ? 'text-red-600 font-semibold' : 'text-gray-700' %>">
+                  <%= @free_plan_usage[:projects][:quota] %>
+                </span>
+              </div>
+            <% end %>
             <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:projects) >= 90 ? '#ef4444' : @account.usage_percentage(:projects) >= 80 ? '#f59e0b' : '#10b981' %>">
               <%= @account.usage_percentage(:projects).round(1) %>%
+            </div>
+          </div>
+        </div>
+        <!-- Requests Total (last 30 days, all sources incl. performance) -->
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-gray-500">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Requests Total</h3>
+            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v2a2 2 0 002 2h2a2 2 0 002-2v-2m-9-4h10M5 9h14M5 5h14"/>
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Requests (last 30 days):</span>
+              <span class="font-bold text-gray-900"><%= number_with_delimiter(@requests_total_last_30_days) %></span>
             </div>
           </div>
         </div>

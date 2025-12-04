@@ -7,6 +7,12 @@
     <div class="flex items-center justify-between mb-4">
       <div>
         <h2 class="text-lg font-semibold text-indigo-900">Current Plan: <%= @account.current_plan&.titleize %></h2>
+        <% if @account.on_trial? %>
+          <p class="text-xs text-indigo-700 mt-1">
+            You’re currently using <span class="font-semibold"><%= @account.effective_plan_name %></span> limits on a trial.
+            After the trial ends, you’ll stay on the <span class="font-semibold"><%= @account.current_plan&.titleize %></span> plan unless you upgrade.
+          </p>
+        <% end %>
         <% if @next_payment_date %>
           <p class="text-sm text-indigo-700">
             Next payment on <%= @next_payment_date %>

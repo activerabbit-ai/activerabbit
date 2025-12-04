@@ -9,6 +9,7 @@ class PricingController < ApplicationController
 
     if @account
       set_usage_data
+      build_free_plan_comparison_if_on_trial!
     end
 
     if (pay_sub = @account&.active_subscription_record)
@@ -46,7 +47,27 @@ class PricingController < ApplicationController
   def set_usage_data
     return unless @account
 
-    # Event/Error tracking usage
+    # Rolling 30-day usage window (for requests totals)
+    window_start = 30.days.ago
+
+    @events_last_30_days =
+      Event.where("occurred_at > ?", window_start).count
+
+    @ai_summaries_last_30_days =
+      Issue.where("ai_summary_generated_at > ?", window_start).count
+
+    @pull_requests_last_30_days =
+      AiRequest.where(request_type: "pull_request")
+               .where("occurred_at > ?", window_start)
+               .count
+
+    perf_requests_last_30_days =
+      PerformanceEvent.where("occurred_at > ?", window_start).count
+
+    @requests_total_last_30_days =
+      @events_last_30_days + @ai_summaries_last_30_days + @pull_requests_last_30_days + perf_requests_last_30_days
+
+    # Event/Error tracking usage (current billing period)
     @event_quota = @account.event_quota_value
     @events_used = @account.events_used_in_billing_period
     @events_remaining = [@event_quota - @events_used, 0].max
@@ -75,6 +96,46 @@ class PricingController < ApplicationController
     @projects_quota = @account.projects_quota
     @projects_used = @account.projects_used
     @projects_remaining = [@projects_quota - @projects_used, 0].max
+  end
+
+  # Build comparison data showing what the user's current usage would look like
+  # against the Free plan limits. This is specifically for the /usage page so
+  # that even during a 14‑day Team trial we can communicate:
+  # "Your account is Free, and you've already used more than a Free plan allows."
+  def build_free_plan_comparison_if_on_trial!
+    return unless @account&.on_trial?
+
+    free_quotas = ResourceQuotas::PLAN_QUOTAS[:free]
+
+    @free_plan_usage = {
+      events: {
+        quota: free_quotas[:events],
+        used: @events_used
+      },
+      ai_summaries: {
+        quota: free_quotas[:ai_summaries],
+        used: @ai_summaries_used
+      },
+      pull_requests: {
+        quota: free_quotas[:pull_requests],
+        used: @pull_requests_used
+      },
+      uptime_monitors: {
+        quota: free_quotas[:uptime_monitors],
+        used: @uptime_monitors_used
+      },
+      status_pages: {
+        quota: free_quotas[:status_pages],
+        used: @status_pages_used
+      },
+      projects: {
+        quota: free_quotas[:projects],
+        used: @projects_used
+      }
+    }
+
+    @resources_exceeding_free =
+      @free_plan_usage.select { |_key, data| data[:used].to_i > data[:quota].to_i }.keys
   end
 
   def calculate_next_payment_date(subscription)
