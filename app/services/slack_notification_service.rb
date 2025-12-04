@@ -1,63 +1,42 @@
 class SlackNotificationService
-  include Rails.application.routes.url_helpers
-
   def initialize(project)
     @project = project
-    @webhook_url = project.settings&.dig("slack_webhook_url")
+    @token = project.slack_access_token
+    @client = Slack::Web::Client.new(token: @token) if @token.present?
   end
 
   def configured?
-    @webhook_url.present?
+    @client.present?
   end
 
   def send_error_frequency_alert(issue, payload)
-    return unless configured?
-
-    message = build_error_frequency_message(issue, payload)
-    send_notification(message, @project)
+    send_message(build_error_frequency_message(issue, payload))
   end
 
   def send_performance_alert(event, payload)
-    return unless configured?
-
-    message = build_performance_message(event, payload)
-    send_notification(message)
+    send_message(build_performance_message(event, payload))
   end
 
   def send_n_plus_one_alert(payload)
-    return unless configured?
-
-    message = build_n_plus_one_message(payload)
-    send_notification(message)
+    send_message(build_n_plus_one_message(payload))
   end
 
   def send_new_issue_alert(issue)
-    return unless configured?
-
-    message = build_new_issue_message(issue)
-    send_notification(message)
-  end
-
-  def send_custom_alert(title, message, color: "warning")
-    return unless configured?
-
-    notification = build_custom_message(title, message, color)
-    send_notification(notification)
+    send_message(build_new_issue_message(issue))
   end
 
   private
 
-  def send_notification(message, project = @project)
-    notifier = Slack::Notifier.new(@webhook_url) do
-      defaults channel: project.settings&.dig("slack_channel"),
-               username: "ActiveRabbit",
-               icon_emoji: ":rabbit:"
-    end
+  def send_message(message)
+    return unless configured?
 
-    notifier.post(message)
-  rescue StandardError => e
-    Rails.logger.error "Failed to send Slack notification: #{e.message}"
-    raise e
+    @client.chat_postMessage(message.merge(
+      channel: slack_channel,
+      username: "ActiveRabbit",
+      icon_emoji: ":rabbit:"
+    ))
+  rescue Slack::Web::Api::Errors::SlackError => e
+    Rails.logger.error "Failed to send Slack message: #{e.message}"
   end
 
   def slack_channel
