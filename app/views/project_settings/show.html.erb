@@ -142,105 +142,18 @@
     </div>
 
     <div class="p-6">
-      <%= form_with(model: @project, url: project_settings_path(@project), method: :patch, local: true, class: "space-y-6") do |form| %>
-
-                <!-- Webhook URL -->
-        <div>
-          <label for="slack_webhook_url" class="block text-sm font-medium text-gray-700 mb-2">
-            Slack Webhook URL
-            <span class="text-red-500">*</span>
-          </label>
-
-          <% if @project.slack_webhook_from_env? %>
-            <div class="mb-3 p-3 bg-green-50 border border-green-200 rounded-md">
-              <div class="flex items-center">
-                <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
-                </svg>
-                <span class="text-sm text-green-800 font-medium">Webhook URL configured via environment variable</span>
-              </div>
-              <p class="text-xs text-green-700 mt-1">
-                Using secure environment variable for webhook URL. This is the recommended approach for production.
-              </p>
-            </div>
-          <% end %>
-
-          <%= form.url_field :slack_webhook_url,
-                value: @project.slack_webhook_from_env? ? '' : @project.slack_webhook_url,
-                placeholder: @project.slack_webhook_from_env? ? "Configured via environment variable" : "https://hooks.slack.com/services/...",
-                disabled: @project.slack_webhook_from_env?,
-                class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm #{'bg-gray-50 text-gray-500' if @project.slack_webhook_from_env?}" %>
-
-          <div class="mt-2 space-y-1">
-            <p class="text-xs text-gray-500">
-              Get your webhook URL from
-              <a href="https://api.slack.com/apps" target="_blank" class="text-blue-600 hover:text-blue-500">
-                Slack Apps → Incoming Webhooks
-              </a>
-            </p>
-            <details class="text-xs text-gray-500">
-              <summary class="cursor-pointer text-blue-600 hover:text-blue-500">🔒 Security Options</summary>
-              <div class="mt-2 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
-                <p class="mb-2"><strong>For production environments:</strong></p>
-                <p class="mb-1">• Set <code>SLACK_WEBHOOK_URL</code> environment variable (all projects)</p>
-                <p class="mb-1">• Set <code>SLACK_WEBHOOK_URL_<%= @project.slug.upcase %></code> for this project only</p>
-                <p class="text-gray-400">Environment variables are more secure than database storage</p>
-              </div>
-            </details>
-          </div>
+      <!-- Enable Slack Button -->
+      <% if @project.slack_access_token.present? %>
+        <div class="p-4 bg-green-100 border border-green-300 rounded">
+          <p>Slack connected successfully to <b><%= @project.slack_team_name %></b></p>
         </div>
-
-        <!-- Channel -->
-        <div>
-          <label for="slack_channel" class="block text-sm font-medium text-gray-700 mb-2">
-            Slack Channel
-          </label>
-          <%= form.text_field :slack_channel,
-                value: @project.slack_channel,
-                placeholder: "#alerts",
-                class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
-          <p class="mt-1 text-xs text-gray-500">
-            Channel or user to send notifications to (e.g., #alerts or @username)
-          </p>
-        </div>
-
-        <!-- Enable/Disable Toggle -->
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <%= form.check_box :slack_notifications_enabled,
-                  checked: @project.slack_notifications_enabled?,
-                  class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
-            <label for="project_slack_notifications_enabled" class="ml-2 block text-sm text-gray-900">
-              Enable Slack notifications
-            </label>
-          </div>
-          <p class="text-xs text-gray-500">
-            Turn notifications on/off without removing configuration
-          </p>
-        </div>
-
-
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-          <div class="flex space-x-3">
-            <%= form.submit "Save Settings",
-                  class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
-
-            <% if @project.slack_configured? %>
-              <%= button_to "Test Notification",
-                    test_notification_project_settings_path(@project),
-                    method: :post,
-                    class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
-            <% end %>
-          </div>
-
-          <% if @project.slack_configured? %>
-            <%= form.submit "Save & Test",
-                  name: "test_slack",
-                  value: "true",
-                  class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" %>
-          <% end %>
-        </div>
+      <% else %>
+        <a href="/slack/oauth/authorize?project_id=<%= @project.id %>">
+          <img alt="Add to Slack" height="40" width="139"
+            src="https://platform.slack-edge.com/img/add_to_slack.png"
+            srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x,
+                    https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" />
+        </a>
       <% end %>
     </div>
   </div>

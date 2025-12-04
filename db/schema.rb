@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_21_224215) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_04_185528) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -392,6 +392,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_21_224215) do
     t.bigint "account_id", null: false
     t.string "url"
     t.string "tech_stack"
+    t.string "slack_access_token"
+    t.string "slack_team_id"
+    t.string "slack_team_name"
+    t.string "slack_channel_id"
     t.index ["account_id"], name: "index_projects_on_account_id"
     t.index ["active"], name: "index_projects_on_active"
     t.index ["environment"], name: "index_projects_on_environment"

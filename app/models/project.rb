@@ -133,7 +133,7 @@ class Project < ApplicationRecord
   end
 
   def slack_configured?
-    slack_webhook_url.present?
+    slack_access_token.present?
   end
 
   def slack_notifications_enabled?

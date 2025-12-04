@@ -23,29 +23,22 @@ class Issue < ApplicationRecord
   end
 
   def self.find_or_create_by_fingerprint(project:, exception_class:, top_frame:, controller_action:, sample_message: nil)
-    # Create fingerprint from exception class + top frame + controller action
     fingerprint = generate_fingerprint(exception_class, top_frame, controller_action)
 
     issue = find_by(project: project, fingerprint: fingerprint)
-
     if issue
-      # Auto-reopen if closed
-      if issue.status == "closed"
-        issue.update!(
-          status: "open",
-          closed_at: nil,
-          count: issue.count + 1,
-          last_seen_at: Time.current
-        )
-      else
-        issue.update!(
-          count: issue.count + 1,
-          last_seen_at: Time.current
-        )
-      end
-    else
-      # Create new issue
-      issue = create!(
+      # обновляем счетчик и статус
+      issue.update!(
+        count: issue.count + 1,
+        last_seen_at: Time.current,
+        status: issue.status == "closed" ? "open" : issue.status,
+        closed_at: issue.status == "closed" ? nil : issue.closed_at
+      )
+      return issue
+    end
+
+    begin
+      create!(
         project: project,
         fingerprint: fingerprint,
         exception_class: exception_class,
@@ -57,9 +50,9 @@ class Issue < ApplicationRecord
         last_seen_at: Time.current,
         status: "open"
       )
+    rescue ActiveRecord::RecordNotUnique
+      find_by(project: project, fingerprint: fingerprint)
     end
-
-    issue
   end
 
   def mark_wip!
