@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  ROLES = %w[admin manager].freeze
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
@@ -14,6 +15,10 @@ class User < ApplicationRecord
 
   # ActiveRabbit relationships (scoped to account through acts_as_tenant)
   has_many :projects, dependent: :destroy
+  belongs_to :invited_by, class_name: "User", optional: true
+
+  # Validations
+  validates :role, inclusion: { in: ROLES }
 
   # Callbacks - Create account BEFORE user creation
   before_validation :ensure_account_exists, on: :create
@@ -47,6 +52,14 @@ class User < ApplicationRecord
 
       new_user.save
     end
+  end
+
+  def admin?
+    role == "admin"
+  end
+
+  def manager?
+    role == "manager"
   end
 
   private

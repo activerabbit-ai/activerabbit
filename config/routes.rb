@@ -24,6 +24,7 @@ Rails.application.routes.draw do
   patch "settings/update_slack_settings", to: "settings#update_slack_settings", as: "update_slack_settings_settings"
   patch "settings/update_user_slack_preferences", to: "settings#update_user_slack_preferences", as: "update_user_slack_preferences_settings"
   post "settings/test_slack_notification", to: "settings#test_slack_notification", as: "test_slack_notification_settings"
+  resources :users, only: [:index, :new, :create, :edit, :update, :destroy]
 
   # Account-wide settings
   resource :account_settings, path: "account/settings", only: [:show, :update] do
