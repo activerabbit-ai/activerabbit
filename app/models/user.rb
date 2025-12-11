@@ -23,6 +23,8 @@ class User < ApplicationRecord
   # Callbacks - Create account BEFORE user creation
   before_validation :ensure_account_exists, on: :create
 
+  before_validation :assign_default_admin_role, on: :create
+
   def needs_onboarding?
     # Handle case when no tenant is set (during registration)
     return true if account.blank?
@@ -32,24 +34,17 @@ class User < ApplicationRecord
   end
 
   def self.from_omniauth(auth)
-    auth_email = auth.info.email
-
     user = find_by(provider: auth.provider, uid: auth.uid)
+    return user if user.present?
 
-    if user.nil? && auth_email.present?
-      user = find_by(email: auth_email)
+    user = find_by(email: auth.info.email)
 
-      if user.present?
-        user.update_columns(provider: auth.provider, uid: auth.uid)
-        return user
-      end
-    end
+    return user if user.present? && user.provider.blank?
 
-    user || find_or_initialize_by(provider: auth.provider, uid: auth.uid) do |new_user|
-      new_user.email = auth_email
+    find_or_create_by(provider: auth.provider, uid: auth.uid) do |new_user|
+      new_user.email = auth.info.email
       new_user.password = SecureRandom.hex(20)
       new_user.name = auth.info.name if new_user.respond_to?(:name)
-
       new_user.save
     end
   end
@@ -60,6 +55,14 @@ class User < ApplicationRecord
 
   def manager?
     role == "manager"
+  end
+
+  def password_required?
+    if invited_by.present?
+      false
+    else
+      super
+    end
   end
 
   private
@@ -82,6 +85,14 @@ class User < ApplicationRecord
       a.billing_interval = "month"
       a.event_quota = 100_000
       a.events_used_in_period = 0
+    end
+  end
+
+  def assign_default_admin_role
+    if invited_by.nil?
+      self.role = "admin" if role.blank?
+    else
+      self.role = role.presence || "manager"
     end
   end
 end
