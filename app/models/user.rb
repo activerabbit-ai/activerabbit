@@ -34,17 +34,24 @@ class User < ApplicationRecord
   end
 
   def self.from_omniauth(auth)
+    auth_email = auth.info.email
+
     user = find_by(provider: auth.provider, uid: auth.uid)
-    return user if user.present?
 
-    user = find_by(email: auth.info.email)
+    if user.nil? && auth_email.present?
+      user = find_by(email: auth_email)
 
-    return user if user.present? && user.provider.blank?
+      if user.present?
+        user.update_columns(provider: auth.provider, uid: auth.uid)
+        return user
+      end
+    end
 
-    find_or_create_by(provider: auth.provider, uid: auth.uid) do |new_user|
-      new_user.email = auth.info.email
+    user || find_or_initialize_by(provider: auth.provider, uid: auth.uid) do |new_user|
+      new_user.email = auth_email
       new_user.password = SecureRandom.hex(20)
       new_user.name = auth.info.name if new_user.respond_to?(:name)
+
       new_user.save
     end
   end
