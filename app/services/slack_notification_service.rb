@@ -31,16 +31,12 @@ class SlackNotificationService
     return unless configured?
 
     @client.chat_postMessage(message.merge(
-      channel: slack_channel,
-      username: "ActiveRabbit",
+      channel: @project.slack_channel_id || "#active_rabbit_alert",
+      username: @project.slack_team_name,
       icon_emoji: ":rabbit:"
     ))
   rescue Slack::Web::Api::Errors::SlackError => e
     Rails.logger.error "Failed to send Slack message: #{e.message}"
-  end
-
-  def slack_channel
-    @project.settings&.dig("slack_channel") || "#alerts"
   end
 
   def project_url

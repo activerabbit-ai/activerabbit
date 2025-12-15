@@ -116,19 +116,38 @@ class AlertJob
   # ------------------------
   def build_error_frequency_email(issue, payload)
     <<~EMAIL
-      High error frequency detected for issue: #{issue.title}
-      Project: #{issue.project.name}
-      Frequency: #{payload['count']} occurrences in #{payload['time_window']} minutes
-      Controller/Action: #{issue.controller_action || 'Unknown'}
+      🚨 HIGH ERROR FREQUENCY
+      Project:
+        #{issue.project.name}
+
+      Issue:
+        #{issue.title}
+      
+      Frequency:
+        #{payload['count']} occurrences in #{payload['time_window']} minutes
+
+      Controller/Action:
+        #{issue.controller_action || 'Unknown'}
     EMAIL
   end
 
   def build_performance_email(event, payload)
+    duration = payload['duration_ms']
+    endpoint = payload['controller_action'] || 'Unknown'
+
     <<~EMAIL
-      Performance alert for project #{event.project.name}
-      Response Time: #{payload['duration_ms']}ms
-      Endpoint: #{payload['controller_action'] || 'Unknown'}
-      Environment: #{event.environment}
+      🚨 PERFORMANCE ALERT
+
+      Project:
+        #{event.project.name}
+
+      Details:
+        • Response time: #{duration} ms
+        • Endpoint: #{endpoint}
+        • Environment: #{event.environment}
+
+      Recommendation:
+        Check database queries, external APIs, and recent deploys.
     EMAIL
   end
 
@@ -137,19 +156,41 @@ class AlertJob
     controller_action = payload["controller_action"]
 
     <<~EMAIL
-      N+1 query detected in #{controller_action}
-      High Severity Incidents: #{incidents.size}
+      🚨 N+1 QUERY DETECTED
+      Location:
+        #{controller_action}
+      
+      Impact:
+        #{incidents.size} repeating query patterns detected
+
       Queries:
-      #{incidents.map { |i| "- #{i['count_in_request']}x #{i['sql_fingerprint']['normalized_query']}" }.join("\n")}
+        #{incidents.map { |i| "- #{i['count_in_request']}x #{i['sql_fingerprint']['normalized_query']}" }.join("\n")}
     EMAIL
   end
 
   def build_new_issue_email(issue)
     <<~EMAIL
-      New issue in project #{issue.project.name}
-      Exception: #{issue.exception_class}
-      Message: #{issue.sample_message}
-      Location: #{issue.controller_action || issue.top_frame || 'Unknown'}
+      🚨 APPLICATION ERROR
+
+      Project:
+        #{issue.project.name}
+
+      Error:
+        #{issue.exception_class}
+        #{issue.sample_message}
+
+      Location:
+        #{error_location(issue)}
+
+      Recommendation:
+        Review the stack trace and recent changes around this code.
     EMAIL
+  end
+
+  def error_location(issue)
+    issue.controller_action ||
+      issue.error_location ||
+      issue.top_frame ||
+      "Unknown"
   end
 end
