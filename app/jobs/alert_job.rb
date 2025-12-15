@@ -122,7 +122,7 @@ class AlertJob
 
       Issue:
         #{issue.title}
-      
+
       Frequency:
         #{payload['count']} occurrences in #{payload['time_window']} minutes
 
@@ -132,8 +132,8 @@ class AlertJob
   end
 
   def build_performance_email(event, payload)
-    duration = payload['duration_ms']
-    endpoint = payload['controller_action'] || 'Unknown'
+    duration = payload["duration_ms"]
+    endpoint = payload["controller_action"] || "Unknown"
 
     <<~EMAIL
       🚨 PERFORMANCE ALERT
@@ -159,7 +159,7 @@ class AlertJob
       🚨 N+1 QUERY DETECTED
       Location:
         #{controller_action}
-      
+
       Impact:
         #{incidents.size} repeating query patterns detected
 
