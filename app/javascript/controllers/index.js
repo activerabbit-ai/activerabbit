@@ -6,3 +6,6 @@ eagerLoadControllersFrom("controllers", application)
 
 import OnboardingTechStackController from "controllers/onboarding_tech_stack_controller"
 application.register("onboarding-tech-stack", OnboardingTechStackController)
+
+import NotificationsController from "controllers/notifications_controller"
+application.register("notifications", NotificationsController)

@@ -14,36 +14,27 @@ class AlertJob
       issue = Issue.find(payload["issue_id"]) if payload["issue_id"]
     end
 
+    return unless project.notifications_enabled?
+
     ActsAsTenant.with_tenant(project.account) do
       notification = AlertNotification.create!(
         alert_rule: alert_rule,
         project: project,
+        notification_type: "multi",
         account_id: project.account.id,
-        notification_type: determine_notification_type(project),
         payload: payload,
         status: "pending"
       )
 
       begin
-        case alert_type
-        when "error_frequency"
-          send_error_frequency_alert(project, issue, payload, notification)
-        when "performance_regression"
-          send_performance_alert(project, payload, notification)
-        when "n_plus_one"
-          send_n_plus_one_alert(project, payload, notification)
-        when "new_issue"
-          send_new_issue_alert(project, payload, notification)
-        else
-          raise "Unknown alert type: #{alert_type}"
-        end
+        dispatch_alert(alert_type, project, issue, payload)
 
         notification.mark_sent!
-        Rails.logger.info "Alert sent successfully: #{alert_type} for project #{project.slug}"
+        Rails.logger.info "Alert sent: #{alert_type} for project #{project.slug}"
 
       rescue => e
         notification.mark_failed!(e.message)
-        Rails.logger.error "Failed to send alert: #{e.message}"
+        Rails.logger.error "Alert failed: #{e.message}"
         raise e
       end
     end
@@ -51,8 +42,70 @@ class AlertJob
 
   private
 
-  def determine_notification_type(project)
-    project.slack_access_token.present? ? "slack" : "email"
+  def dispatch_alert(alert_type, project, issue, payload)
+    case alert_type
+    when "error_frequency"
+      deliver_error_frequency(project, issue, payload)
+    when "performance_regression"
+      deliver_performance(project, payload)
+    when "n_plus_one"
+      deliver_n_plus_one(project, payload)
+    when "new_issue"
+      deliver_new_issue(project, payload)
+    else
+      raise "Unknown alert type: #{alert_type}"
+    end
+  end
+
+  def deliver_error_frequency(project, issue, payload)
+    if project.notify_via_slack?
+      slack_service(project).send_error_frequency_alert(issue, payload)
+    end
+
+    if project.notify_via_email?
+      send_email_alert(
+        project,
+        "Error Frequency Alert",
+        build_error_frequency_email(issue, payload)
+      )
+    end
+  end
+
+  def deliver_performance(project, payload)
+    event = ActsAsTenant.without_tenant do
+      PerformanceEvent.unscoped.find_by(id: payload["event_id"])
+    end
+    return unless event
+
+    slack_service(project).send_performance_alert(event, payload) if project.notify_via_slack?
+
+    send_email_alert(
+      project,
+      "Performance Alert",
+      build_performance_email(event, payload)
+    ) if project.notify_via_email?
+  end
+
+  def deliver_n_plus_one(project, payload)
+    slack_service(project).send_n_plus_one_alert(payload) if project.notify_via_slack?
+
+    send_email_alert(
+      project,
+      "N+1 Query Alert",
+      build_n_plus_one_email(payload)
+    ) if project.notify_via_email?
+  end
+
+  def deliver_new_issue(project, payload)
+    issue = ActsAsTenant.without_tenant { Issue.find(payload["issue_id"]) }
+
+    slack_service(project).send_new_issue_alert(issue) if project.notify_via_slack?
+
+    send_email_alert(
+      project,
+      "New Issue Alert",
+      build_new_issue_email(issue)
+    ) if project.notify_via_email?
   end
 
   # ------------------------
@@ -60,43 +113,6 @@ class AlertJob
   # ------------------------
   def slack_service(project)
     SlackNotificationService.new(project)
-  end
-
-  def send_error_frequency_alert(project, issue, payload, notification)
-    if notification.notification_type == "slack" && slack_service(project).configured?
-      slack_service(project).send_error_frequency_alert(issue, payload)
-    else
-      send_email_alert(project, "Error Frequency Alert", build_error_frequency_email(issue, payload))
-    end
-  end
-
-  def send_performance_alert(project, payload, notification)
-    event = ActsAsTenant.without_tenant { PerformanceEvent.unscoped.find_by(id: payload["event_id"]) }
-    return unless event
-
-    if notification.notification_type == "slack" && slack_service(project).configured?
-      slack_service(project).send_performance_alert(event, payload)
-    else
-      send_email_alert(project, "Performance Alert", build_performance_email(event, payload))
-    end
-  end
-
-  def send_n_plus_one_alert(project, payload, notification)
-    if notification.notification_type == "slack" && slack_service(project).configured?
-      slack_service(project).send_n_plus_one_alert(payload)
-    else
-      send_email_alert(project, "N+1 Query Alert", build_n_plus_one_email(payload))
-    end
-  end
-
-  def send_new_issue_alert(project, payload, notification)
-    issue = ActsAsTenant.without_tenant { Issue.find(payload["issue_id"]) }
-
-    if notification.notification_type == "slack" && slack_service(project).configured?
-      slack_service(project).send_new_issue_alert(issue)
-    else
-      send_email_alert(project, "New Issue Alert", build_new_issue_email(issue))
-    end
   end
 
   # ------------------------

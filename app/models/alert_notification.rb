@@ -5,7 +5,7 @@ class AlertNotification < ApplicationRecord
   belongs_to :alert_rule
   belongs_to :project
 
-  validates :notification_type, inclusion: { in: %w[slack email webhook] }
+  validates :notification_type, inclusion: { in: %w[slack email multi] }
   validates :status, inclusion: { in: %w[pending sent failed] }
 
   scope :recent, -> { order(created_at: :desc) }

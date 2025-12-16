@@ -9,11 +9,12 @@ class ProjectSettingsController < ApplicationController
   end
 
   def update
-    if update_slack_settings && update_github_settings
+    if update_notification_settings && update_github_settings
       if params[:test_slack] == "true"
         test_slack_notification
       else
-        redirect_to project_settings_path(@project), notice: "Settings updated successfully."
+        redirect_to project_settings_path(@project),
+                    notice: "Settings updated successfully."
       end
     else
       render :show, status: :unprocessable_entity
@@ -21,8 +22,9 @@ class ProjectSettingsController < ApplicationController
   end
 
   def test_notification
-    unless @project.slack_configured?
-      redirect_to project_settings_path(@project), alert: "Slack webhook URL must be configured first."
+    unless @project.notify_via_slack?
+      redirect_to project_settings_path(@project),
+                  alert: "Slack notifications are disabled or Slack is not configured."
       return
     end
 
@@ -55,20 +57,24 @@ class ProjectSettingsController < ApplicationController
     end
   end
 
-  def update_slack_settings
-    slack_params = params.require(:project).permit(:slack_webhook_url, :slack_channel, :slack_notifications_enabled)
+  def update_notification_settings
+    notif_params = params
+      .require(:project)
+      .fetch(:notifications, {})
+      .permit(:enabled, channels: [:slack, :email])
 
-    # Update individual settings
-    @project.slack_webhook_url = slack_params[:slack_webhook_url]
-    @project.slack_channel = slack_params[:slack_channel]
+    settings = @project.settings || {}
+    settings["notifications"] ||= {}
 
-    # Handle checkbox for notifications enabled
-    if slack_params[:slack_notifications_enabled] == "1"
-      @project.settings = @project.settings.merge("slack_notifications_enabled" => true)
-    else
-      @project.settings = @project.settings.merge("slack_notifications_enabled" => false)
-    end
+    settings["notifications"]["enabled"] =
+      notif_params[:enabled] == "1"
 
+    settings["notifications"]["channels"] = {
+      "slack" => notif_params.dig(:channels, :slack) == "1",
+      "email" => notif_params.dig(:channels, :email) == "1"
+    }
+
+    @project.settings = settings
     @project.save
   end
 
