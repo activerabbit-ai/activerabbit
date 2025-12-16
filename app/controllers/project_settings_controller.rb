@@ -6,16 +6,27 @@ class ProjectSettingsController < ApplicationController
   def show
     # Show project settings including Slack configuration
     @api_tokens = @project.api_tokens.active
+    @preferences_by_type =
+      NotificationPreference::ALERT_TYPES.index_with do |type|
+        @project.notification_preferences.find_or_create_by!(
+          alert_type: type
+        ) do |pref|
+          pref.enabled = true
+          pref.frequency = "immediate"
+        end
+      end
   end
 
   def update
-    if update_notification_settings && update_github_settings
-      if params[:test_slack] == "true"
-        test_slack_notification
-      else
-        redirect_to project_settings_path(@project),
-                    notice: "Settings updated successfully."
-      end
+    ok = true
+
+    ok &&= update_notification_settings if params[:project]&.dig(:notifications)
+    ok &&= update_github_settings if params[:project]&.except(:notifications).present?
+    ok &&= update_notification_preferences if params[:preferences].present?
+
+    if ok
+      redirect_to project_settings_path(@project),
+                  notice: "Settings updated successfully."
     else
       render :show, status: :unprocessable_entity
     end
@@ -58,6 +69,8 @@ class ProjectSettingsController < ApplicationController
   end
 
   def update_notification_settings
+    return true unless params[:project]
+
     notif_params = params
       .require(:project)
       .fetch(:notifications, {})
@@ -126,5 +139,17 @@ class ProjectSettingsController < ApplicationController
       redirect_to project_settings_path(@project),
                   alert: "Settings saved, but test notification failed: #{e.message}"
     end
+  end
+
+  def update_notification_preferences
+    prefs = params[:preferences]
+    return true if prefs.blank?
+
+    prefs.each do |id, attrs|
+      pref = @project.notification_preferences.find(id)
+      pref.update!(frequency: attrs[:frequency])
+    end
+
+    true
   end
 end

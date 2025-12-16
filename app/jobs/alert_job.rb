@@ -16,6 +16,9 @@ class AlertJob
 
     return unless project.notifications_enabled?
 
+    preference = project.notification_pref_for(alert_type)
+    return unless preference&.can_send_now?
+
     ActsAsTenant.with_tenant(project.account) do
       notification = AlertNotification.create!(
         alert_rule: alert_rule,
@@ -29,6 +32,7 @@ class AlertJob
       begin
         dispatch_alert(alert_type, project, issue, payload)
 
+        preference.mark_sent!
         notification.mark_sent!
         Rails.logger.info "Alert sent: #{alert_type} for project #{project.slug}"
 

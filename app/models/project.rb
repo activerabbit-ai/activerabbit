@@ -14,6 +14,7 @@ class Project < ApplicationRecord
   has_many :alert_rules, dependent: :destroy
   has_many :alert_notifications, dependent: :destroy
   has_many :deploys, dependent: :destroy
+  has_many :notification_preferences, dependent: :destroy
 
   validates :name, presence: true
   validates_uniqueness_to_tenant :name, scope: :user_id
@@ -110,6 +111,10 @@ class Project < ApplicationRecord
     return false unless notifications_enabled?
 
     settings.dig("notifications", "channels", "email") == true
+  end
+
+  def notification_pref_for(alert_type)
+    notification_preferences.find_by(alert_type: alert_type)
   end
 
   def self.ransackable_attributes(auth_object = nil)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_04_185528) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_16_201448) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -228,6 +228,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_185528) do
     t.index ["project_id", "fingerprint"], name: "index_issues_on_project_id_and_fingerprint", unique: true
     t.index ["project_id"], name: "index_issues_on_project_id"
     t.index ["status"], name: "index_issues_on_status"
+  end
+
+  create_table "notification_preferences", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "alert_type", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "frequency", default: "immediate", null: false
+    t.datetime "last_sent_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id", "alert_type"], name: "index_notification_preferences_on_project_id_and_alert_type", unique: true
+    t.index ["project_id"], name: "index_notification_preferences_on_project_id"
   end
 
   create_table "pay_charges", force: :cascade do |t|
@@ -502,6 +514,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_04_185528) do
   add_foreign_key "healthchecks", "projects"
   add_foreign_key "issues", "accounts"
   add_foreign_key "issues", "projects"
+  add_foreign_key "notification_preferences", "projects"
   add_foreign_key "pay_charges", "pay_customers", column: "customer_id"
   add_foreign_key "pay_payment_methods", "pay_customers", column: "customer_id"
   add_foreign_key "pay_subscriptions", "pay_customers", column: "customer_id"

@@ -319,53 +319,85 @@
   </div>
 
   <!-- Alert Rules Card -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900">Alert Rules</h3>
-      <p class="text-sm text-gray-500">Configure when to send notifications</p>
-    </div>
-    <div class="p-6">
-      <div class="space-y-4">
-        <% @project.alert_rules.each do |rule| %>
-          <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div>
-              <h4 class="font-medium text-gray-900"><%= rule.name %></h4>
-              <p class="text-sm text-gray-500"><%= rule.formatted_threshold %></p>
-            </div>
-            <div class="flex items-center space-x-3">
-              <span class="text-sm <%= rule.enabled? ? 'text-green-600' : 'text-gray-400' %>">
-                <%= rule.enabled? ? 'Enabled' : 'Disabled' %>
-              </span>
-              <% if rule.enabled? %>
-                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-              <% else %>
-                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                </svg>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
+  <%= form_with url: project_settings_path(@project),
+              method: :put,
+              local: true do %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Alert Rules</h3>
+        <p class="text-sm text-gray-500">Configure when to send notifications</p>
       </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <% @project.alert_rules.each do |rule| %>
+            <% pref = @preferences_by_type[rule.rule_type] %>
 
-      <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-        <div class="flex">
-          <svg class="w-5 h-5 text-blue-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-          </svg>
-          <div>
-            <h4 class="text-sm font-medium text-blue-800">About Alert Rules</h4>
-            <p class="text-sm text-blue-700 mt-1">
-              These rules determine when Slack notifications are sent. When Slack is configured and enabled,
-              notifications will be sent to your channel when any of these conditions are met.
-            </p>
+            <div class="p-4 border border-gray-200 rounded-lg space-y-3">
+
+              <!-- Rule info -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-medium text-gray-900"><%= rule.name %></h4>
+                  <p class="text-sm text-gray-500"><%= rule.formatted_threshold %></p>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                  <span class="text-sm <%= rule.enabled? ? 'text-green-600' : 'text-gray-400' %>">
+                    <%= rule.enabled? ? 'Enabled' : 'Disabled' %>
+                  </span>
+
+                  <% if rule.enabled? %>
+                    <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                    </svg>
+                  <% end %>
+                </div>
+              </div>
+
+              <!-- Frequency -->
+              <div class="flex items-center space-x-4">
+                <label class="text-sm text-gray-700">
+                  Notification frequency
+                </label>
+
+                <select
+                  name="preferences[<%= pref.id %>][frequency]"
+                  class="text-sm rounded-md border-gray-300"
+                  <%= "disabled" unless rule.enabled? %>>
+                  <% NotificationPreference::FREQUENCIES.each do |f| %>
+                    <option value="<%= f %>" <%= "selected" if pref.frequency == f %>>
+                      <%= f.humanize %>
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+            </div>
+          <% end %>
+          <div class="mt-6 flex justify-end">
+            <button type="submit"
+                    class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+              Save alert preferences
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+          <div class="flex">
+            <svg class="w-5 h-5 text-blue-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+            </svg>
+            <div>
+              <h4 class="text-sm font-medium text-blue-800">About Alert Rules</h4>
+              <p class="text-sm text-blue-700 mt-1">
+                These rules determine when Slack notifications are sent. When Slack is configured and enabled,
+                notifications will be sent to your channel when any of these conditions are met.
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  <% end %>
  </div>
 
  <script>
