@@ -26,11 +26,9 @@ class User < ApplicationRecord
   before_validation :assign_default_admin_role, on: :create
 
   def needs_onboarding?
-    # Handle case when no tenant is set (during registration)
     return true if account.blank?
 
-    # Use direct database query to avoid acts_as_tenant scoping issues
-    Project.unscoped.where(user_id: id).count == 0
+    !account.projects.exists?
   end
 
   def self.from_omniauth(auth)

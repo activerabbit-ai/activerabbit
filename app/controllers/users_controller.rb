@@ -2,7 +2,7 @@ class UsersController < ApplicationController
   layout "admin"
   before_action :authenticate_user!
   before_action :require_admin!, only: [:create, :destroy]
-  
+
   skip_before_action :check_onboarding_needed, only: [:new, :create]
   skip_before_action :set_current_tenant, only: [:new]
   skip_before_action :set_current_project_from_slug, only: [:new, :create]
@@ -36,7 +36,7 @@ class UsersController < ApplicationController
   def update
     @user = current_user
     if @user.update(user_params)
-      redirect_to @user, notice: 'Profile updated successfully.'
+      redirect_to @user, notice: "Profile updated successfully."
     else
       render :edit
     end
@@ -45,9 +45,9 @@ class UsersController < ApplicationController
   def destroy
     @user = User.find(params[:id])
     if @user.destroy
-      redirect_to users_path, notice: 'User deleted successfully.'
+      redirect_to users_path, notice: "User deleted successfully."
     else
-      redirect_to users_path, alert: 'Failed to delete user.'
+      redirect_to users_path, alert: "Failed to delete user."
     end
   end
 

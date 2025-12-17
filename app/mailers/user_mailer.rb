@@ -5,7 +5,7 @@ class UserMailer < ApplicationMailer
 
     mail(
       to: user.email,
-      subject: 'Welcome to Active Rabbit - Setup Your Password'
+      subject: "Welcome to Active Rabbit - Setup Your Password"
     )
   end
 end

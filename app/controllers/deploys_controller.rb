@@ -19,6 +19,6 @@ class DeploysController < ApplicationController
   private
 
   def set_project
-    @project = current_user.projects.find(params[:project_id])
+    @project = current_account.projects.find(params[:project_id])
   end
 end

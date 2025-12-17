@@ -24,11 +24,11 @@ class OnboardingController < ApplicationController
   end
 
   def new_project
-    @project = current_user.projects.build
+    @project = current_account.projects.build
   end
 
   def create_project
-    @project = current_user.projects.build(project_params)
+    @project = current_account.projects.build(project_params)
     @project.environment = "production" # Default environment
 
     if @project.save
@@ -46,11 +46,11 @@ class OnboardingController < ApplicationController
   end
 
   def install_gem
-    @project = current_user.projects.find(params[:project_id])
+    @project = current_account.projects.find(params[:project_id])
   end
 
   def verify_gem
-    @project = current_user.projects.find(params[:project_id])
+    @project = current_account.projects.find(params[:project_id])
 
     verification_service = GemVerificationService.new(@project)
     result = verification_service.verify_connection
@@ -73,7 +73,7 @@ class OnboardingController < ApplicationController
   end
 
   def redirect_if_has_projects
-    if current_user.projects.any?
+    if current_account.projects.any?
       redirect_to dashboard_path
     end
   end
