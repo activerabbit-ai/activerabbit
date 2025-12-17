@@ -14,6 +14,7 @@ class Project < ApplicationRecord
   has_many :alert_rules, dependent: :destroy
   has_many :alert_notifications, dependent: :destroy
   has_many :deploys, dependent: :destroy
+  has_many :notification_preferences, dependent: :destroy
 
   validates :name, presence: true
   validates_uniqueness_to_tenant :name, scope: :user_id
@@ -104,64 +105,30 @@ class Project < ApplicationRecord
     update!(health_status: new_status)
   end
 
-  # Slack notification settings
-  def slack_webhook_url
-    # Priority: ENV variable > database setting
-    env_webhook = ENV["SLACK_WEBHOOK_URL_#{slug.upcase}"] || ENV["SLACK_WEBHOOK_URL"]
-    env_webhook.presence || settings["slack_webhook_url"]
-  end
-
-  def slack_webhook_url=(url)
-    # Only store in database if not using environment variable
-    if url.present? && !url.start_with?("ENV:")
-      self.settings = settings.merge("slack_webhook_url" => url&.strip)
-    elsif url&.start_with?("ENV:")
-      # Store reference to environment variable
-      env_var = url.sub("ENV:", "")
-      self.settings = settings.merge("slack_webhook_url" => "ENV:#{env_var}")
-    else
-      # Clear the setting
-      new_settings = settings.dup
-      new_settings.delete("slack_webhook_url")
-      self.settings = new_settings
-    end
-  end
-
-  def slack_webhook_from_env?
-    settings["slack_webhook_url"]&.start_with?("ENV:") ||
-    ENV["SLACK_WEBHOOK_URL_#{slug.upcase}"].present? ||
-    ENV["SLACK_WEBHOOK_URL"].present?
-  end
-
-  def slack_channel
-    settings["slack_channel"] || "#alerts"
-  end
-
-  def slack_channel=(channel)
-    # Ensure channel starts with # if it's not a user DM
-    formatted_channel = channel&.strip
-    if formatted_channel.present? && !formatted_channel.start_with?("#", "@")
-      formatted_channel = "##{formatted_channel}"
-    end
-    self.settings = settings.merge("slack_channel" => formatted_channel)
-  end
-
+  # ---- Notifications ----
   def slack_configured?
-    slack_webhook_url.present?
+    slack_access_token.present?
   end
 
-  def slack_notifications_enabled?
-    slack_configured? && settings["slack_notifications_enabled"] != false
+  def notifications_enabled?
+    settings.dig("notifications", "enabled") != false
   end
 
-  def enable_slack_notifications!
-    self.settings = settings.merge("slack_notifications_enabled" => true)
-    save!
+  def notify_via_slack?
+    return false unless notifications_enabled?
+    return false unless slack_configured?
+
+    settings.dig("notifications", "channels", "slack") == true
   end
 
-  def disable_slack_notifications!
-    self.settings = settings.merge("slack_notifications_enabled" => false)
-    save!
+  def notify_via_email?
+    return false unless notifications_enabled?
+
+    settings.dig("notifications", "channels", "email") == true
+  end
+
+  def notification_pref_for(alert_type)
+    notification_preferences.find_by(alert_type: alert_type)
   end
 
   def self.ransackable_attributes(auth_object = nil)

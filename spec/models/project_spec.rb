@@ -43,13 +43,4 @@ RSpec.describe Project, type: :model do
       expect(project.api_token).to be_present
     end
   end
-
-  describe '#slack_webhook_url precedence' do
-    it 'prefers ENV over settings' do
-      project.settings = { 'slack_webhook_url' => 'https://hooks.slack.com/xxx' }
-      ClimateControl.modify("SLACK_WEBHOOK_URL_#{project.slug.upcase}" => 'https://env.slack/abc') do
-        expect(project.slack_webhook_url).to eq('https://env.slack/abc')
-      end
-    end
-  end
 end

@@ -6,23 +6,36 @@ class ProjectSettingsController < ApplicationController
   def show
     # Show project settings including Slack configuration
     @api_tokens = @project.api_tokens.active
+    @preferences_by_type =
+      NotificationPreference::ALERT_TYPES.index_with do |type|
+        @project.notification_preferences.find_or_create_by!(
+          alert_type: type
+        ) do |pref|
+          pref.enabled = true
+          pref.frequency = "immediate"
+        end
+      end
   end
 
   def update
-    if update_slack_settings && update_github_settings
-      if params[:test_slack] == "true"
-        test_slack_notification
-      else
-        redirect_to project_settings_path(@project), notice: "Settings updated successfully."
-      end
+    ok = true
+
+    ok &&= update_notification_settings if params[:project]&.dig(:notifications)
+    ok &&= update_github_settings if params[:project]&.except(:notifications).present?
+    ok &&= update_notification_preferences if params[:preferences].present?
+
+    if ok
+      redirect_to project_settings_path(@project),
+                  notice: "Settings updated successfully."
     else
       render :show, status: :unprocessable_entity
     end
   end
 
   def test_notification
-    unless @project.slack_configured?
-      redirect_to project_settings_path(@project), alert: "Slack webhook URL must be configured first."
+    unless @project.notify_via_slack?
+      redirect_to project_settings_path(@project),
+                  alert: "Slack notifications are disabled or Slack is not configured."
       return
     end
 
@@ -55,20 +68,26 @@ class ProjectSettingsController < ApplicationController
     end
   end
 
-  def update_slack_settings
-    slack_params = params.require(:project).permit(:slack_webhook_url, :slack_channel, :slack_notifications_enabled)
+  def update_notification_settings
+    return true unless params[:project]
 
-    # Update individual settings
-    @project.slack_webhook_url = slack_params[:slack_webhook_url]
-    @project.slack_channel = slack_params[:slack_channel]
+    notif_params = params
+      .require(:project)
+      .fetch(:notifications, {})
+      .permit(:enabled, channels: [:slack, :email])
 
-    # Handle checkbox for notifications enabled
-    if slack_params[:slack_notifications_enabled] == "1"
-      @project.settings = @project.settings.merge("slack_notifications_enabled" => true)
-    else
-      @project.settings = @project.settings.merge("slack_notifications_enabled" => false)
-    end
+    settings = @project.settings || {}
+    settings["notifications"] ||= {}
 
+    settings["notifications"]["enabled"] =
+      notif_params[:enabled] == "1"
+
+    settings["notifications"]["channels"] = {
+      "slack" => notif_params.dig(:channels, :slack) == "1",
+      "email" => notif_params.dig(:channels, :email) == "1"
+    }
+
+    @project.settings = settings
     @project.save
   end
 
@@ -120,5 +139,17 @@ class ProjectSettingsController < ApplicationController
       redirect_to project_settings_path(@project),
                   alert: "Settings saved, but test notification failed: #{e.message}"
     end
+  end
+
+  def update_notification_preferences
+    prefs = params[:preferences]
+    return true if prefs.blank?
+
+    prefs.each do |id, attrs|
+      pref = @project.notification_preferences.find(id)
+      pref.update!(frequency: attrs[:frequency])
+    end
+
+    true
   end
 end

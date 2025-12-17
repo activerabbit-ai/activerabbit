@@ -74,7 +74,7 @@ class Account < ApplicationRecord
   end
 
   def slack_configured?
-    slack_webhook_url.present?
+    settings&.dig("slack_webhook_url").present?
   end
 
   def slack_notifications_enabled?
