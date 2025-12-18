@@ -58,3 +58,8 @@ accessories:
     port: 6379
     directories:
       - data:/data
+
+ssh:
+  user: root
+  keys:
+    - ~/.ssh/a1xsh
