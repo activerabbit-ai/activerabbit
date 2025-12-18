@@ -1,4 +1,5 @@
 Rails.application.configure do
+  config.lograge.enabled = false if defined?(Lograge)
   config.cache_classes = true
   config.eager_load = true
 
@@ -6,5 +7,5 @@ Rails.application.configure do
 
   config.force_ssl = false
 
-  config.log_level = :info
+  config.log_level = :debug
 end
