@@ -1,6 +1,6 @@
 service: activerabbit-staging
 
-image: nextsoft-io/activerabbit:staging
+image: nextsoft-io/activerabbit
 
 servers:
   web:
