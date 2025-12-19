@@ -29,6 +29,16 @@ class Api::V1::ReleasesController < Api::BaseController
       metadata: payload[:metadata]
     )
 
+    Deploy.create!(
+      account: project.account,
+      project: project,
+      release: release,
+      status: :success,
+      started_at: release.deployed_at - 1.minute,
+      finished_at: release.deployed_at,
+      source: "auto"
+    )
+
     render_created(
       {
         id: release.id,
