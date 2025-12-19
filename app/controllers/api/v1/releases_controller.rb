@@ -30,8 +30,8 @@ class Api::V1::ReleasesController < Api::BaseController
     )
 
     Deploy.create!(
-      account: project.account,
-      project: project,
+      account: @current_project.account,
+      project: @current_project,
       release: release,
       status: :success,
       started_at: release.deployed_at - 1.minute,
