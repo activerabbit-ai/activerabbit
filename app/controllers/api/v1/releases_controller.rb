@@ -35,8 +35,7 @@ class Api::V1::ReleasesController < Api::BaseController
       release: release,
       status: :success,
       started_at: release.deployed_at - 1.minute,
-      finished_at: release.deployed_at,
-      source: "auto"
+      finished_at: release.deployed_at
     )
 
     render_created(
