@@ -3,6 +3,39 @@
 <% content_for :page_subtitle, "Start your journey with ActiveRabbit today" %>
 <% content_for :layout, "auth" %>
 
+<div class="mt-6 flex flex-col gap-4 w-full max-w-sm mx-auto">
+  <%= link_to user_github_omniauth_authorize_path,
+      class: "flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800 transition" do %>
+    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 0C5.372 0 0 5.372 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.234c-3.338.726-4.033-1.61-4.033-1.61-.546-1.387-1.334-1.756-1.334-1.756-1.09-.745.083-.73.083-.73 1.205.084 1.84 1.238 1.84 1.238 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.605-2.665-.305-5.466-1.332-5.466-5.93 0-1.31.468-2.382 1.235-3.222-.124-.304-.535-1.527.117-3.176 0 0 1.008-.323 3.3 1.23a11.45 11.45 0 013.003-.404c1.02.005 2.046.138 3.003.404 2.29-1.554 3.297-1.23 3.297-1.23.653 1.649.242 2.872.118 3.176.77.84 1.234 1.912 1.234 3.222 0 4.61-2.803 5.624-5.475 5.921.43.37.815 1.096.815 2.21v3.277c0 .32.218.694.825.576C20.565 21.796 24 17.3 24 12c0-6.628-5.372-12-12-12z"/>
+    </svg>
+    Sign up with GitHub
+  <% end %>
+
+  <%= link_to user_google_oauth2_omniauth_authorize_path,
+      class: "flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-semibold hover:bg-gray-50 transition" do %>
+    <svg class="w-5 h-5" viewBox="0 0 533.5 544.3">
+      <path fill="#4285F4" d="M533.5 278.4c0-18.3-1.6-36-4.6-53.3H272v100.9h146.9c-6.3 33.9-25.2 62.6-53.8 81.8v68.1h87.2c51.1-47.1 80.2-116.5 80.2-197.5z"/>
+      <path fill="#34A853" d="M272 544.3c72.6 0 133.5-24.1 178-65.3l-87.2-68.1c-24.2 16.2-55.1 25.8-90.8 25.8-69.7 0-128.8-47-150-110.1H32.1v69.2c44.2 87.3 134.9 149.5 239.9 149.5z"/>
+      <path fill="#FBBC05" d="M122 325.6c-10.4-30.9-10.4-64.1 0-95l-90-69.2C5.8 198 0 236.4 0 272c0 35.7 5.8 74.1 32 110.6l90-69z"/>
+      <path fill="#EA4335" d="M272 107.7c37.6-.6 73.9 13.1 101.4 38.3l76-76C405.6 24.1 344.6 0 272 0 167 0 76.3 62.2 32.1 149.5l90 69.2c21.3-63.1 80.3-110 149.9-110z"/>
+    </svg>
+    Sign up with Google
+  <% end %>
+</div>
+
+<!-- Divider -->
+<div class="mt-6">
+  <div class="relative">
+    <div class="absolute inset-0 flex items-center">
+      <div class="w-full border-t border-gray-300"></div>
+    </div>
+    <div class="relative flex justify-center text-sm">
+      <span class="px-2 bg-white text-gray-500">or</span>
+    </div>
+  </div>
+</div>
+
 <%= form_for(resource, as: resource_name, url: registration_path(resource_name), local: true, html: { class: "space-y-6" }) do |f| %>
   <!-- Error Messages -->
   <% if resource.errors.any? %>
@@ -105,38 +138,6 @@
           class: "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" %>
   </div>
 <% end %>
-
-<div class="mt-6">
-  <div class="relative">
-    <div class="absolute inset-0 flex items-center">
-      <div class="w-full border-t border-gray-300"></div>
-    </div>
-    <div class="relative flex justify-center text-sm">
-      <span class="px-2 bg-white text-gray-500">Or sign up by</span>
-    </div>
-  </div>
-</div>
-
-<div class="mt-6 flex flex-col gap-4 w-full max-w-sm mx-auto">
-  <%= link_to user_github_omniauth_authorize_path,
-      class: "flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800 transition" do %>
-    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 0C5.372 0 0 5.372 0 12c0 5.303 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.234c-3.338.726-4.033-1.61-4.033-1.61-.546-1.387-1.334-1.756-1.334-1.756-1.09-.745.083-.73.083-.73 1.205.084 1.84 1.238 1.84 1.238 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.605-2.665-.305-5.466-1.332-5.466-5.93 0-1.31.468-2.382 1.235-3.222-.124-.304-.535-1.527.117-3.176 0 0 1.008-.323 3.3 1.23a11.45 11.45 0 013.003-.404c1.02.005 2.046.138 3.003.404 2.29-1.554 3.297-1.23 3.297-1.23.653 1.649.242 2.872.118 3.176.77.84 1.234 1.912 1.234 3.222 0 4.61-2.803 5.624-5.475 5.921.43.37.815 1.096.815 2.21v3.277c0 .32.218.694.825.576C20.565 21.796 24 17.3 24 12c0-6.628-5.372-12-12-12z"/>
-    </svg>
-    Sign up with GitHub
-  <% end %>
-
-  <%= link_to user_google_oauth2_omniauth_authorize_path,
-      class: "flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-semibold hover:bg-gray-50 transition" do %>
-    <svg class="w-5 h-5" viewBox="0 0 533.5 544.3">
-      <path fill="#4285F4" d="M533.5 278.4c0-18.3-1.6-36-4.6-53.3H272v100.9h146.9c-6.3 33.9-25.2 62.6-53.8 81.8v68.1h87.2c51.1-47.1 80.2-116.5 80.2-197.5z"/>
-      <path fill="#34A853" d="M272 544.3c72.6 0 133.5-24.1 178-65.3l-87.2-68.1c-24.2 16.2-55.1 25.8-90.8 25.8-69.7 0-128.8-47-150-110.1H32.1v69.2c44.2 87.3 134.9 149.5 239.9 149.5z"/>
-      <path fill="#FBBC05" d="M122 325.6c-10.4-30.9-10.4-64.1 0-95l-90-69.2C5.8 198 0 236.4 0 272c0 35.7 5.8 74.1 32 110.6l90-69z"/>
-      <path fill="#EA4335" d="M272 107.7c37.6-.6 73.9 13.1 101.4 38.3l76-76C405.6 24.1 344.6 0 272 0 167 0 76.3 62.2 32.1 149.5l90 69.2c21.3-63.1 80.3-110 149.9-110z"/>
-    </svg>
-    Sign up with Google
-  <% end %>
-</div>
 
 <!-- Divider -->
 <div class="mt-6">
