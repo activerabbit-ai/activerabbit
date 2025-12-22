@@ -1,0 +1,65 @@
+service: activerabbit-staging
+
+image: nextsoft-io/activerabbit
+
+servers:
+  web:
+    - 65.108.93.69
+  job:
+    hosts:
+      - 65.108.93.69
+    cmd: bundle exec sidekiq -q default -q ingest
+
+registry:
+  server: ghcr.io
+  username: nextsoft-io
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+env:
+  secret:
+    - RAILS_MASTER_KEY
+    - STAGING_DATABASE_URL
+    - REDIS_URL
+    - SECRET_KEY_BASE
+    - OPENAI_API_KEY
+
+  clear:
+    RAILS_ENV: staging
+    RAILS_LOG_TO_STDOUT: true
+    RAILS_SERVE_STATIC_FILES: true
+
+    APP_HOST: 65.108.93.69
+
+    WEB_CONCURRENCY: 1
+    RAILS_MAX_THREADS: 5
+    SIDEKIQ_CONCURRENCY: 5
+
+    FORCE_SSL: false
+    RACK_ATTACK_ENABLED: false
+
+aliases:
+  console: app exec --interactive --reuse "bin/rails console"
+  shell: app exec --interactive --reuse "bash"
+  logs: app logs -f
+
+volumes:
+  - "activerabbit_stage_storage:/rails/storage"
+
+asset_path: /rails/public/assets
+
+builder:
+  arch: amd64
+
+accessories:
+  redis:
+    image: redis:7.0
+    host: 65.108.93.69
+    port: 6379
+    directories:
+      - data:/data
+
+ssh:
+  user: root
+  keys:
+    - ~/.ssh/a1xsh
