@@ -114,46 +114,17 @@
         <h2 class="text-lg font-medium text-gray-900">Step 2: Configure the Gem</h2>
       </div>
 
-      <p class="text-gray-600 mb-4">Create an initializer file to configure ActiveRabbit:</p>
+      <p class="text-gray-600 mb-4">Set your ActiveRabbit API key as an environment variable:</p>
 
-      <!-- Initializer Code -->
+      <!-- Environment Variable -->
       <div class="bg-gray-900 rounded-lg p-4 mb-6">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-gray-400 text-sm">config/initializers/activerabbit.rb</span>
-          <button onclick="copyToClipboard('initializer-code')" class="text-gray-400 hover:text-white text-sm">
+          <span class="text-gray-400 text-sm">Environment</span>
+          <button onclick="copyToClipboard('env-var-code')" class="text-gray-400 hover:text-white text-sm">
             📋 Copy
           </button>
         </div>
-        <pre id="initializer-code" class="text-green-400 text-sm"><code>ActiveRabbit::Client.configure do |config|
-  config.api_key = "<%= @project.api_token %>"
-
-  # Enable monitoring features
-  config.enable_performance_monitoring = true
-  config.enable_n_plus_one_detection   = true
-  config.enable_pii_scrubbing          = true
-
-  # Optional: enable deployment tracking
-  config.revision = ENV["APP_REVISION"] || `git rev-parse HEAD`.chomp
-
-  # Optional: 404 handling (true = ignore 404s, false = report them)
-  config.ignore_404 = true
-end</code></pre>
-      </div>
-
-      <!-- Environment Variables Alternative -->
-      <div class="bg-blue-50 rounded-lg p-4 mb-6">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <span class="text-blue-500 text-xl">💡</span>
-          </div>
-          <div class="ml-4">
-            <h3 class="text-sm font-medium text-blue-900 mb-2">Alternative: Use Environment Variables</h3>
-            <p class="text-sm text-blue-800 mb-3">You can also configure using environment variables:</p>
-            <div class="bg-white rounded border p-3">
-              <pre class="text-xs text-gray-700"><code>ACTIVERABBIT_API_KEY=<%= @project.api_token %></code></pre>
-            </div>
-          </div>
-        </div>
+        <pre id="env-var-code" class="text-green-400 text-sm"><code>ACTIVERABBIT_API_KEY=<%= @project.api_token %></code></pre>
       </div>
 
       <!-- Test Step -->
@@ -243,7 +214,7 @@ ActiveRabbit::Client.track_performance("test_operation", 100, { custom: "data" }
           <ul class="text-sm text-yellow-700 space-y-1">
             <li>• Make sure to restart your Rails server after installation</li>
             <li>• Check that your API token is correctly configured</li>
-            <li>• Verify your application can reach <%= request.base_url %></li>
+            <li>• Verify your application can reach <%= @project.url.presence || request.base_url %></li>
           </ul>
         </div>
       </div>
