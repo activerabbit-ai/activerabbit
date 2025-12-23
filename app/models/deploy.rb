@@ -24,7 +24,6 @@ class Deploy < ApplicationRecord
         project_id: project_id
       })
       .where("events.occurred_at >= ?", started_at)
-      .distinct
       .count
   end
 
