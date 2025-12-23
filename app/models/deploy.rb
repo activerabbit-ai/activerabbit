@@ -6,7 +6,6 @@ class Deploy < ApplicationRecord
   belongs_to :user, optional: true
 
   has_many :events, dependent: :nullify
-  has_many :issues, dependent: :nullify
 
   validates :started_at, presence: true
 
@@ -19,15 +18,44 @@ class Deploy < ApplicationRecord
   end
 
   def errors_count
-    events.count
+    Issue
+      .joins(:events)
+      .where(events: {
+        project_id: project_id
+      })
+      .where("events.occurred_at >= ?", started_at)
+      .distinct
+      .count
+  end
+
+  def time_since_deploy_seconds
+    Time.current - started_at
   end
 
   def errors_per_hour
-    return 0 if duration_seconds.nil? || duration_seconds.zero?
-    (errors_count / (duration_seconds / 3600.0)).round(2)
+    hours = time_since_deploy_seconds / 3600.0
+    return 0 if hours <= 0
+
+    (errors_count / hours).round(2)
   end
 
   def performance_summary
     release.regression_summary
+  end
+
+  def duration_human
+    return "—" unless finished_at
+
+    seconds = duration_seconds.to_i
+
+    if seconds < 60
+      "#{seconds}s"
+    elsif seconds < 3600
+      "#{seconds / 60}m"
+    else
+      hours = seconds / 3600
+      minutes = (seconds % 3600) / 60
+      "#{hours}h #{minutes}m"
+    end
   end
 end

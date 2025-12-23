@@ -15,7 +15,6 @@
       <thead class="bg-gray-50">
         <tr>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deployed</th>
@@ -28,10 +27,7 @@
           <% @deploys.each do |deploy| %>
             <tr>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= deploy.release.version %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= deploy.account&.name || "—" %>
+                <%= deploy.release.version&.slice(0, 7) %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= deploy[:status] == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
@@ -39,16 +35,24 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= deploy.duration_seconds %>
+                <%= deploy.duration_human %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <%= time_ago_in_words(deploy.started_at) %> ago
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= deploy.errors_count %>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <% if deploy.errors_count.zero? %>
+                  <span>0</span>
+                <% else %>
+                  <span><%= deploy.errors_count %></span>
+                <% end %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= deploy.errors_per_hour %>
+                <% if deploy.errors_count.zero? %>
+                  —
+                <% else %>
+                  <%= number_with_precision(deploy.errors_per_hour, precision: 2) %>
+                <% end %>
               </td>
             </tr>
           <% end %>
