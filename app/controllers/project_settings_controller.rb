@@ -21,7 +21,8 @@ class ProjectSettingsController < ApplicationController
     ok = true
 
     ok &&= update_notification_settings if params[:project]&.dig(:notifications)
-    ok &&= update_github_settings if params[:project]&.except(:notifications).present?
+    ok &&= update_github_settings if github_params_present?
+    ok &&= update_fizzy_settings if fizzy_params_present?
     ok &&= update_notification_preferences if params[:preferences].present?
 
     if ok
@@ -52,6 +53,39 @@ class ProjectSettingsController < ApplicationController
       Rails.logger.error "Slack test failed: #{e.message}"
       redirect_to project_settings_path(@project), alert: "Failed to send test notification: #{e.message}"
     end
+  end
+
+  def test_fizzy_sync
+    unless @project.fizzy_configured?
+      redirect_to project_settings_path(@project),
+                  alert: "Fizzy is not configured. Please set the endpoint URL and API key."
+      return
+    end
+
+    fizzy_service = FizzySyncService.new(@project)
+    result = fizzy_service.test_connection
+
+    if result[:success]
+      redirect_to project_settings_path(@project),
+                  notice: result[:message] || "Successfully connected to Fizzy!"
+    else
+      redirect_to project_settings_path(@project),
+                  alert: "Fizzy test failed: #{result[:error]}"
+    end
+  end
+
+  def sync_all_errors
+    unless @project.fizzy_configured?
+      redirect_to project_settings_path(@project),
+                  alert: "Fizzy is not configured. Please set the endpoint URL and API key."
+      return
+    end
+
+    # Pass force=true to bypass the auto-sync toggle (this is a manual sync)
+    FizzyBatchSyncJob.perform_async(@project.id, true)
+
+    redirect_to project_settings_path(@project),
+                notice: "Fizzy sync started. Issues will be synced in the background."
   end
 
   private
@@ -151,5 +185,45 @@ class ProjectSettingsController < ApplicationController
     end
 
     true
+  end
+
+  def github_params_present?
+    project_params = params[:project]
+    return false unless project_params
+
+    %i[github_repo github_installation_id github_pat github_app_id github_app_pk github_app_pk_file].any? do |key|
+      project_params.key?(key)
+    end
+  end
+
+  def fizzy_params_present?
+    project_params = params[:project]
+    return false unless project_params
+
+    %i[fizzy_endpoint_url fizzy_api_key fizzy_sync_enabled].any? do |key|
+      project_params.key?(key)
+    end
+  end
+
+  def update_fizzy_settings
+    fizzy_params = params.fetch(:project, {}).permit(:fizzy_endpoint_url, :fizzy_api_key, :fizzy_sync_enabled)
+    return true if fizzy_params.blank?
+
+    # Use the concern's setter methods which handle ENV: prefix logic
+    if fizzy_params.key?(:fizzy_endpoint_url) && !@project.fizzy_endpoint_from_env?
+      @project.fizzy_endpoint_url = fizzy_params[:fizzy_endpoint_url]
+    end
+
+    if fizzy_params.key?(:fizzy_api_key) && !@project.fizzy_api_key_from_env?
+      @project.fizzy_api_key = fizzy_params[:fizzy_api_key]
+    end
+
+    if fizzy_params.key?(:fizzy_sync_enabled)
+      settings = @project.settings || {}
+      settings["fizzy_sync_enabled"] = fizzy_params[:fizzy_sync_enabled] == "1"
+      @project.settings = settings
+    end
+
+    @project.save
   end
 end

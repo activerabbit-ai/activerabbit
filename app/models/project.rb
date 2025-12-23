@@ -1,4 +1,6 @@
 class Project < ApplicationRecord
+  include FizzySyncable
+
   # Multi-tenancy setup - Project belongs to Account (tenant)
   acts_as_tenant(:account)
 
