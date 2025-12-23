@@ -24,8 +24,12 @@ class Release < ApplicationRecord
       metadata: metadata
     )
 
-    # Schedule regression detection
-    RegressionDetectionJob.perform_async(release.id)
+    # Schedule regression detection (best-effort: do not fail deploy creation if job queue is down)
+    begin
+      RegressionDetectionJob.perform_async(release.id)
+    rescue => e
+      Rails.logger.error("[ActiveRabbit] Failed to enqueue RegressionDetectionJob (perform_async) for release=#{release.id}: #{e.class}: #{e.message}") if defined?(Rails)
+    end
 
     release
   end
@@ -115,7 +119,12 @@ class Release < ApplicationRecord
   private
 
   def detect_regressions
-    RegressionDetectionJob.perform_in(5.minutes, id)
+    # Best-effort: if Sidekiq/Redis is down, we still want the release/deploy to persist.
+    begin
+      RegressionDetectionJob.perform_in(5.minutes, id)
+    rescue => e
+      Rails.logger.error("[ActiveRabbit] Failed to enqueue RegressionDetectionJob (perform_in) for release=#{id}: #{e.class}: #{e.message}") if defined?(Rails)
+    end
   end
 
   def calculate_regression_severity(regression_pct, absolute_increase_ms)

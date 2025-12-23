@@ -26,7 +26,7 @@ class Api::V1::EventsController < Api::BaseController
     serializable_payload = JSON.parse(payload.to_h.to_json)
     Rails.logger.info "Serializable payload: #{serializable_payload.inspect}"
     Rails.logger.info "Calling ErrorIngestJob.perform_async(#{@current_project.id}, payload)"
-    ErrorIngestJob.perform_async(@current_project.id, serializable_payload)
+    enqueue_error_ingest(@current_project.id, serializable_payload)
 
     render_created(
       {
@@ -65,7 +65,7 @@ class Api::V1::EventsController < Api::BaseController
     serializable_payload = JSON.parse(payload.to_h.to_json)
     Rails.logger.info "Serializable payload: #{serializable_payload.inspect}"
     Rails.logger.info "Calling PerformanceIngestJob.perform_async(#{@current_project.id}, payload)"
-    PerformanceIngestJob.perform_async(@current_project.id, serializable_payload)
+    enqueue_performance_ingest(@current_project.id, serializable_payload)
 
     render_created(
       {
@@ -84,6 +84,12 @@ class Api::V1::EventsController < Api::BaseController
   def create_batch
     Rails.logger.info "=== DEBUG: create_batch called ==="
     Rails.logger.info "Raw params: #{params.inspect}"
+
+    unless @current_project
+      Rails.logger.error "ERROR: @current_project is nil!"
+      render json: { error: "project_not_found", message: "Project not found" }, status: :not_found
+      return
+    end
 
     events = params[:events] || []
     Rails.logger.info "Events array: #{events.inspect}"
@@ -130,7 +136,7 @@ class Api::V1::EventsController < Api::BaseController
           Rails.logger.info "Payload is valid, queuing job"
           serializable_payload = JSON.parse(payload.to_h.to_json)
           Rails.logger.info "Calling ErrorIngestJob.perform_async(#{@current_project.id}, payload, #{batch_id})"
-          ErrorIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
+          enqueue_error_ingest(@current_project.id, serializable_payload, batch_id)
           processed_count += 1
         else
           Rails.logger.info "Payload validation failed, skipping"
@@ -139,7 +145,7 @@ class Api::V1::EventsController < Api::BaseController
         payload = sanitize_performance_payload(actual_data)
         next unless valid_performance_payload?(payload)
         serializable_payload = JSON.parse(payload.to_h.to_json)
-        PerformanceIngestJob.perform_async(@current_project.id, serializable_payload, batch_id)
+        enqueue_performance_ingest(@current_project.id, serializable_payload, batch_id)
         processed_count += 1
       end
     end
@@ -153,6 +159,10 @@ class Api::V1::EventsController < Api::BaseController
       },
       message: "Batch events queued for processing"
     )
+  rescue => e
+    Rails.logger.error "ERROR in create_batch: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    render json: { error: "processing_error", message: e.message }, status: :internal_server_error
   end
 
   # POST /api/v1/test/connection
@@ -323,5 +333,21 @@ class Api::V1::EventsController < Api::BaseController
       # Handle string backtrace
       backtrace.to_s.split("\n")
     end
+  end
+
+  # If Sidekiq/Redis is down (or queue push fails), fall back to synchronous ingest so
+  # customers still see new errors/performance data in the UI.
+  def enqueue_error_ingest(project_id, payload, batch_id = nil)
+    ErrorIngestJob.perform_async(project_id, payload, batch_id)
+  rescue => e
+    Rails.logger.error("[ActiveRabbit] ErrorIngestJob.perform_async failed, falling back to inline perform: #{e.class}: #{e.message}")
+    ErrorIngestJob.new.perform(project_id, payload, batch_id)
+  end
+
+  def enqueue_performance_ingest(project_id, payload, batch_id = nil)
+    PerformanceIngestJob.perform_async(project_id, payload, batch_id)
+  rescue => e
+    Rails.logger.error("[ActiveRabbit] PerformanceIngestJob.perform_async failed, falling back to inline perform: #{e.class}: #{e.message}")
+    PerformanceIngestJob.new.perform(project_id, payload, batch_id)
   end
 end
