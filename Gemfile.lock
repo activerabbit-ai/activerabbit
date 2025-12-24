@@ -60,6 +60,8 @@ GEM
       globalid (>= 0.3.6)
     activemodel (8.0.2.1)
       activesupport (= 8.0.2.1)
+    activerabbit-ai (0.5.2)
+      concurrent-ruby (~> 1.1)
     activerecord (8.0.2.1)
       activemodel (= 8.0.2.1)
       activesupport (= 8.0.2.1)
@@ -517,6 +519,7 @@ PLATFORMS
 
 DEPENDENCIES
   HDRHistogram
+  activerabbit-ai (~> 0.5.2)
   acts_as_tenant
   administrate!
   bootsnap
