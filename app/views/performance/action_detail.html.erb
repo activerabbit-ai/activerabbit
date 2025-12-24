@@ -400,31 +400,6 @@
   </div>
 </div>
 
-<% if defined?(@error_rate_by_day) && @error_rate_by_day.present? %>
-  <div class="bg-white rounded-lg shadow p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-medium text-gray-900">Error rate by day (last 7 days)</h3>
-      <div class="text-xs text-gray-500">Errors / Requests</div>
-    </div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-      <% @error_rate_by_day.each do |row| %>
-        <% rate = row[:error_rate].to_f %>
-        <div class="rounded-lg border border-gray-200 p-3">
-          <div class="text-xs text-gray-500"><%= row[:day].strftime("%b %d") %></div>
-          <div class="mt-1 flex items-baseline justify-between">
-            <div class="text-sm font-semibold <%= rate > 5 ? 'text-red-700' : rate > 1 ? 'text-yellow-700' : 'text-green-700' %>">
-              <%= rate %>%
-            </div>
-            <div class="text-xs text-gray-500">
-              <%= row[:error_count] %>/<%= row[:request_count] %>
-            </div>
-          </div>
-        </div>
-      <% end %>
-    </div>
-  </div>
-<% end %>
-
 <!-- Performance History -->
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 py-4 border-b border-gray-200">

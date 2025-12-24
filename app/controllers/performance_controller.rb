@@ -78,41 +78,7 @@ class PerformanceController < ApplicationController
         }
       end
 
-      # Error rate trend (last 7 days) - keep fast via grouped counts and indexes
-      trend_start = 7.days.ago.beginning_of_day
-      errors_by_day = Event.where(project: project_scope, event_type: "error")
-                           .where("occurred_at >= ?", trend_start)
-                           .group("DATE(occurred_at)")
-                           .count
-                           .transform_keys(&:to_date)
-
-      requests_by_day =
-        if recent_rollups.exists?
-          project_scope.perf_rollups
-                       .where(timeframe: "minute")
-                       .where("timestamp >= ?", trend_start)
-                       .group("DATE(timestamp)")
-                       .sum(:request_count)
-                       .transform_keys(&:to_date)
-        else
-          PerformanceEvent.where(project: project_scope)
-                          .where("occurred_at >= ?", trend_start)
-                          .group("DATE(occurred_at)")
-                          .count
-                          .transform_keys(&:to_date)
-        end
-
-      @error_rate_by_day = (0..6).map do |i|
-        day = trend_start.to_date + i
-        req = requests_by_day[day].to_i
-        err = errors_by_day[day].to_i
-        {
-          day: day,
-          request_count: req,
-          error_count: err,
-          error_rate: req > 0 ? ((err.to_f / req) * 100).round(2) : 0
-        }
-      end
+      # Intentionally no "by-day" error rate UI here; keep the page lightweight.
 
       # Build list rows: prefer rollups; fallback to raw events if no rollups present
       @list_rows = []
@@ -505,22 +471,6 @@ class PerformanceController < ApplicationController
         end
         @rollups = synthetic.sort_by(&:timestamp)
 
-        # 7-day error rate trend (daily)
-        trend_start = 7.days.ago.beginning_of_day
-        errors_by_day = error_counts_by_day.transform_keys(&:to_date)
-        requests_by_day = grouped.transform_values(&:size)
-                                .transform_keys(&:to_date)
-        @error_rate_by_day = (0..6).map do |i|
-          day = trend_start.to_date + i
-          req = requests_by_day[day].to_i
-          err = errors_by_day[day].to_i
-          {
-            day: day,
-            request_count: req,
-            error_count: err,
-            error_rate: req > 0 ? ((err.to_f / req) * 100).round(2) : 0
-          }
-        end
       else
       # Calculate detailed metrics from rollups
       @total_requests = @rollups.sum(:request_count)
@@ -539,24 +489,6 @@ class PerformanceController < ApplicationController
 
       @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
 
-      # 7-day error rate trend (daily) from rollups, without loading all rows
-      trend_start = 7.days.ago.beginning_of_day
-      minute_rollups = project_scope.perf_rollups
-                                    .where(target: @target, timeframe: "minute")
-                                    .where("timestamp >= ?", trend_start)
-      errors_by_day = minute_rollups.group("DATE(timestamp)").sum(:error_count).transform_keys(&:to_date)
-      requests_by_day = minute_rollups.group("DATE(timestamp)").sum(:request_count).transform_keys(&:to_date)
-      @error_rate_by_day = (0..6).map do |i|
-        day = trend_start.to_date + i
-        req = requests_by_day[day].to_i
-        err = errors_by_day[day].to_i
-        {
-          day: day,
-          request_count: req,
-          error_count: err,
-          error_rate: req > 0 ? ((err.to_f / req) * 100).round(2) : 0
-        }
-      end
       end
 
 
@@ -783,13 +715,14 @@ class PerformanceController < ApplicationController
 
     result = pr_service.create_pr_for_issue(issue_like)
 
-    redirect_path = if @current_project
-                      performance_action_detail_path(target: target)
-    elsif @project
-                      project_performance_action_detail_path(@project, target: target)
-    else
-                      performance_action_detail_path(target: target)
-    end
+    redirect_path =
+      if @current_project
+        performance_action_detail_path(target: target)
+      elsif @project
+        project_performance_action_detail_path(@project, target: target)
+      else
+        performance_action_detail_path(target: target)
+      end
 
     if result[:success]
       # Persist PR URL for this performance target to show a direct link next time
@@ -819,18 +752,20 @@ class PerformanceController < ApplicationController
     result = pr_service.create_n_plus_one_fix_pr(@sql_fingerprint)
 
     if result[:success]
-      redirect_path = if @current_project
-                        "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
-      else
-                        project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
-      end
+      redirect_path =
+        if @current_project
+          "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
+        else
+          project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
+        end
       redirect_to redirect_path, notice: "PR created: #{result[:pr_url]}"
     else
-      redirect_path = if @current_project
-                        "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
-      else
-                        project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
-      end
+      redirect_path =
+        if @current_project
+          "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
+        else
+          project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
+        end
       redirect_to redirect_path, alert: "Failed to create PR: #{result[:error]}"
     end
   end
