@@ -44,7 +44,6 @@
       padding: 16px;
       border-radius: 6px;
       border-left: 4px solid #dc3545;
-      margin: 16px 0;
       white-space: pre-line;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 13px;
@@ -54,11 +53,15 @@
       display: inline-block;
       padding: 10px 18px;
       background: #667eea;
-      color: white;
       text-decoration: none;
       border-radius: 6px;
       margin-top: 12px;
       font-size: 14px;
+    }
+    .button-text {
+      color: white;
+      margin: 0;
+      font-weight: 600;
     }
     .button-wrapper {
       text-align: center;
@@ -76,9 +79,34 @@
 </head>
 <body>
   <div class="header">
-    <img src="<%= URI.join(root_url, 'favicon-32.png') %>" width="22" height="22" alt="ActiveRabbit">
-    <h1>🚨 ActiveRabbit Alert</h1>
-    <p>Project: <%= @project.name %></p>
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" valign="middle">
+          <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto;">
+            <tr>
+              <td valign="middle" style="padding-right: 10px;">
+                <%= image_tag "faviicons/favicon-512.png",
+                  width: 60,
+                  height: 60,
+                  alt: "ActiveRabbit",
+                  title: "ActiveRabbit",
+                  style: "display:block;"
+                %>
+              </td>
+
+              <td valign="middle" style="text-align:left;">
+                <div style="font-size:18px; font-weight:700; line-height:1.2; margin:0; color:#ffffff;">
+                  🚨 ActiveRabbit Alert
+                </div>
+                <div style="font-size:13px; line-height:1.2; margin-top:4px; opacity:0.9; color:#ffffff;">
+                  Project: <%= @project.name %>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </div>
 
   <div class="content">
@@ -88,7 +116,7 @@
 
     <div class="button-wrapper">
       <a href="<%= @project_errors_url %>" class="button">
-        View in ActiveRabbit Dashboard
+        <p class="button-text">View in ActiveRabbit Dashboard</p>
       </a>
     </div>
 
