@@ -72,11 +72,7 @@ env:
     SIDEKIQ_CONCURRENCY: 10
 
     # Email configuration
-    MAILER_FROM_EMAIL: noreply@your-domain.com
-    ALERT_FROM_EMAIL: alerts@your-domain.com
-    SMTP_HOST: smtp.your-provider.com
-    SMTP_PORT: 587
-    SMTP_USERNAME: your-smtp-username
+    ALERT_FROM_EMAIL: ALERT_FROM_EMAIL
 
     # Security
     FORCE_SSL: true
