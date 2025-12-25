@@ -12,4 +12,3 @@ ActiveRabbit::Client.configure do |config|
   # Optional: 404 handling (true = ignore 404s, false = report them)
   config.ignore_404 = true
 end
-

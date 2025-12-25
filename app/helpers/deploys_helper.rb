@@ -1,21 +1,19 @@
 module DeploysHelper
-  def live_for_human(deploy)
-    seconds = deploy.live_for_seconds.to_i
-    return "just now" if seconds < 60
+  def live_for_human(deploy, next_deploy)
+    seconds = deploy.live_for_seconds(next_deploy)
 
     minutes = seconds / 60
     return "#{minutes}m" if minutes < 60
 
     hours = minutes / 60
-    remaining_minutes = minutes % 60
-    return "#{hours}h #{remaining_minutes}m" if hours < 24
+    return "#{hours}h" if hours < 24
 
     days = hours / 24
-    remaining_hours = hours % 24
-    return "#{days}d #{remaining_hours}h" if days < 7
+    "#{days}d"
+  end
 
-    weeks = days / 7
-    remaining_days = days % 7
-    remaining_days.zero? ? "#{weeks}w" : "#{weeks}w #{remaining_days}d"
+  def progress_percent(value, max)
+    return 0 if max.zero?
+    ((value.to_f / max) * 100).round
   end
 end

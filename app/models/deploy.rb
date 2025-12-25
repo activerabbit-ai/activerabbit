@@ -22,12 +22,20 @@ class Deploy < ApplicationRecord
       .count
   end
 
-  def live_for_seconds
-    Time.current - started_at
+  def live_for_seconds(next_deploy = nil)
+    end_time =
+      if next_deploy
+        next_deploy.started_at
+      else
+        Time.current
+      end
+
+    (end_time - started_at).to_i
   end
 
-  def errors_per_hour
-    hours = live_for_seconds / 3600.0
+  def errors_per_hour(next_deploy = nil)
+    seconds = live_for_seconds(next_deploy)
+    hours = seconds / 3600.0
     return 0 if hours <= 0
 
     (errors_count / hours).round(2)
