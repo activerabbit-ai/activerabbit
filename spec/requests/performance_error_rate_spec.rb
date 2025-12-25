@@ -33,5 +33,3 @@ RSpec.describe "Performance error rate", type: :request do
     expect(response.body).not_to include("0.0%")
   end
 end
-
-
