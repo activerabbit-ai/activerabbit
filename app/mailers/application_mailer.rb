@@ -1,4 +1,4 @@
 class ApplicationMailer < ActionMailer::Base
-  default from: "ActiveRabbit <#{ENV.fetch("ALERT_FROM_EMAIL", "activerabbit@updates.activerabbit.ai")}>"
+  default from: ENV.fetch("MAILER_FROM_EMAIL", "noreply@activerabbit.com")
   layout "mailer"
 end
