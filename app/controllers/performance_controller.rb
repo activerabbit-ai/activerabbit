@@ -47,9 +47,9 @@ class PerformanceController < ApplicationController
       slow_threshold_ms = 1000
 
       if recent_rollups.exists?
-      total_requests = recent_rollups.sum(:request_count)
-      total_errors = recent_rollups.sum(:error_count)
-      avg_response = recent_rollups.average(:avg_duration_ms)
+        total_requests = recent_rollups.sum(:request_count)
+        total_errors = recent_rollups.sum(:error_count)
+        avg_response = recent_rollups.average(:avg_duration_ms)
         slow_requests = raw_events_scope.where("duration_ms > ?", slow_threshold_ms).count
 
         @metrics = {
@@ -61,16 +61,25 @@ class PerformanceController < ApplicationController
       else
         # Fallback to raw events when rollups are not present
         total_requests = raw_events_scope.count
+        # Error rate should stay fast even if we expand the performance window (e.g. to 30d),
+        # so we cap error counting to the last 7 days.
+        error_start_time = [@hours_back.hours.ago, 7.days.ago].max
+        # NOTE: `events` currently only stores error events and does not have an `event_type` column.
+        total_errors = Event.where(project: project_scope)
+                            .where("occurred_at > ?", error_start_time)
+                            .count
         avg_response = raw_events_scope.average(:duration_ms)
         slow_requests = raw_events_scope.where("duration_ms > ?", slow_threshold_ms).count
 
-      @metrics = {
-        response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
-        throughput: "#{total_requests}/day",
-          error_rate: total_requests > 0 ? "0.0%" : "0%",
+        @metrics = {
+          response_time: avg_response ? "#{avg_response.round(1)}ms" : "N/A",
+          throughput: "#{total_requests}/day",
+          error_rate: total_requests > 0 ? "#{((total_errors.to_f / total_requests) * 100).round(2)}%" : "0%",
           slow_requests: slow_requests
         }
       end
+
+      # Intentionally no "by-day" error rate UI here; keep the page lightweight.
 
       # Build list rows: prefer rollups; fallback to raw events if no rollups present
       @list_rows = []
@@ -421,15 +430,23 @@ class PerformanceController < ApplicationController
         raw_events = raw_events_scope
         durations = raw_events.pluck(:duration_ms).compact.sort
 
+        # Cap error counting to last 7 days for performance even when the selected window is larger.
+        error_start_time = [start_time, 7.days.ago].compact.max
+
         @total_requests = raw_events.count
-        @total_errors = 0
+        # NOTE: `events` currently only stores error events and does not have an `event_type` column.
+        error_counts_by_day = Event.where(project: project_scope, controller_action: @target)
+                                   .where("occurred_at > ?", error_start_time)
+                                   .group("DATE(occurred_at)")
+                                   .count
+        @total_errors = error_counts_by_day.values.sum
         @avg_response_time = durations.any? ? (durations.sum / durations.size.to_f) : nil
         @p50_response_time = if durations.any?; durations[(0.50 * (durations.size - 1)).round]; end
         @p95_response_time = if durations.any?; durations[(0.95 * (durations.size - 1)).round]; end
         @p99_response_time = if durations.any?; durations[(0.99 * (durations.size - 1)).round]; end
         @min_response_time = durations.first
         @max_response_time = durations.last
-        @error_rate = 0
+        @error_rate = @total_requests > 0 ? ((@total_errors.to_f / @total_requests) * 100).round(2) : 0
 
         @hourly_data = {}
         @daily_data = {}
@@ -451,10 +468,11 @@ class PerformanceController < ApplicationController
             avg_duration_ms: avg,
             p95_duration_ms: p95,
             request_count: ds.size,
-            error_count: 0
+            error_count: error_counts_by_day[day_ts.to_date] || 0
           )
         end
         @rollups = synthetic.sort_by(&:timestamp)
+
       else
       # Calculate detailed metrics from rollups
       @total_requests = @rollups.sum(:request_count)
@@ -472,6 +490,7 @@ class PerformanceController < ApplicationController
                              .group_by { |r| r.timestamp.beginning_of_hour }
 
       @daily_data = @rollups.group_by { |r| r.timestamp.beginning_of_day }
+
       end
 
 
@@ -698,13 +717,14 @@ class PerformanceController < ApplicationController
 
     result = pr_service.create_pr_for_issue(issue_like)
 
-    redirect_path = if @current_project
-                      performance_action_detail_path(target: target)
-    elsif @project
-                      project_performance_action_detail_path(@project, target: target)
-    else
-                      performance_action_detail_path(target: target)
-    end
+    redirect_path =
+      if @current_project
+        performance_action_detail_path(target: target)
+      elsif @project
+        project_performance_action_detail_path(@project, target: target)
+      else
+        performance_action_detail_path(target: target)
+      end
 
     if result[:success]
       # Persist PR URL for this performance target to show a direct link next time
@@ -734,18 +754,20 @@ class PerformanceController < ApplicationController
     result = pr_service.create_n_plus_one_fix_pr(@sql_fingerprint)
 
     if result[:success]
-      redirect_path = if @current_project
-                        "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
-      else
-                        project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
-      end
+      redirect_path =
+        if @current_project
+          "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
+        else
+          project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
+        end
       redirect_to redirect_path, notice: "PR created: #{result[:pr_url]}"
     else
-      redirect_path = if @current_project
-                        "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
-      else
-                        project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
-      end
+      redirect_path =
+        if @current_project
+          "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
+        else
+          project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
+        end
       redirect_to redirect_path, alert: "Failed to create PR: #{result[:error]}"
     end
   end
