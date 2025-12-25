@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ActiveRabbit Weekly Report</title>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .content {
+      padding: 24px 20px;
+    }
+
+    h2 {
+      margin: 24px 0 12px;
+      font-size: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto 12px;
+    }
+
+    th {
+      text-align: left;
+      font-size: 13px;
+      color: #666;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 6px 4px;
+    }
+
+    td {
+      padding: 8px 4px;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+
+    .right {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .muted {
+      color: #777;
+      font-size: 12px;
+    }
+
+    .empty {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+    }
+
+    .button-wrapper {
+      text-align: center;
+      margin: 24px 0 8px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #667eea;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 13px;
+      color: #777;
+      border-top: 1px solid #e5e5e5;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td align="center">
+            <table cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td valign="middle" style="padding-right: 10px;">
+                  <%= image_tag "faviicons/favicon-512.png",
+                    width: 48,
+                    height: 48,
+                    alt: "ActiveRabbit",
+                    title: "ActiveRabbit",
+                    style: "display:block;" %>
+                </td>
+                <td valign="middle">
+                  <strong>ActiveRabbit Weekly Report</strong><br>
+                  <span style="font-size:13px;">
+                    <%= @report[:period].first.strftime("%b %d, %Y") %> –
+                    <%= @report[:period].last.strftime("%b %d, %Y") %>
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="content">
+      <h2>Top Errors</h2>
+      <% if @report[:errors].any? %>
+        <table>
+          <tr>
+            <th>Error</th>
+            <th class="right">Count</th>
+            <th>Last seen</th>
+          </tr>
+          <% @report[:errors].each do |issue| %>
+            <tr>
+              <td>
+                <strong><%= issue.exception_class %></strong><br>
+                <span class="muted"><%= issue.controller_action %></span>
+              </td>
+              <td class="right"><%= issue.occurrences %></td>
+              <td><%= issue.last_seen.strftime("%Y-%m-%d %H:%M") %></td>
+            </tr>
+          <% end %>
+        </table>
+      <% else %>
+        <div class="empty">🎉 No errors recorded this week</div>
+      <% end %>
+
+      <h2>Slowest Endpoints</h2>
+      <% if @report[:performance].any? %>
+        <table>
+          <tr>
+            <th>Target</th>
+            <th class="right">Requests</th>
+            <th class="right">Avg</th>
+            <th class="right">Max</th>
+          </tr>
+          <% @report[:performance].each do |p| %>
+            <tr>
+              <td><%= p.target %></td>
+              <td class="right"><%= p.requests %></td>
+              <td class="right"><%= p.avg_ms.round %> ms</td>
+              <td class="right"><%= p.max_ms.round %> ms</td>
+            </tr>
+          <% end %>
+        </table>
+      <% else %>
+        <div class="empty">👍 No performance issues detected</div>
+      <% end %>
+
+      <div class="button-wrapper">
+        <a href="<%= @dashboard_url %>" class="button">
+          Go to Dashboard
+        </a>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      This report was generated automatically by ActiveRabbit
+    </div>
+
+  </div>
+</body>
+</html>
