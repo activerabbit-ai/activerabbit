@@ -21,8 +21,8 @@ RSpec.describe "Performance error rate", type: :request do
     create(:performance_event, project: project, target: "HomeController#index", duration_ms: 110.0, occurred_at: 9.minutes.ago)
 
     # Two errors in the events table within 7 days
-    create(:event, project: project, account: account, controller_action: "HomeController#index", event_type: "error", occurred_at: 8.minutes.ago)
-    create(:event, project: project, account: account, controller_action: "HomeController#index", event_type: "error", occurred_at: 7.minutes.ago)
+    create(:event, project: project, account: account, controller_action: "HomeController#index", occurred_at: 8.minutes.ago)
+    create(:event, project: project, account: account, controller_action: "HomeController#index", occurred_at: 7.minutes.ago)
 
     get "/projects/#{project.id}/performance"
     expect(response).to have_http_status(:ok)

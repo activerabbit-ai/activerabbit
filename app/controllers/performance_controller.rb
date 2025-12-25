@@ -64,7 +64,8 @@ class PerformanceController < ApplicationController
         # Error rate should stay fast even if we expand the performance window (e.g. to 30d),
         # so we cap error counting to the last 7 days.
         error_start_time = [@hours_back.hours.ago, 7.days.ago].max
-        total_errors = Event.where(project: project_scope, event_type: "error")
+        # NOTE: `events` currently only stores error events and does not have an `event_type` column.
+        total_errors = Event.where(project: project_scope)
                             .where("occurred_at > ?", error_start_time)
                             .count
         avg_response = raw_events_scope.average(:duration_ms)
@@ -433,7 +434,8 @@ class PerformanceController < ApplicationController
         error_start_time = [start_time, 7.days.ago].compact.max
 
         @total_requests = raw_events.count
-        error_counts_by_day = Event.where(project: project_scope, event_type: "error", controller_action: @target)
+        # NOTE: `events` currently only stores error events and does not have an `event_type` column.
+        error_counts_by_day = Event.where(project: project_scope, controller_action: @target)
                                    .where("occurred_at > ?", error_start_time)
                                    .group("DATE(occurred_at)")
                                    .count
