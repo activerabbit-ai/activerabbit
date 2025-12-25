@@ -71,6 +71,9 @@ env:
     # Sidekiq configuration
     SIDEKIQ_CONCURRENCY: 10
 
+    # Email configuration
+    ALERT_FROM_EMAIL: activerabbit@updates.activerabbit.ai
+
     # Security
     FORCE_SSL: true
     RACK_ATTACK_ENABLED: true
