@@ -1,5 +1,5 @@
 class AlertMailer < ApplicationMailer
-  default from: ENV.fetch("ALERT_FROM_EMAIL")
+  default from: "ActiveRabbit <#{ENV.fetch("ALERT_FROM_EMAIL")}>"
 
   def send_alert(to:, subject:, body:, project:)
     @body = body
