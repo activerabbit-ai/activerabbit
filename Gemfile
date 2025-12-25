@@ -78,6 +78,11 @@ gem "thruster", require: false
 
 gem 'ransack'
 
+gem 'slack-ruby-client'
+
+# Resend email delivery service
+gem 'resend'
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
@@ -98,7 +103,7 @@ group :development, :test do
 end
 
 # ActiveRabbit AI monitoring gem
-# gem "activerabbit-ai", "~> 0.4.2"
+gem "activerabbit-ai", "~> 0.5.2"
 
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]

@@ -52,7 +52,10 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:password@db:5432/activerabbit_development
+      # Use a single writable Redis endpoint for both app + Sidekiq in dev
       REDIS_URL: redis://redis:6379/0
+      # Explicit Sidekiq writer URL to avoid accidentally pointing at a replica in other envs
+      SIDEKIQ_REDIS_URL: redis://redis:6379/0
       RAILS_ENV: development
     env_file:
       - .env
@@ -76,7 +79,9 @@ services:
         condition: service_started
     environment:
       DATABASE_URL: postgresql://postgres:password@db:5432/activerabbit_development
+      # Sidekiq must always point at a writable Redis (not a replica)
       REDIS_URL: redis://redis:6379/0
+      SIDEKIQ_REDIS_URL: redis://redis:6379/0
       RAILS_ENV: development
     env_file:
       - .env

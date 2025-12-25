@@ -82,3 +82,7 @@ production:
   <<: *default
   url: <%= ENV["DATABASE_URL"] %>
   # Single database configuration - using Redis for caching and Sidekiq for jobs
+
+staging:
+  <<: *default
+  url: <%= ENV["STAGING_DATABASE_URL"] %>

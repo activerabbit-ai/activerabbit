@@ -11,7 +11,7 @@ servers:
   job:
     hosts:
       - 5.78.134.55
-    cmd: bundle exec sidekiq -q default -q ingest
+    cmd: bundle exec sidekiq -q default -q ingest -q alerts
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
 # Remove this section when using multiple web servers and ensure you terminate SSL at your load balancer.
@@ -56,6 +56,8 @@ env:
     - PGDATABASE
     - OPENAI_API_KEY
     - ADMIN_EMAIL_ALLOWLIST
+    - RESEND_API_KEY
+    - ALERT_FROM_EMAIL
   clear:
     RAILS_ENV: production
     RAILS_LOG_TO_STDOUT: true
@@ -70,11 +72,7 @@ env:
     SIDEKIQ_CONCURRENCY: 10
 
     # Email configuration
-    MAILER_FROM_EMAIL: noreply@your-domain.com
-    ALERT_FROM_EMAIL: alerts@your-domain.com
-    SMTP_HOST: smtp.your-provider.com
-    SMTP_PORT: 587
-    SMTP_USERNAME: your-smtp-username
+    ALERT_FROM_EMAIL: ALERT_FROM_EMAIL
 
     # Security
     FORCE_SSL: true

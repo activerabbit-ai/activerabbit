@@ -6,25 +6,39 @@ class Deploy < ApplicationRecord
   belongs_to :user, optional: true
 
   has_many :events, dependent: :nullify
-  has_many :issues, dependent: :nullify
 
   validates :started_at, presence: true
 
   scope :recent, -> { order(started_at: :desc) }
   scope :for_environment, ->(env) { joins(:release).where(releases: { environment: env }) }
 
-  def duration_seconds
-    return nil unless finished_at
-    finished_at - started_at
-  end
-
   def errors_count
-    events.count
+    Issue
+      .joins(:events)
+      .where(events: {
+        project_id: project_id
+      })
+      .where("events.occurred_at >= ?", started_at)
+      .count
   end
 
-  def errors_per_hour
-    return 0 if duration_seconds.nil? || duration_seconds.zero?
-    (errors_count / (duration_seconds / 3600.0)).round(2)
+  def live_for_seconds(next_deploy = nil)
+    end_time =
+      if next_deploy
+        next_deploy.started_at
+      else
+        Time.current
+      end
+
+    (end_time - started_at).to_i
+  end
+
+  def errors_per_hour(next_deploy = nil)
+    seconds = live_for_seconds(next_deploy)
+    hours = seconds / 3600.0
+    return 0 if hours <= 0
+
+    (errors_count / hours).round(2)
   end
 
   def performance_summary

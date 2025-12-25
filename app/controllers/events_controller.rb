@@ -8,7 +8,6 @@ class EventsController < ApplicationController
     @events = @project.events.includes(:issue, :release)
 
     # Filtering
-    @events = @events.where(event_type: params[:event_type]) if params[:event_type].present?
     @events = @events.where(environment: params[:environment]) if params[:environment].present?
     @events = @events.where("controller_action ILIKE ?", "%#{params[:controller_action]}%") if params[:controller_action].present?
     @events = @events.joins(:issue).where(issues: { id: params[:issue_id] }) if params[:issue_id].present?
@@ -24,13 +23,15 @@ class EventsController < ApplicationController
     @events = @events.order(occurred_at: :desc).page(params[:page]).per(50)
 
     # Stats
+    # NOTE: `events` currently only stores error events and does not have an `event_type` column.
+    perf_events_scope = PerformanceEvent.where(project: @project)
     @stats = {
       total_today: @project.events.where("occurred_at > ?", 24.hours.ago).count,
-      errors_today: @project.events.errors.where("occurred_at > ?", 24.hours.ago).count,
-      performance_today: @project.events.performance.where("occurred_at > ?", 24.hours.ago).count,
-      avg_response_time: @project.events.performance
-                                .where("occurred_at > ? AND duration_ms IS NOT NULL", 24.hours.ago)
-                                .average(:duration_ms)&.round(2)
+      errors_today: @project.events.where("occurred_at > ?", 24.hours.ago).count,
+      performance_today: perf_events_scope.where("occurred_at > ?", 24.hours.ago).count,
+      avg_response_time: perf_events_scope
+                           .where("occurred_at > ? AND duration_ms IS NOT NULL", 24.hours.ago)
+                           .average(:duration_ms)&.round(2)
     }
 
     # Environment breakdown
