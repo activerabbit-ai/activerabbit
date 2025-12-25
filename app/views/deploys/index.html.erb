@@ -24,7 +24,8 @@
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
         <% if @deploys.any? %>
-          <% @deploys.each do |deploy| %>
+          <% @deploys.each_with_index do |deploy, index| %>
+            <% next_deploy = index.positive? ? @deploys[index - 1] : nil %>
             <tr>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 <%= deploy.release.version&.slice(0, 7) %>
@@ -35,24 +36,51 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= live_for_human(deploy) %>
+                <div class="text-gray-900 font-medium">
+                  <%= live_for_human(deploy, next_deploy) %>
+                </div>
+
+                <div class="h-1 bg-gray-200 rounded">
+                  <div
+                    class="h-1 bg-gray-400 rounded"
+                    style="width: <%= progress_percent(
+                      deploy.live_for_seconds(next_deploy),
+                      @max_live_seconds
+                    ) %>%">
+                  </div>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= time_ago_in_words(deploy.started_at) %> ago
+                <%= deploy.started_at.strftime("%b %eth %H:%M") %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <% if deploy.errors_count.zero? %>
-                  <span>0</span>
-                <% else %>
-                  <span><%= deploy.errors_count %></span>
-                <% end %>
+                <div class="space-y-1">
+                  <div class="text-gray-900">
+                    <%= deploy.errors_count %>
+                  </div>
+                  <div class="h-1 bg-gray-200 rounded">
+                    <div
+                      class="h-1 bg-gray-400 rounded"
+                      style="width: <%= progress_percent(deploy.errors_count, @max_errors) %>%">
+                    </div>
+                  </div>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <% if deploy.errors_count.zero? %>
-                  —
-                <% else %>
-                  <%= number_with_precision(deploy.errors_per_hour, precision: 2) %>
-                <% end %>
+                <%= number_with_precision(
+                      deploy.errors_per_hour(next_deploy),
+                      precision: 2
+                ) %>
+
+                <div class="h-1 bg-gray-200 rounded">
+                  <div
+                    class="h-1 bg-gray-400 rounded"
+                    style="width: <%= progress_percent(
+                      deploy.errors_per_hour(next_deploy),
+                      @max_errors_per_hour
+                    ) %>%">
+                  </div>
+                </div>
               </td>
             </tr>
           <% end %>
