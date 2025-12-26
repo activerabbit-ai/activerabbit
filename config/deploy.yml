@@ -57,7 +57,7 @@ env:
     - OPENAI_API_KEY
     - ADMIN_EMAIL_ALLOWLIST
     - RESEND_API_KEY
-    - ALERT_FROM_EMAIL
+
   clear:
     RAILS_ENV: production
     RAILS_LOG_TO_STDOUT: true
@@ -70,9 +70,6 @@ env:
 
     # Sidekiq configuration
     SIDEKIQ_CONCURRENCY: 10
-
-    # Email configuration
-    ALERT_FROM_EMAIL: ALERT_FROM_EMAIL
 
     # Security
     FORCE_SSL: true
