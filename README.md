@@ -400,6 +400,7 @@ COVERAGE=true bundle exec rspec
 - [How to Error Tracking](docs/HOW_TO_ERROR_TRACKING.md)
 - [Slack Integration](docs/SLACK_INTEGRATION.md)
 - [Account Slack Notifications](docs/ACCOUNT_SLACK_NOTIFICATIONS.md)
+- [Fizzy Integration](docs/FIZZY_INTEGRATION.md) - Sync errors to Fizzy boards
 
 ### Test Application
 - [Test Rails 8 App](../test_rails8_app/README_TESTING.md) - Verify all error types are captured
