@@ -273,7 +273,7 @@ class PerformanceController < ApplicationController
       end
     else
       # Global performance overview
-      @projects = current_user.projects.includes(:perf_rollups)
+      @projects = current_account.projects.includes(:perf_rollups)
 
       @global_stats = {}
       total_requests = 0
@@ -775,6 +775,6 @@ class PerformanceController < ApplicationController
   private
 
   def set_project
-    @project = current_user.projects.find(params[:project_id])
+    @project = Project.find(params[:project_id])
   end
 end

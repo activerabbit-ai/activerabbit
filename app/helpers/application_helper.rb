@@ -7,9 +7,10 @@ module ApplicationHelper
     # Show sidebar on admin/dashboard pages
     controller_path.start_with?("admin") ||
     request.path.start_with?("/dashboard") ||
-    %w[dashboard errors performance security logs settings deploys projects].include?(controller_name) ||
+    %w[dashboard errors performance security logs settings deploys projects users].include?(controller_name) ||
     controller_path.include?("project_settings") ||
-    controller_path.include?("account_settings")
+    controller_path.include?("account_settings") ||
+    controller_path.include?("users")
   end
 
   # Unified helper for errors index path that respects project scoping (global, project_id, or slug)
