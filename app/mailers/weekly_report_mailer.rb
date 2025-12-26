@@ -1,6 +1,4 @@
 class WeeklyReportMailer < ApplicationMailer
-  default from: ENV.fetch("ALERT_FROM_EMAIL")
-
   def weekly_report
     @user = params[:user]
     @report = params[:report]
