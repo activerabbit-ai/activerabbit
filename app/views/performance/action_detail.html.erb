@@ -264,6 +264,48 @@
             </div>
             <!-- Full-width Context -->
             <div class="mt-6">
+              <% sql_queries = (ctx['sql_queries'] || ctx[:sql_queries] || []) %>
+              <% if sql_queries.is_a?(Array) && sql_queries.any? %>
+                <div class="bg-white border border-gray-100 rounded-lg p-4 mb-6">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="text-sm font-medium text-gray-900">SQL Queries</div>
+                    <div class="text-xs text-gray-500"><%= sql_queries.length %> captured</div>
+                  </div>
+
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-3 py-2 text-left font-medium text-gray-600">#</th>
+                          <th class="px-3 py-2 text-left font-medium text-gray-600">ms</th>
+                          <th class="px-3 py-2 text-left font-medium text-gray-600">cached</th>
+                          <th class="px-3 py-2 text-left font-medium text-gray-600">name</th>
+                          <th class="px-3 py-2 text-left font-medium text-gray-600">query</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-100">
+                        <% sql_queries.each_with_index do |q, idx| %>
+                          <% qh = q.is_a?(Hash) ? q : {} %>
+                          <% dms = (qh['duration_ms'] || qh[:duration_ms] || 0).to_f %>
+                          <% cached = qh.key?('cached') ? qh['cached'] : qh[:cached] %>
+                          <% qname = qh['name'] || qh[:name] %>
+                          <% qsql = qh['sql'] || qh[:sql] %>
+                          <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 text-gray-500 whitespace-nowrap"><%= idx + 1 %></td>
+                            <td class="px-3 py-2 text-gray-900 whitespace-nowrap"><%= dms.round(2) %></td>
+                            <td class="px-3 py-2 text-gray-700 whitespace-nowrap"><%= cached ? 'yes' : 'no' %></td>
+                            <td class="px-3 py-2 text-gray-700 whitespace-nowrap"><%= qname.presence || '–' %></td>
+                            <td class="px-3 py-2 text-gray-900">
+                              <pre class="whitespace-pre-wrap break-words"><%= qsql.presence || '–' %></pre>
+                            </td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              <% end %>
+
               <div class="text-sm font-medium text-gray-900 mb-2">Context</div>
               <pre class="bg-gray-50 rounded p-4 text-sm overflow-x-auto"><%= JSON.pretty_generate(ctx) rescue ctx.inspect %></pre>
             </div>
