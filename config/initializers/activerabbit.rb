@@ -88,7 +88,7 @@ ActiveRabbit::Client.configure do |config|
   config.enable_pii_scrubbing          = true
 
   # Optional: enable deployment tracking
-  config.revision = ENV["APP_REVISION"] || `git rev-parse HEAD`.chomp
+  config.revision = `git rev-parse HEAD`.chomp
 
   # Optional: 404 handling (true = ignore 404s, false = report them)
   config.ignore_404 = true
