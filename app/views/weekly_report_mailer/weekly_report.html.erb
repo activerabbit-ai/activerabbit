@@ -109,31 +109,24 @@
 <body>
   <div class="container">
     <div class="header">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-        <tr>
-          <td align="center">
-            <table cellpadding="0" cellspacing="0" role="presentation">
-              <tr>
-                <td valign="middle" style="padding-right: 10px;">
-                  <%= image_tag "faviicons/favicon-512.png",
-                    width: 48,
-                    height: 48,
-                    alt: "ActiveRabbit",
-                    title: "ActiveRabbit",
-                    style: "display:block;" %>
-                </td>
-                <td valign="middle">
-                  <strong>ActiveRabbit Weekly Report</strong><br>
-                  <span style="font-size:13px;">
-                    <%= @report[:period].first.strftime("%b %d, %Y") %> –
-                    <%= @report[:period].last.strftime("%b %d, %Y") %>
-                  </span>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;">
+          <%= image_tag "faviicons/favicon-512.png",
+            width: 48,
+            height: 48,
+            style: "display:block;margin-right:16px;" %>
+
+          <div style="text-align:left;">
+            <div style="font-weight:700;font-size:16px;line-height:1.25;">
+              ActiveRabbit Weekly Report
+            </div>
+            <div style="font-size:13px;opacity:0.9;margin-top:2px;">
+              <%= @report[:period].first.strftime("%b %d, %Y") %> –
+              <%= @report[:period].last.strftime("%b %d, %Y") %>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="content">
