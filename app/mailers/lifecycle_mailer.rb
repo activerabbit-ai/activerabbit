@@ -1,9 +1,4 @@
 class LifecycleMailer < ApplicationMailer
-  default from: ENV.fetch(
-    "ALERT_FROM_EMAIL",
-    "ActiveRabbit <activerabbit@updates.activerabbit.ai>"
-  )
-
   def welcome(account:)
     @account = account
     mail to: account.users.first.email, subject: "Welcome to ActiveRabbit"

@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 class QuotaAlertMailer < ApplicationMailer
-  default from: ENV.fetch(
-    "ALERT_FROM_EMAIL",
-    "ActiveRabbit <activerabbit@updates.activerabbit.ai>"
-  )
-
   # Send alert when user reaches 80% of quota
   def warning_80_percent(account, resource_type)
     @account = account
