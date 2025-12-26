@@ -57,6 +57,7 @@ env:
     - OPENAI_API_KEY
     - ADMIN_EMAIL_ALLOWLIST
     - RESEND_API_KEY
+    - ACTIVERABBIT_SELF_MONITOR
 
   clear:
     RAILS_ENV: production
