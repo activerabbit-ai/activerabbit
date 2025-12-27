@@ -177,7 +177,7 @@
                          else
                            performance_action_detail_path(target: perf_issue[:action], tab: 'ai')
                          end %>
-            <tr class="hover:bg-gray-50 transition-colors">
+            <tr class="hover:bg-gray-50 hover:cursor-pointer transition-colors" onclick="window.location.href='<%= row_link %>'">
               <td class="px-6 py-4">
                 <div class="flex items-start">
                   <div class="flex-shrink-0 w-2 h-2 rounded-full mt-2 mr-3 <%= perf_issue[:status] == 'slow' ? 'bg-yellow-400' : perf_issue[:error_count].to_i > 0 ? 'bg-red-400' : 'bg-green-400' %>"></div>
@@ -239,7 +239,7 @@
                   <%= perf_issue[:last_seen].strftime("%b %d, %Y") %>
                 </div>
               </td>
-              <td class="px-6 py-4">
+              <td class="px-6 py-4" onclick="event.stopPropagation();">
                 <% if (pr_url = perf_issue[:github_pr_url]).present? %>
                   <%= link_to pr_url, target: "_blank", rel: "noopener", class: "inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 focus:outline-none" do %>
                     <svg class="w-4 h-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -251,7 +251,7 @@
                   <span class="text-xs text-gray-400">—</span>
                 <% end %>
               </td>
-              <td class="px-6 py-4">
+              <td class="px-6 py-4" onclick="event.stopPropagation();">
                 <%= link_to(ai_link,
                             target: "_blank",
                             rel: "noopener",
