@@ -1,0 +1,49 @@
+<%# locals: (pagy:) %>
+<%# Renders a compact "Prev / Next" pagination control (only buttons + page indicator). %>
+<% return unless pagy && pagy.pages.to_i > 1 %>
+
+<div class="flex items-center justify-between gap-4">
+  <div class="text-sm text-gray-700 whitespace-nowrap">
+    Page <span class="font-medium"><%= pagy.page %></span> of <span class="font-medium"><%= pagy.pages %></span>
+  </div>
+
+  <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="Pagination">
+    <% if pagy.prev %>
+      <%= link_to pagy_url_for(pagy, pagy.prev),
+                  rel: "prev",
+                  class: "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Prev
+      <% end %>
+    <% else %>
+      <span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded-l-md cursor-not-allowed select-none">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Prev
+      </span>
+    <% end %>
+
+    <% if pagy.next %>
+      <%= link_to pagy_url_for(pagy, pagy.next),
+                  rel: "next",
+                  class: "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 border-l-0 rounded-r-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" do %>
+        Next
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      <% end %>
+    <% else %>
+      <span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 border-l-0 rounded-r-md cursor-not-allowed select-none">
+        Next
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </span>
+    <% end %>
+  </div>
+</div>
+
+
