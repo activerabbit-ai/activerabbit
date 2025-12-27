@@ -21,6 +21,24 @@ class PerformanceIngestJob
 
     # Detect N+1 queries if SQL queries are provided
     if payload[:sql_queries].present?
+      # Ensure count is always set for UI badges/rollups.
+      payload[:sql_queries_count] ||= payload[:sql_queries].size
+
+      # Persist a safe, bounded copy into context so Samples UI can render it.
+      payload[:context] ||= {}
+      existing_ctx = payload[:context].is_a?(Hash) ? payload[:context] : {}
+      payload[:context] = existing_ctx
+      payload[:context][:sql_queries] ||= payload[:sql_queries].first(200).map do |q|
+        h = q.is_a?(Hash) ? q : {}
+        {
+          name: h[:name] || h["name"],
+          sql: (h[:sql] || h["sql"]).to_s,
+          duration_ms: (h[:duration_ms] || h["duration_ms"] || 0).to_f,
+          start_ms: (h[:start_ms] || h["start_ms"]),
+          cached: !!(h[:cached] || h["cached"])
+        }
+      end
+
       n_plus_one_incidents = SqlFingerprint.detect_n_plus_one(
         project: project,
         controller_action: payload[:controller_action],
@@ -29,7 +47,6 @@ class PerformanceIngestJob
 
       # Persist N+1 detection inside context so it's available on the event
       payload[:n_plus_one_detected] = n_plus_one_incidents.any?
-      payload[:context] ||= {}
       payload[:context][:n_plus_one_detected] = payload[:n_plus_one_detected]
 
       # Track individual SQL queries
