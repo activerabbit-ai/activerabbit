@@ -55,7 +55,9 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
+  app_host = ENV.fetch("APP_HOST", "app.activerabbit.ai")
+  config.action_mailer.default_url_options = { host: app_host, protocol: "https" }
+  config.action_mailer.asset_host = "https://#{app_host}"
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via rails credentials:edit.
   config.action_mailer.delivery_method = :resend
