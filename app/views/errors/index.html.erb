@@ -144,7 +144,7 @@
               <%= sort_link(@q, :status, "Status", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= sort_link(@q, :count, "Total", class: "inline-flex items-center") %>
+              Impact %
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               PR
@@ -154,9 +154,6 @@
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= sort_link(@q, :first_seen_at, "First Seen", class: "inline-flex items-center") %>
             </th>
           </tr>
         </thead>
@@ -205,10 +202,16 @@
                 <%= render "errors/status_dropdown_list", issue: issue, project: @project %>
               </td>
 
-              <!-- Total -->
+              <!-- Impact % (24h) -->
               <td class="px-6 py-4">
-                <div class="text-sm font-semibold text-gray-900"><%= issue.count %></div>
-                <div class="text-xs text-gray-500">times</div>
+                <% issue_24h = (@events_24h_by_issue_id || {})[issue.id].to_i %>
+                <% impact = (@total_events_24h.to_i > 0 && issue_24h > 0) ? ((issue_24h.to_f / @total_events_24h.to_f) * 100).round(2) : 0.0 %>
+                <% if impact > 0 %>
+                  <div class="text-sm font-semibold text-orange-600">~<%= impact %>%</div>
+                  <div class="text-xs text-gray-500"><%= number_with_delimiter(issue.count) %> total</div>
+                <% else %>
+                  <span class="text-xs text-gray-400">—</span>
+                <% end %>
               </td>
               <td class="px-6 py-4" onclick="event.stopPropagation();">
                 <% if (pr_url = issue.github_pr_url).present? %>
@@ -247,10 +250,6 @@
               <td class="px-6 py-4">
                 <div class="text-sm text-gray-900"><%= time_ago_in_words(issue.last_seen_at) %> ago</div>
                 <div class="text-xs text-gray-500"><%= issue.last_seen_at.strftime("%b %d, %Y %H:%M") %></div>
-              </td>
-              <td class="px-6 py-4">
-                <div class="text-sm text-gray-900"><%= time_ago_in_words(issue.first_seen_at) %> ago</div>
-                <div class="text-xs text-gray-500"><%= issue.first_seen_at.strftime("%b %d, %Y %H:%M") %></div>
               </td>
             </tr>
           <% end %>
