@@ -5,6 +5,9 @@ class ApplicationController < ActionController::Base
   # Include Pagy backend for pagination
   include Pagy::Backend
 
+  # Pundit authorization
+  include Pundit::Authorization
+
   # Devise authentication - skip for Devise controllers (sign up, sign in, etc.)
   before_action :authenticate_user!, unless: :devise_controller?
 

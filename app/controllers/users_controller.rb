@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
   layout "admin"
   before_action :authenticate_user!
-  before_action :require_admin!, only: [:create, :destroy]
+  before_action :require_owner!, only: [:create, :destroy]
 
   skip_before_action :check_onboarding_needed, only: [:new, :create]
   skip_before_action :set_current_tenant, only: [:new]
@@ -13,7 +13,7 @@ class UsersController < ApplicationController
   end
 
   def edit
-    @user = current_user
+    @user = User.find(params[:id])
   end
 
   def new
@@ -34,9 +34,10 @@ class UsersController < ApplicationController
   end
 
   def update
-    @user = current_user
-    if @user.update(user_params)
-      redirect_to @user, notice: "Profile updated successfully."
+    @user = User.find(params[:id])
+
+    if @user.update(user_update_params)
+      redirect_to users_path, notice: "User updated successfully."
     else
       render :edit
     end
@@ -57,11 +58,15 @@ class UsersController < ApplicationController
     params.require(:user).permit(:email, :password, :password_confirmation)
   end
 
+  def user_update_params
+    params.require(:user).permit(:role)
+  end
+
   def current_account
     current_user.account
   end
 
-  def require_admin!
-    redirect_to root_path, alert: "Not have permissions" unless current_user.admin?
+  def require_owner!
+    redirect_to root_path, alert: "Not have permissions" unless current_user.owner?
   end
 end

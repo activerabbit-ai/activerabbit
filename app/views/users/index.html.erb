@@ -17,17 +17,45 @@
     <div class="p-6 space-y-4">
       <% @users.each do |user| %>
         <div class="flex items-center justify-between">
+          <!-- Email -->
           <div>
             <p class="text-sm text-gray-600"><%= user.email %></p>
           </div>
-          <div>
+
+          <!-- Role + actions -->
+          <div class="flex items-center gap-3 relative">
             <% if user.owner? %>
-              <span class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded-full">Owner</span>
+              <span class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded-full">
+                Owner
+              </span>
             <% else %>
-              <span class="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-200 rounded-full">Member</span>
+              <span class="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-200 rounded-full">
+                Member
+              </span>
             <% end %>
+
+            <!-- Dropdown -->
+            <details class="relative">
+              <summary class="list-none cursor-pointer rounded-full p-1 hover:bg-gray-100">
+                <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6 10a2 2 0 114 0 2 2 0 01-4 0zm4-6a2 2 0 114 0 2 2 0 01-4 0zm0 12a2 2 0 114 0 2 2 0 01-4 0z"/>
+                </svg>
+              </summary>
+
+              <div class="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                <%= link_to "Edit",
+                  edit_user_path(user),
+                  class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" %>
+
+                <%= link_to "Delete",
+                  user_path(user),
+                  data: { turbo_method: :delete, turbo_confirm: "Are you sure?" },
+                  class: "block px-4 py-2 text-sm text-red-600 hover:bg-red-50" %>
+              </div>
+            </details>
           </div>
         </div>
+
         <% unless user == @users.last %>
           <hr class="border-gray-200">
         <% end %>
