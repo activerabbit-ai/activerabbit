@@ -21,10 +21,10 @@
             <p class="text-sm text-gray-600"><%= user.email %></p>
           </div>
           <div>
-            <% if user.admin? %>
-              <span class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded-full">Admin</span>
-            <% else %>      
-              <span class="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-200 rounded-full">Manager</span>
+            <% if user.owner? %>
+              <span class="px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded-full">Owner</span>
+            <% else %>
+              <span class="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-200 rounded-full">Member</span>
             <% end %>
           </div>
         </div>

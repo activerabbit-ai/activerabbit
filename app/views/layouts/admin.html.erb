@@ -144,7 +144,7 @@
             Usage
           <% end %>
 
-          <% if current_user.role == "admin" %>
+          <% if current_user.role == "owner" %>
             <%= link_to users_path,
                 class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(users_path)}" do %>
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -264,7 +264,7 @@
                   </div>
                   <div class="hidden md:block text-left">
                     <div class="text-sm font-medium text-gray-900">
-                      <%= current_user&.email&.split("@")&.first&.capitalize || "Admin" %>
+                      <%= current_user&.email&.split("@")&.first&.capitalize || "Owner" %>
                     </div>
                     <div class="text-xs text-gray-500"><%= current_user&.role&.capitalize %></div>
                   </div>

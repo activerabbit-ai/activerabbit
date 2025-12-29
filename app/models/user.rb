@@ -1,5 +1,5 @@
 class User < ApplicationRecord
-  ROLES = %w[admin manager].freeze
+  ROLES = %w[owner member].freeze
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
@@ -23,7 +23,7 @@ class User < ApplicationRecord
   # Callbacks - Create account BEFORE user creation
   before_validation :ensure_account_exists, on: :create
 
-  before_validation :assign_default_admin_role, on: :create
+  before_validation :assign_default_owner_role, on: :create
 
   def needs_onboarding?
     return true if account.blank?
@@ -54,12 +54,12 @@ class User < ApplicationRecord
     end
   end
 
-  def admin?
-    role == "admin"
+  def owner?
+    role == "owner"
   end
 
-  def manager?
-    role == "manager"
+  def member?
+    role == "member"
   end
 
   def password_required?
@@ -93,11 +93,11 @@ class User < ApplicationRecord
     end
   end
 
-  def assign_default_admin_role
+  def assign_default_owner_role
     if invited_by.nil?
-      self.role = "admin" if role.blank?
+      self.role = "owner" if role.blank?
     else
-      self.role = role.presence || "manager"
+      self.role = role.presence || "member"
     end
   end
 end
