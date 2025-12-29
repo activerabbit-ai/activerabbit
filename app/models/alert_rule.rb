@@ -38,13 +38,23 @@ class AlertRule < ApplicationRecord
     event.project.alert_rules.active.for_type("performance_regression").each do |rule|
       next unless event.duration_ms && event.duration_ms >= rule.threshold_value
 
+      target = event.target.presence || "unknown"
+
+      recent_alert = AlertNotification
+        .where(alert_rule: rule)
+        .where("created_at > ?", rule.time_window_minutes.minutes.ago)
+        .where("payload ->> 'target' = ?", target)
+        .exists?
+
+      next if recent_alert
+
       AlertJob.perform_async(
         rule.id,
         "performance_regression",
         {
           event_id: event.id,
           duration_ms: event.duration_ms,
-          target: event.target
+          target: target
         }
       )
     end
