@@ -21,22 +21,8 @@ class ProjectsController < ApplicationController
   end
 
   def show
-    @api_tokens = @project.api_tokens.order(:created_at)
-    @alert_rules = @project.alert_rules.order(:name)
-
-    # Summary stats (to mirror dashboard card details)
-    @project_stats = {
-      open_issues: @project.issues.open.count,
-      events_today: @project.events.where("occurred_at > ?", 24.hours.ago).count,
-      events_total: @project.events.count
-    }
-
-    # Performance metrics for last 24 hours
-    @performance_stats = @project.perf_rollups
-                                .where("timestamp > ?", 24.hours.ago)
-                                .group(:target)
-                                .average(:avg_duration_ms)
-                                .transform_values { |v| v.round(2) }
+    # Project show is intentionally not used; send users to the project Errors page instead.
+    redirect_to(project_slug_errors_path(@project.slug)) and return
   end
 
   def new
@@ -63,7 +49,7 @@ class ProjectsController < ApplicationController
 
   def update
     if @project.update(project_params)
-      redirect_to project_path(@project), notice: "Project updated successfully."
+      redirect_to project_slug_errors_path(@project.slug), notice: "Project updated successfully."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -71,14 +57,14 @@ class ProjectsController < ApplicationController
 
   def destroy
     @project.destroy
-    redirect_to projects_path, notice: "Project deleted successfully."
+    redirect_to dashboard_path, notice: "Project deleted successfully."
   end
 
   def regenerate_token
     @project.api_tokens.active.update_all(active: false, revoked_at: Time.current)
     new_token = @project.generate_api_token!
 
-    redirect_to project_path(@project),
+    redirect_to project_slug_errors_path(@project.slug),
                 notice: "New API token generated: #{new_token.mask_token}"
   end
 

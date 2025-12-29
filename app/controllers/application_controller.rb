@@ -40,11 +40,11 @@ class ApplicationController < ActionController::Base
       if resource.needs_onboarding?
         onboarding_welcome_path
       else
-        dashboard_path
+        stored_location_for(resource) || dashboard_path
       end
     rescue ActsAsTenant::Errors::NoTenantSet
       # If tenant isn't set yet, assume onboarding is needed
-      onboarding_welcome_path
+      stored_location_for(resource) || onboarding_welcome_path
     end
   end
 

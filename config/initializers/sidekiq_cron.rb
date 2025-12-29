@@ -44,3 +44,18 @@ class ReportUsageDailyLoader
     end
   end
 end
+
+if defined?(Sidekiq::Cron) &&
+   ENV["REDIS_URL"].present? &&
+   !ActiveModel::Type::Boolean.new.cast(ENV["DISABLE_SIDEKIQ_CRON"]) &&
+   !Rails.env.test?
+
+  jobs = {
+    "weekly_report" => {
+      "cron" => "0 9 * * 0",  # Every Sunday at 9:00 AM
+      "class" => "WeeklyReportJob"
+    }
+  }
+
+  Sidekiq::Cron::Job.load_from_hash(jobs)
+end

@@ -78,12 +78,18 @@ class PerformanceController < ApplicationController
           slow_requests: slow_requests
         }
       end
+      # Total requests in the selected window (across all actions). Used for Impact % in the list table.
+      # Important: must match the source used to build the list (rollups vs raw events) to avoid confusing ratios.
+      @total_requests_in_window = 0
 
       # Intentionally no "by-day" error rate UI here; keep the page lightweight.
 
       # Build list rows: prefer rollups; fallback to raw events if no rollups present
       @list_rows = []
       if @rollups.exists?
+        # Denominator for Impact %: sum request counts from the same rollups used for list rows
+        @total_requests_in_window = @rollups.sum(:request_count).to_i
+
         # Summarize by target from rollups
         rollup_groups = @rollups.group_by(&:target)
 
@@ -135,6 +141,8 @@ class PerformanceController < ApplicationController
         window_start = @hours_back.hours.ago
         events = PerformanceEvent.where(project: project_scope)
                                  .where("occurred_at > ?", window_start)
+        # Denominator for Impact %: total raw requests in window (across all actions)
+        @total_requests_in_window = events.size
 
         event_groups = events.group_by(&:target)
 

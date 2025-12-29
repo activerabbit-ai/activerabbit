@@ -59,7 +59,7 @@ class DashboardController < ApplicationController
       return
     end
 
-    # Redirect to the full project show page
-    redirect_to project_path(@current_project)
+    # Redirect to Errors by default when switching/landing on a project
+    redirect_to project_slug_errors_path(@current_project.slug)
   end
 end

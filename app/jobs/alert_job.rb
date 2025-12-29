@@ -2,6 +2,8 @@ class AlertJob
   include Sidekiq::Job
 
   sidekiq_options queue: :alerts, retry: 3
+  URL_HOST = ENV.fetch("APP_HOST", "localhost:3000")
+  URL_PROTOCOL = Rails.env.production? ? "https" : "http"
 
   def perform(alert_rule_id, alert_type, payload)
     alert_rule = nil
@@ -70,7 +72,8 @@ class AlertJob
       send_email_alert(
         project,
         "Error Frequency Alert",
-        build_error_frequency_email(issue, payload)
+        build_error_frequency_email(issue, payload),
+        dashboard_url: project_error_url(project, issue)
       )
     end
   end
@@ -86,7 +89,8 @@ class AlertJob
     send_email_alert(
       project,
       "Performance Alert",
-      build_performance_email(event, payload)
+      build_performance_email(event, payload),
+      dashboard_url: project_performance_issue_url(project, event)
     ) if project.notify_via_email?
   end
 
@@ -108,7 +112,8 @@ class AlertJob
     send_email_alert(
       project,
       "New Issue Alert",
-      build_new_issue_email(issue)
+      build_new_issue_email(issue),
+      dashboard_url: project_error_url(project, issue)
     ) if project.notify_via_email?
   end
 
@@ -122,13 +127,22 @@ class AlertJob
   # ------------------------
   # Email fallback
   # ------------------------
-  def send_email_alert(project, subject, body)
+  def send_email_alert(project, subject, body, dashboard_url: nil)
     AlertMailer.send_alert(
       to: project.user.email,
-      subject: "[#{project.name}] #{subject}",
+      subject: "#{project.name}: #{subject}",
       body: body,
-      project: project
+      project: project,
+      dashboard_url: dashboard_url
     ).deliver_now
+  end
+
+  def project_error_url(project, issue)
+    Rails.application.routes.url_helpers.project_error_url(project, issue, host: URL_HOST, protocol: URL_PROTOCOL)
+  end
+
+  def project_performance_issue_url(project, event)
+    Rails.application.routes.url_helpers.project_performance_issue_url(project, event, host: URL_HOST, protocol: URL_PROTOCOL)
   end
 
   # ------------------------
@@ -156,7 +170,7 @@ class AlertJob
     endpoint = payload["controller_action"] || "Unknown"
 
     <<~EMAIL
-      🚨 PERFORMANCE ALERT
+      PERFORMANCE ALERT
 
       Project:
         #{event.project.name}

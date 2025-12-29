@@ -111,7 +111,7 @@
               <div class="flex items-center space-x-2">
                 <h3 class="text-lg font-semibold">
                   <%= link_to project.name,
-                              project_path(project),
+                              project_slug_errors_path(project.slug),
                               class: "text-indigo-600 hover:text-indigo-800 transition-colors" %>
                 </h3>
                 <span class="inline-block w-2 h-2 rounded-full <%= dot_class %>"></span>

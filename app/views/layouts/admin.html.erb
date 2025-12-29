@@ -212,7 +212,7 @@
                         Switch Project
                       </div>
                       <% current_account.projects.order(:name).each do |project| %>
-                        <%= link_to "/#{project.slug}",
+                        <%= link_to project_slug_errors_path(project.slug),
                             class: "flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 #{'bg-indigo-50 text-indigo-700' if (defined?(@current_project) && @current_project&.id == project.id) || (selected_project_for_menu&.id == project.id && !@current_project)}" do %>
                           <div class="w-2 h-2 bg-<%= project.active? ? 'green' : 'gray' %>-400 rounded-full mr-3"></div>
                           <div class="flex-1">
