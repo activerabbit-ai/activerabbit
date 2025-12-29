@@ -8,6 +8,8 @@ class ApplicationController < ActionController::Base
   # Pundit authorization
   include Pundit::Authorization
 
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+
   # Devise authentication - skip for Devise controllers (sign up, sign in, etc.)
   before_action :authenticate_user!, unless: :devise_controller?
 
@@ -138,6 +140,10 @@ class ApplicationController < ActionController::Base
     if message
       flash.now[:alert] = view_context.link_to(message, plan_path, class: "underline hover:text-red-800").html_safe
     end
+  end
+
+  def user_not_authorized
+    redirect_to root_path, alert: "You don’t have permission to perform this action"
   end
 
   layout :layout_by_resource

@@ -1,23 +1,33 @@
 class UserPolicy < ApplicationPolicy
   def index?
-    user.user_is_owner?
+    user.owner?
+  end
+
+  def create?
+    user.owner?
+  end
+
+  def edit?
+    user.owner? || record == user
   end
 
   def update?
-    user.user_is_owner? || record.id == user.id
+    user.owner? || record == user
   end
 
   def destroy?
-    user.user_is_owner?
+    user.owner?
   end
 
-  def invite?
-    user.user_is_owner?
+    def invite?
+    user.owner?
   end
 
-  private
-
-  def user_is_owner?
-    user.role == "owner"
+  def permitted_attributes
+    if user.owner?
+      [:role]
+    else
+      []
+    end
   end
 end

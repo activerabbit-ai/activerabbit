@@ -9,20 +9,25 @@ class UsersController < ApplicationController
   skip_before_action :check_quota_exceeded, only: [:new, :create]
 
   def index
-    @users = User.where(invited_by: current_user)
+    authorize User
+    @users = current_account.users
   end
 
   def edit
     @user = User.find(params[:id])
+    authorize @user
   end
 
   def new
     @user = User.new
+    authorize @user
   end
 
   def create
     @user = current_account.users.new(user_params)
     @user.invited_by = current_user
+
+    authorize @user
 
     unless @user.save
       render :new, status: :unprocessable_content
@@ -35,8 +40,9 @@ class UsersController < ApplicationController
 
   def update
     @user = User.find(params[:id])
+    authorize @user
 
-    if @user.update(user_update_params)
+    if @user.update(permitted_attributes(@user))
       redirect_to users_path, notice: "User updated successfully."
     else
       render :edit
@@ -45,6 +51,7 @@ class UsersController < ApplicationController
 
   def destroy
     @user = User.find(params[:id])
+    authorize @user
     if @user.destroy
       redirect_to users_path, notice: "User deleted successfully."
     else
@@ -56,10 +63,6 @@ class UsersController < ApplicationController
 
   def user_params
     params.require(:user).permit(:email, :password, :password_confirmation)
-  end
-
-  def user_update_params
-    params.require(:user).permit(:role)
   end
 
   def current_account
