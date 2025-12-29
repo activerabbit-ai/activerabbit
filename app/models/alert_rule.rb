@@ -48,6 +48,16 @@ class AlertRule < ApplicationRecord
 
       next if recent_alert
 
+      if rule.cooldown_minutes.to_i > 0
+        cooldown_alert = AlertNotification
+          .where(alert_rule: rule)
+          .where("created_at > ?", rule.cooldown_minutes.minutes.ago)
+          .where("payload ->> 'target' = ?", target)
+          .exists?
+
+        next if cooldown_alert
+      end
+
       AlertJob.perform_async(
         rule.id,
         "performance_regression",
