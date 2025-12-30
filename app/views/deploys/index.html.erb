@@ -67,18 +67,12 @@
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= number_with_precision(
-                      deploy.errors_per_hour(next_deploy),
-                      precision: 2
-                ) %>
+                <%= deploy.errors_per_hour %>
 
                 <div class="h-1 bg-gray-200 rounded">
                   <div
                     class="h-1 bg-gray-400 rounded"
-                    style="width: <%= progress_percent(
-                      deploy.errors_per_hour(next_deploy),
-                      @max_errors_per_hour
-                    ) %>%">
+                    style="width: <%= progress_percent(deploy.errors_per_hour, @max_errors_per_hour) %>%">
                   </div>
                 </div>
               </td>
