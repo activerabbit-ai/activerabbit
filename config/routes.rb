@@ -1,9 +1,16 @@
 require "sidekiq/web"
 
 Rails.application.routes.draw do
-  devise_for :users, controllers: {
-    omniauth_callbacks: "users/omniauth_callbacks"
-  }
+  devise_for :users,
+    controllers: {
+      omniauth_callbacks: "users/omniauth_callbacks"
+    },
+    path: "",
+    path_names: {
+      sign_in: "signin",
+      sign_out: "signout",
+      sign_up: "signup"
+    }
   root "dashboard#index"
 
   # Onboarding routes for new users
@@ -24,6 +31,7 @@ Rails.application.routes.draw do
   patch "settings/update_notification_settings", to: "settings#update_notification_settings", as: "update_notification_settings"
   patch "settings/update_user_slack_preferences", to: "settings#update_user_slack_preferences", as: "update_user_slack_preferences_settings"
   post "settings/test_slack_notification", to: "settings#test_slack_notification", as: "test_slack_notification_settings"
+  resources :users
 
   get  "slack/oauth/authorize", to: "slack_auth#authorize"
   get  "slack/oauth/callback",  to: "slack_auth#callback"

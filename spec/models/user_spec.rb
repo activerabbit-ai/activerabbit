@@ -9,8 +9,13 @@ RSpec.describe User, type: :model do
 
   it 'responds to needs_onboarding?' do
     user = create(:user)
+
     expect(user.needs_onboarding?).to eq(true)
-    create(:project, user: user, account: user.account)
+
+    ActsAsTenant.with_tenant(user.account) do
+      create(:project, user: user, account: user.account)
+    end
+
     expect(user.needs_onboarding?).to eq(false)
   end
 end

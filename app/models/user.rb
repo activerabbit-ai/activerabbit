@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  ROLES = %w[owner member].freeze
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
@@ -14,16 +15,20 @@ class User < ApplicationRecord
 
   # ActiveRabbit relationships (scoped to account through acts_as_tenant)
   has_many :projects, dependent: :destroy
+  belongs_to :invited_by, class_name: "User", optional: true
+
+  # Validations
+  validates :role, inclusion: { in: ROLES }
 
   # Callbacks - Create account BEFORE user creation
   before_validation :ensure_account_exists, on: :create
 
+  before_validation :assign_default_owner_role, on: :create
+
   def needs_onboarding?
-    # Handle case when no tenant is set (during registration)
     return true if account.blank?
 
-    # Use direct database query to avoid acts_as_tenant scoping issues
-    Project.unscoped.where(user_id: id).count == 0
+    !account.projects.exists?
   end
 
   def self.from_omniauth(auth)
@@ -49,6 +54,22 @@ class User < ApplicationRecord
     end
   end
 
+  def owner?
+    role == "owner"
+  end
+
+  def member?
+    role == "member"
+  end
+
+  def password_required?
+    if invited_by.present?
+      false
+    else
+      super
+    end
+  end
+
   private
 
   def ensure_account_exists
@@ -69,6 +90,14 @@ class User < ApplicationRecord
       a.billing_interval = "month"
       a.event_quota = 100_000
       a.events_used_in_period = 0
+    end
+  end
+
+  def assign_default_owner_role
+    if invited_by.nil?
+      self.role = "owner" if role.blank?
+    else
+      self.role = role.presence || "member"
     end
   end
 end

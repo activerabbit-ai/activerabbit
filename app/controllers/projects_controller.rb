@@ -26,11 +26,12 @@ class ProjectsController < ApplicationController
   end
 
   def new
-    @project = current_user.projects.build
+    @project = current_account.projects.build
   end
 
   def create
-    @project = current_user.projects.build(project_params)
+    @project = current_account.projects.build(project_params)
+    @project.user = current_user
 
     if @project.save
       @project.generate_api_token!
@@ -72,7 +73,7 @@ class ProjectsController < ApplicationController
   private
 
   def set_project
-    @project = current_account.projects.find(params[:id])
+    @project = Project.find(params[:id])
   end
 
   def project_params

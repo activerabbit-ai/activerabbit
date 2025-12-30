@@ -91,19 +91,25 @@ class Rack::Attack
 
   self.throttled_responder = lambda do |env|
     match_data = env["rack.attack.match_data"]
-    now = match_data[:epoch_time]
+
+    period = match_data[:period]
+    limit  = match_data[:limit]
+
+    retry_after = period
+    reset_at = Time.now.to_i + retry_after
 
     headers = {
       "Content-Type" => "application/json",
-      "X-RateLimit-Limit" => match_data[:limit].to_s,
+      "X-RateLimit-Limit" => limit.to_s,
       "X-RateLimit-Remaining" => "0",
-      "X-RateLimit-Reset" => (now + match_data[:period]).to_s
+      "X-RateLimit-Reset" => reset_at.to_s,
+      "Retry-After" => retry_after.to_s
     }
 
     body = {
       error: "rate_limit_exceeded",
       message: "Rate limit exceeded. Please slow down.",
-      retry_after: match_data[:period]
+      retry_after: retry_after
     }.to_json
 
     [429, headers, [body]]

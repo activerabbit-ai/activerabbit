@@ -479,8 +479,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_23_000001) do
     t.bigint "account_id", null: false
     t.string "provider"
     t.string "uid"
+    t.string "role"
+    t.bigint "invited_by_id"
     t.index ["account_id"], name: "index_users_on_account_id"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["invited_by_id"], name: "index_users_on_invited_by_id"
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
@@ -534,4 +537,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_23_000001) do
   add_foreign_key "sql_fingerprints", "accounts"
   add_foreign_key "sql_fingerprints", "projects"
   add_foreign_key "users", "accounts"
+  add_foreign_key "users", "users", column: "invited_by_id"
 end

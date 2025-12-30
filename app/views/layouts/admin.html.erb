@@ -143,6 +143,16 @@
             </svg>
             Usage
           <% end %>
+
+          <% if current_user.role == "owner" %>
+            <%= link_to users_path,
+                class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(users_path)}" do %>
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 0112 15a9 9 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              Users
+            <% end %>
+          <% end %>
         </nav>
 
         <!-- Persistent Subscription Promo Box at bottom of sidebar -->
@@ -177,7 +187,7 @@
 =end%>
 
               <!-- Project Selector -->
-              <% if user_signed_in? && current_account&.projects&.any? %>
+              <% if user_signed_in? && ActsAsTenant.current_tenant && current_account.projects.any? %>
                 <div class="relative" data-controller="dropdown">
                   <button data-action="click->dropdown#toggle" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     <div class="w-2 h-2 bg-indigo-600 rounded-full"></div>
@@ -254,9 +264,9 @@
                   </div>
                   <div class="hidden md:block text-left">
                     <div class="text-sm font-medium text-gray-900">
-                      <%= current_user&.email&.split("@")&.first&.capitalize || "Admin" %>
+                      <%= current_user&.email&.split("@")&.first&.capitalize || "Owner" %>
                     </div>
-                    <div class="text-xs text-gray-500">Administrator</div>
+                    <div class="text-xs text-gray-500"><%= current_user&.role&.capitalize %></div>
                   </div>
                   <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>

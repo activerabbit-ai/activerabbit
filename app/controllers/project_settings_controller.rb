@@ -62,7 +62,7 @@ class ProjectSettingsController < ApplicationController
     if @current_project
       @project = @current_project
     elsif params[:project_id].present?
-      @project = current_user.projects.find(params[:project_id])
+      @project = current_account.projects.find(params[:project_id])
     else
       redirect_to dashboard_path, alert: "Project not found."
     end
