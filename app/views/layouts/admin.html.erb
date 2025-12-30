@@ -143,16 +143,6 @@
             </svg>
             Usage
           <% end %>
-
-          <% if current_user.role == "owner" %>
-            <%= link_to users_path,
-                class: "flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(users_path)}" do %>
-              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 0112 15a9 9 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-              </svg>
-              Users
-            <% end %>
-          <% end %>
         </nav>
 
         <!-- Persistent Subscription Promo Box at bottom of sidebar -->
@@ -283,6 +273,20 @@
                         </svg>
                         Profile Settings
                       </div>
+                    <% end %>
+                    <% if current_user.role == "owner" %>
+                      <%= link_to users_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" do %>
+                        <div class="flex items-center">
+                          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M7 7a3 3 0 116 0 3 3 0 01-6 0
+                                M4 17a5 5 0 0110 0
+                                M14 7a3.5 2.5 0 115 0
+                                M15 17a4 18 0 015 0" />
+                          </svg>
+                          Users
+                        </div>
+                      <% end %>
                     <% end %>
                     <%= link_to root_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" do %>
                       <div class="flex items-center">
