@@ -67,7 +67,7 @@ class AlertRulesController < ApplicationController
   private
 
   def set_project
-    @project = Project.find(params[:project_id])
+    @project = current_account.projects.find(params[:project_id])
   end
 
   def set_alert_rule
