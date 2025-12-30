@@ -167,7 +167,7 @@ class AlertJob
 
   def build_performance_email(event, payload)
     duration = payload["duration_ms"]
-    endpoint = payload["controller_action"] || "Unknown"
+    endpoint = event.target.presence || "Unknown"
 
     <<~EMAIL
       PERFORMANCE ALERT
