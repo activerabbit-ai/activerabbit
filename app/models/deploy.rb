@@ -13,12 +13,9 @@ class Deploy < ApplicationRecord
   scope :for_environment, ->(env) { joins(:release).where(releases: { environment: env }) }
 
   def errors_count
-    Issue
-      .joins(:events)
-      .where(events: {
-        project_id: project_id
-      })
-      .where("events.occurred_at >= ?", started_at)
+    Event
+      .where(project_id: project_id)
+      .where("occurred_at >= ?", started_at)
       .count
   end
 
@@ -33,12 +30,20 @@ class Deploy < ApplicationRecord
     (end_time - started_at).to_i
   end
 
-  def errors_per_hour(next_deploy = nil)
-    seconds = live_for_seconds(next_deploy)
-    hours = seconds / 3600.0
-    return 0 if hours <= 0
+  def errors_last_hour
+    Event
+      .where(project_id: project_id)
+      .where("occurred_at >= ?", 1.hour.ago)
+      .count
+  end
 
-    (errors_count / hours).round(2)
+  def errors_per_hour
+    from = [started_at, 1.hour.ago].max
+
+    Event
+      .where(project_id: project_id)
+      .where("occurred_at >= ?", from)
+      .count
   end
 
   def performance_summary
