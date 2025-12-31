@@ -20,17 +20,37 @@ class AlertRule < ApplicationRecord
         .where("created_at > ?", rule.time_window_minutes.minutes.ago)
         .count
 
-      if recent_count >= rule.threshold_value
-        AlertJob.perform_async(
-          rule.id,
-          "error_frequency",
-          {
-            issue_id: issue.id,
-            count: recent_count,
-            time_window: rule.time_window_minutes
-          }
-        )
+      next unless recent_count >= rule.threshold_value
+
+      alert_key = issue.id.to_s
+
+      recent_alert = AlertNotification
+        .where(alert_rule: rule)
+        .where("created_at > ?", rule.time_window_minutes.minutes.ago)
+        .where("payload ->> 'issue_id' = ?", alert_key)
+        .exists?
+
+      next if recent_alert
+
+      if rule.cooldown_minutes.to_i > 0
+        cooldown_alert = AlertNotification
+          .where(alert_rule: rule)
+          .where("created_at > ?", rule.cooldown_minutes.minutes.ago)
+          .where("payload ->> 'issue_id' = ?", alert_key)
+          .exists?
+
+        next if cooldown_alert
       end
+
+      AlertJob.perform_async(
+        rule.id,
+        "error_frequency",
+        {
+          issue_id: issue.id,
+          count: recent_count,
+          time_window: rule.time_window_minutes
+        }
+      )
     end
   end
 
@@ -73,17 +93,36 @@ class AlertRule < ApplicationRecord
   def self.check_n_plus_one_rules(project, incidents)
     project.alert_rules.active.for_type("n_plus_one").each do |rule|
       high_severity = incidents.select { |i| i[:severity] == "high" }
+      next if high_severity.size < rule.threshold_value
 
-      if high_severity.size >= rule.threshold_value
-        AlertJob.perform_async(
-          rule.id,
-          "n_plus_one",
-          {
-            incidents: high_severity,
-            controller_action: incidents.first[:controller_action]
-          }
-        )
+      alert_key = high_severity.first[:controller_action].presence || "unknown"
+
+      recent_alert = AlertNotification
+        .where(alert_rule: rule)
+        .where("created_at > ?", rule.time_window_minutes.minutes.ago)
+        .where("payload ->> 'controller_action' = ?", alert_key)
+        .exists?
+
+      next if recent_alert
+
+      if rule.cooldown_minutes.to_i > 0
+        cooldown_alert = AlertNotification
+          .where(alert_rule: rule)
+          .where("created_at > ?", rule.cooldown_minutes.minutes.ago)
+          .where("payload ->> 'controller_action' = ?", alert_key)
+          .exists?
+
+        next if cooldown_alert
       end
+
+      AlertJob.perform_async(
+        rule.id,
+        "n_plus_one",
+        {
+          incidents: high_severity,
+          controller_action: alert_key
+        }
+      )
     end
   end
 
