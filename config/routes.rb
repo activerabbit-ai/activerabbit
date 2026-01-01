@@ -80,6 +80,8 @@ Rails.application.routes.draw do
 
     resource :settings, controller: "project_settings", only: [:show, :update] do
       post :test_notification
+      post :test_fizzy_sync
+      post :sync_all_errors
     end
 
     resources :issues do

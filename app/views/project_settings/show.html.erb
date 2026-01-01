@@ -400,6 +400,150 @@
       <% end %>
     </div>
   </div>
+
+  <!-- Fizzy Integration Card -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <%= image_tag "fizzy-logo.png", class: "w-6 h-6 mr-3", alt: "Fizzy" %>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">Fizzy Integration</h3>
+            <p class="text-sm text-gray-500">Sync errors to your Fizzy board</p>
+          </div>
+        </div>
+        <div class="flex items-center">
+          <% if @project.fizzy_configured? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              Configured
+            </span>
+          <% else %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              Not Configured
+            </span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="p-6">
+      <%= form_with(model: @project, url: project_settings_path(@project), method: :patch, local: true, class: "space-y-4") do |form| %>
+        <% if @project.fizzy_endpoint_from_env? || @project.fizzy_api_key_from_env? %>
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex">
+              <svg class="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+              </svg>
+              <p class="text-sm text-blue-700">
+                Some settings are configured via environment variables and cannot be edited here.
+              </p>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fizzy Endpoint URL</label>
+            <% if @project.fizzy_endpoint_from_env? %>
+              <div class="flex items-center">
+                <input type="text" disabled value="<%= @project.fizzy_endpoint_url %>" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-500 sm:text-sm">
+                <span class="ml-2 text-xs text-gray-500">(from ENV)</span>
+              </div>
+            <% else %>
+              <%= form.text_field :fizzy_endpoint_url,
+                  value: @project.settings['fizzy_endpoint_url'],
+                  placeholder: "https://fizzy.example.com/account/boards/BOARD_ID",
+                  class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm" %>
+            <% end %>
+            <p class="text-xs text-gray-500 mt-1">Your Fizzy board URL (e.g., https://fizzy.app/account/boards/abc123)</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fizzy API Key</label>
+            <% if @project.fizzy_api_key_from_env? %>
+              <div class="flex items-center">
+                <input type="password" disabled value="configured-via-env" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-500 sm:text-sm">
+                <span class="ml-2 text-xs text-gray-500">(from ENV)</span>
+              </div>
+            <% else %>
+              <%= form.password_field :fizzy_api_key,
+                  value: @project.settings['fizzy_api_key'],
+                  placeholder: "Your Fizzy API key",
+                  class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm" %>
+            <% end %>
+            <p class="text-xs text-gray-500 mt-1">API key for authenticating with Fizzy</p>
+          </div>
+        </div>
+
+        <!-- Auto-Sync Enable Toggle -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div>
+            <label class="text-sm font-medium text-gray-900">Auto-sync new errors</label>
+            <p class="text-sm text-gray-500">Automatically create Fizzy cards when new errors occur</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="hidden" name="project[fizzy_sync_enabled]" value="0">
+            <input type="checkbox"
+                   name="project[fizzy_sync_enabled]"
+                   value="1"
+                   class="sr-only peer"
+                   <%= "checked" if @project.fizzy_sync_enabled? %>
+                   <%= "disabled" unless @project.fizzy_configured? %>>
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer
+                        peer-checked:bg-orange-500
+                        peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
+                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                        after:bg-white after:border-gray-300 after:border after:rounded-full
+                        after:h-5 after:w-5 after:transition-all
+                        peer-checked:after:translate-x-full">
+            </div>
+          </label>
+        </div>
+
+        <div class="pt-4">
+          <%= form.submit "Save Fizzy Settings",
+              class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500" %>
+        </div>
+      <% end %>
+
+      <% if @project.fizzy_configured? %>
+        <div class="pt-4 border-t border-gray-200 mt-4 flex flex-wrap gap-3">
+          <%= button_to "Test Connection",
+              test_fizzy_sync_project_settings_path(@project),
+              method: :post,
+              class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500" %>
+
+          <%= button_to "Sync All Open Issues",
+              sync_all_errors_project_settings_path(@project),
+              method: :post,
+              data: { confirm: "This will sync all open issues to Fizzy. Continue?" },
+              class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500" %>
+        </div>
+      <% end %>
+
+      <div class="mt-6 p-4 bg-orange-50 rounded-lg">
+        <div class="flex">
+          <svg class="w-5 h-5 text-orange-400 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+          </svg>
+          <div>
+            <h4 class="text-sm font-medium text-orange-800">About Fizzy Integration</h4>
+            <p class="text-sm text-orange-700 mt-1">
+              Fizzy integration creates cards on your Fizzy board when errors occur.
+              You can also configure this via environment variables:
+              <code class="text-xs bg-orange-100 px-1 rounded">FIZZY_ENDPOINT_URL</code> and
+              <code class="text-xs bg-orange-100 px-1 rounded">FIZZY_API_KEY</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
  </div>
 
  <script>
