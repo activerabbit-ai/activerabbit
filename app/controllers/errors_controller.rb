@@ -242,12 +242,13 @@ class ErrorsController < ApplicationController
 
           # Check if it's from the detail page or list page
           if params[:from_list]
-            # Update the list view status dropdown
+            # Update the list view status dropdown (turbo-frame)
+            @issue.reload
             render turbo_stream: [
               turbo_stream.replace(
                 "status_dropdown_#{@issue.id}",
                 partial: "errors/status_dropdown_list",
-                locals: { issue: @issue, project: @project }
+                locals: { issue: @issue, project: @project, current_project: @current_project }
               ),
               turbo_stream.append(
                 "flash_messages",

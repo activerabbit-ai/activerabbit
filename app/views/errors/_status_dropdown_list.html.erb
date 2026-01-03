@@ -1,50 +1,54 @@
-<div id="status_dropdown_<%= issue.id %>" class="relative inline-block" data-controller="dropdown">
-  <!-- Status Badge Button -->
-  <button type="button"
-          data-action="click->dropdown#toggle"
-          onclick="event.stopPropagation();"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-1
-                 <%= case issue.status
-                     when 'open' then 'bg-red-50 text-red-700 border border-red-200 focus:ring-red-400'
-                     when 'wip' then 'bg-amber-50 text-amber-700 border border-amber-200 focus:ring-amber-400'
-                     else 'bg-emerald-50 text-emerald-700 border border-emerald-200 focus:ring-emerald-400'
-                     end %>">
-    <span class="w-1.5 h-1.5 rounded-full <%= case issue.status
-                                              when 'open' then 'bg-red-500'
-                                              when 'wip' then 'bg-amber-500'
-                                              else 'bg-emerald-500'
-                                              end %>"></span>
-    <span><%= issue.status == 'open' ? 'Open' : issue.status == 'wip' ? 'In Progress' : 'Closed' %></span>
-    <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-    </svg>
-  </button>
+<turbo-frame id="status_dropdown_<%= issue.id %>">
+  <div class="relative inline-block" data-controller="dropdown">
+    <!-- Status Badge Button -->
+    <button type="button"
+            data-action="click->dropdown#toggle"
+            onclick="event.stopPropagation();"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-1
+                   <%= case issue.status
+                       when 'open' then 'bg-red-50 text-red-700 border border-red-200 focus:ring-red-400'
+                       when 'wip' then 'bg-amber-50 text-amber-700 border border-amber-200 focus:ring-amber-400'
+                       else 'bg-emerald-50 text-emerald-700 border border-emerald-200 focus:ring-emerald-400'
+                       end %>">
+      <span class="w-1.5 h-1.5 rounded-full <%= case issue.status
+                                                when 'open' then 'bg-red-500'
+                                                when 'wip' then 'bg-amber-500'
+                                                else 'bg-emerald-500'
+                                                end %>"></span>
+      <span><%= issue.status == 'open' ? 'Open' : issue.status == 'wip' ? 'In Progress' : 'Closed' %></span>
+      <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-  <!-- Dropdown Menu -->
-  <div data-dropdown-target="menu"
-       class="hidden absolute left-0 mt-1 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[999999] animate-fade-in">
+    <!-- Dropdown Menu -->
+    <div data-dropdown-target="menu"
+         class="hidden fixed w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[999999] animate-fade-in"
+         style="margin-top: 4px;">
 
-    <% [['open', 'Open', 'red'], ['wip', 'In Progress', 'amber'], ['closed', 'Closed', 'emerald']].each do |status, label, color| %>
-      <%= form_with model: issue,
-                    url: (@current_project ? "/#{@current_project.slug}/errors/#{issue.id}" : (project ? project_error_path(project, issue) : error_path(issue))),
-                    method: :patch,
-                    data: { turbo_frame: "status_dropdown_#{issue.id}" },
-                    class: "block" do |f| %>
-        <%= f.hidden_field :from_list, value: true %>
-        <%= f.hidden_field :status, value: status %>
-        <button type="submit"
-                onclick="event.stopPropagation();"
-                class="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors
-                       <%= issue.status == status ? 'bg-gray-50 font-medium' : 'hover:bg-gray-50' %>">
-          <span class="w-2 h-2 rounded-full bg-<%= color %>-500"></span>
-          <span class="text-gray-700"><%= label %></span>
-          <% if issue.status == status %>
-            <svg class="w-3 h-3 ml-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-          <% end %>
-        </button>
+      <% current_proj = defined?(current_project) ? current_project : @current_project %>
+      <% [['open', 'Open', 'red'], ['wip', 'In Progress', 'amber'], ['closed', 'Closed', 'emerald']].each do |status, label, color| %>
+        <%= form_with model: issue,
+                      url: (current_proj ? "/#{current_proj.slug}/errors/#{issue.id}" : (project ? project_error_path(project, issue) : error_path(issue))),
+                      method: :patch,
+                      data: { turbo: true },
+                      class: "block" do |f| %>
+          <%= f.hidden_field :from_list, value: true %>
+          <%= f.hidden_field :status, value: status %>
+          <button type="submit"
+                  onclick="event.stopPropagation();"
+                  class="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors
+                         <%= issue.status == status ? 'bg-gray-50 font-medium' : 'hover:bg-gray-50' %>">
+            <span class="w-2 h-2 rounded-full bg-<%= color %>-500"></span>
+            <span class="text-gray-700"><%= label %></span>
+            <% if issue.status == status %>
+              <svg class="w-3 h-3 ml-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            <% end %>
+          </button>
+        <% end %>
       <% end %>
-    <% end %>
+    </div>
   </div>
-</div>
+</turbo-frame>

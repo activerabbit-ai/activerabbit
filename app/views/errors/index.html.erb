@@ -133,8 +133,8 @@
       </div>
     <% elsif @issues.any? %>
     <!-- Proper HTML Table -->
-    <div class="overflow-visible">
-      <table class="min-w-full divide-y divide-gray-200">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200" style="position: relative;">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -142,6 +142,9 @@
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :status, "Status", class: "inline-flex items-center") %>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <%= sort_link(@q, :count, "Count", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Impact %
@@ -196,6 +199,12 @@
                 <%= render "errors/status_dropdown_list", issue: issue, project: @project %>
               </td>
 
+              <!-- Total Count -->
+              <td class="px-6 py-4">
+                <div class="text-sm font-semibold text-gray-900"><%= number_with_delimiter(issue.count || 0) %></div>
+                <div class="text-xs text-gray-500">total</div>
+              </td>
+
               <!-- Impact % (24h) -->
               <td class="px-6 py-4">
                 <% issue_24h = (@events_24h_by_issue_id || {})[issue.id].to_i %>
@@ -205,7 +214,7 @@
                   <div class="text-xs text-gray-500"><%= number_with_delimiter(issue_24h) %> in 24h</div>
                 <% else %>
                   <div class="text-xs text-gray-400">0%</div>
-                  <div class="text-xs text-gray-400"><%= number_with_delimiter(issue.count || 0) %> total</div>
+                  <div class="text-xs text-gray-400">0 in 24h</div>
                 <% end %>
               </td>
               <td class="px-6 py-4" onclick="event.stopPropagation();">
