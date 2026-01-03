@@ -40,7 +40,7 @@ class UsersController < ApplicationController
       reset_password_token: enc_token,
       reset_password_sent_at: Time.current
     )
-    UserMailer.welcome_and_setup_password(@user, raw_token).deliver_later
+    SendWelcomeEmailJob.perform_async(@user.id, raw_token)
 
     redirect_to users_path, notice: "User invited"
   end

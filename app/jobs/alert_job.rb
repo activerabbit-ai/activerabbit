@@ -135,14 +135,15 @@ class AlertJob
   # Email fallback
   # ------------------------
   def send_email_alert(project, subject, body, dashboard_url: nil)
-    project.account.users.find_each do |user|
+    project.account.users.find_each.with_index do |user, index|
+      # Stagger emails to avoid Resend rate limit (2/second)
       AlertMailer.send_alert(
         to: user.email,
         subject: "#{project.name}: #{subject}",
         body: body,
         project: project,
         dashboard_url: dashboard_url
-      ).deliver_now
+      ).deliver_later(wait: index.seconds)
     end
   end
 
