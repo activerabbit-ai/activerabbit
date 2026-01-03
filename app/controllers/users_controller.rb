@@ -34,7 +34,14 @@ class UsersController < ApplicationController
       return
     end
 
-    @user.send_reset_password_instructions
+    # Generate reset token and send welcome email (not generic reset password)
+    raw_token, enc_token = Devise.token_generator.generate(User, :reset_password_token)
+    @user.update_columns(
+      reset_password_token: enc_token,
+      reset_password_sent_at: Time.current
+    )
+    UserMailer.welcome_and_setup_password(@user, raw_token).deliver_later
+
     redirect_to users_path, notice: "User invited"
   end
 
