@@ -11,6 +11,7 @@ class NotificationPreference < ApplicationRecord
   FREQUENCIES = %w[
     immediate
     every_30_minutes
+    every_2_hours
     first_in_deploy
     after_close
   ]
@@ -26,7 +27,9 @@ class NotificationPreference < ApplicationRecord
     when "immediate"
       true
     when "every_30_minutes"
-      last_sent_at < 30.minutes.ago
+      last_sent_at.nil? || last_sent_at < 30.minutes.ago
+    when "every_2_hours"
+      last_sent_at.nil? || last_sent_at < 2.hours.ago
     when "first_in_deploy"
       last_sent_at.nil?
     when "after_close"

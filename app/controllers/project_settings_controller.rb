@@ -12,7 +12,7 @@ class ProjectSettingsController < ApplicationController
           alert_type: type
         ) do |pref|
           pref.enabled = true
-          pref.frequency = "immediate"
+          pref.frequency = "every_2_hours"
         end
       end
   end
