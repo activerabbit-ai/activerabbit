@@ -128,13 +128,15 @@ class AlertJob
   # Email fallback
   # ------------------------
   def send_email_alert(project, subject, body, dashboard_url: nil)
-    AlertMailer.send_alert(
-      to: project.user.email,
-      subject: "#{project.name}: #{subject}",
-      body: body,
-      project: project,
-      dashboard_url: dashboard_url
-    ).deliver_now
+    project.account.users.find_each do |user|
+      AlertMailer.send_alert(
+        to: user.email,
+        subject: "#{project.name}: #{subject}",
+        body: body,
+        project: project,
+        dashboard_url: dashboard_url
+      ).deliver_now
+    end
   end
 
   def project_error_url(project, issue)
