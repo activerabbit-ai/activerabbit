@@ -22,7 +22,7 @@
 
   <!-- Dropdown Menu -->
   <div data-dropdown-target="menu"
-       class="hidden absolute left-0 mt-1 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999] animate-fade-in">
+       class="hidden absolute left-0 mt-1 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[999999] animate-fade-in">
 
     <% [['open', 'Open', 'red'], ['wip', 'In Progress', 'amber'], ['closed', 'Closed', 'emerald']].each do |status, label, color| %>
       <%= form_with model: issue,
