@@ -201,7 +201,7 @@
                 <% issue_24h = (@events_24h_by_issue_id || {})[issue.id].to_i %>
                 <% impact = (@total_events_24h.to_i > 0 && issue_24h > 0) ? ((issue_24h.to_f / @total_events_24h.to_f) * 100).round(2) : 0.0 %>
                 <% if issue_24h > 0 %>
-                  <div class="text-sm font-semibold text-orange-600"><%= impact > 0 ? "~#{impact}%" : "<1%" %></div>
+                  <div class="text-sm font-semibold <%= impact > 50 ? 'text-red-600' : 'text-gray-900' %>"><%= impact > 0 ? "~#{impact}%" : "<1%" %></div>
                   <div class="text-xs text-gray-500"><%= number_with_delimiter(issue_24h) %> in 24h</div>
                 <% else %>
                   <div class="text-xs text-gray-400">0%</div>

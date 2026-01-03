@@ -195,7 +195,7 @@
                 <% num = perf_issue[:total_requests].to_i %>
                 <% impact = (denom > 0 && num > 0) ? ((num.to_f / denom.to_f) * 100).round(2) : 0.0 %>
                 <% if impact > 0 %>
-                  <div class="text-sm font-semibold text-orange-600">~<%= impact %>%</div>
+                  <div class="text-sm font-semibold <%= impact > 50 ? 'text-red-600' : 'text-gray-900' %>">~<%= impact %>%</div>
                   <div class="text-xs text-gray-500"><%= number_with_delimiter(num) %> requests </div>
                 <% else %>
                   <span class="text-xs text-gray-400">—</span>

@@ -1,6 +1,6 @@
 <div id="status_dropdown_<%= issue.id %>" class="relative inline-block" data-controller="dropdown">
   <!-- Status Badge Button -->
-  <button type="button" 
+  <button type="button"
           data-action="click->dropdown#toggle"
           onclick="event.stopPropagation();"
           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:shadow-md hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-1
@@ -21,9 +21,9 @@
   </button>
 
   <!-- Dropdown Menu -->
-  <div data-dropdown-target="menu" 
+  <div data-dropdown-target="menu"
        class="hidden absolute left-0 mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 animate-fade-in">
-    
+
     <% [['open', 'Open', 'red'], ['wip', 'In Progress', 'amber'], ['closed', 'Closed', 'emerald']].each do |status, label, color| %>
       <%= form_with model: issue,
                     url: (@current_project ? "/#{@current_project.slug}/errors/#{issue.id}" : (project ? project_error_path(project, issue) : error_path(issue))),
@@ -32,7 +32,7 @@
                     class: "block" do |f| %>
         <%= f.hidden_field :from_list, value: true %>
         <%= f.hidden_field :status, value: status %>
-        <button type="submit" 
+        <button type="submit"
                 onclick="event.stopPropagation();"
                 class="w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors
                        <%= issue.status == status ? 'bg-gray-50 font-medium' : 'hover:bg-gray-50' %>">
