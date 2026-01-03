@@ -39,6 +39,21 @@ class ErrorsController < ApplicationController
       @recent_errors = Issue.where("last_seen_at > ?", 24.hours.ago).count
     end
 
+    # Calculate impact metrics for the issues list
+    issue_ids = @issues.map(&:id)
+    if issue_ids.any?
+      events_scope = project_scope ? project_scope.events : Event
+      @total_events_24h = events_scope.where("occurred_at > ?", 24.hours.ago).count
+      @events_24h_by_issue_id = events_scope
+        .where(issue_id: issue_ids)
+        .where("occurred_at > ?", 24.hours.ago)
+        .group(:issue_id)
+        .count
+    else
+      @total_events_24h = 0
+      @events_24h_by_issue_id = {}
+    end
+
     # Optional: build graph data across all errors
     if params[:tab] == "graph"
       range_key = (params[:range] || "7D").to_s.upcase

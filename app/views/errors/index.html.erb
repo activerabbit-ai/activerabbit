@@ -183,16 +183,10 @@
                       </span>
                     </div>
                     <% if issue.sample_message.present? %>
-                      <div class="text-xs text-gray-600 mb-1">
-                        <%= truncate(issue.sample_message, length: 60) %>
+                      <div class="text-xs text-gray-600">
+                        <%= truncate(issue.sample_message, length: 80) %>
                       </div>
                     <% end %>
-                    <div class="text-xs text-gray-500">
-                      <strong>Action:</strong> <%= issue.controller_action || 'unknown' %>
-                    </div>
-                    <div class="text-xs text-gray-400">
-                      <%= truncate(issue.top_frame || 'unknown', length: 40) %>
-                    </div>
                   </div>
                 </div>
               </td>
@@ -206,11 +200,12 @@
               <td class="px-6 py-4">
                 <% issue_24h = (@events_24h_by_issue_id || {})[issue.id].to_i %>
                 <% impact = (@total_events_24h.to_i > 0 && issue_24h > 0) ? ((issue_24h.to_f / @total_events_24h.to_f) * 100).round(2) : 0.0 %>
-                <% if impact > 0 %>
-                  <div class="text-sm font-semibold text-orange-600">~<%= impact %>%</div>
-                  <div class="text-xs text-gray-500"><%= number_with_delimiter(issue.count) %> total</div>
+                <% if issue_24h > 0 %>
+                  <div class="text-sm font-semibold text-orange-600"><%= impact > 0 ? "~#{impact}%" : "<1%" %></div>
+                  <div class="text-xs text-gray-500"><%= number_with_delimiter(issue_24h) %> in 24h</div>
                 <% else %>
-                  <span class="text-xs text-gray-400">—</span>
+                  <div class="text-xs text-gray-400">0%</div>
+                  <div class="text-xs text-gray-400"><%= number_with_delimiter(issue.count || 0) %> total</div>
                 <% end %>
               </td>
               <td class="px-6 py-4" onclick="event.stopPropagation();">
