@@ -19,9 +19,17 @@ class AlertJob
     return unless project.notifications_enabled?
 
     preference = project.notification_pref_for(alert_type)
-    return unless preference&.can_send_now?
+    return unless preference
 
+    # Use database lock to prevent race condition - only one job can proceed
     ActsAsTenant.with_tenant(project.account) do
+      preference.with_lock do
+        return unless preference.can_send_now?
+
+        # Mark sent FIRST to prevent other jobs from sending
+        preference.mark_sent!
+      end
+
       notification = AlertNotification.create!(
         alert_rule: alert_rule,
         project: project,
@@ -34,7 +42,6 @@ class AlertJob
       begin
         dispatch_alert(alert_type, project, issue, payload)
 
-        preference.mark_sent!
         notification.mark_sent!
         Rails.logger.info "Alert sent: #{alert_type} for project #{project.slug}"
 
