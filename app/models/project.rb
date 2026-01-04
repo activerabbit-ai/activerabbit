@@ -2,7 +2,7 @@ class Project < ApplicationRecord
   # Multi-tenancy setup - Project belongs to Account (tenant)
   acts_as_tenant(:account)
 
-  belongs_to :user
+  belongs_to :user, optional: true
   has_many :issues, dependent: :destroy
   has_many :events, dependent: :destroy
   has_many :perf_rollups, dependent: :destroy
@@ -17,7 +17,7 @@ class Project < ApplicationRecord
   has_many :notification_preferences, dependent: :destroy
 
   validates :name, presence: true
-  validates_uniqueness_to_tenant :name, scope: :user_id
+  validates_uniqueness_to_tenant :name
   validates :slug, presence: true, uniqueness: true
   validates :environment, presence: true
   validates :url, presence: true, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), message: "must be a valid URL" }

@@ -4,7 +4,7 @@ RSpec.describe Project, type: :model do
   subject(:project) { build(:project) }
 
   describe 'associations' do
-    it { is_expected.to belong_to(:user) }
+    it { is_expected.to belong_to(:user).optional }
     it { is_expected.to have_many(:issues).dependent(:destroy) }
     it { is_expected.to have_many(:events).dependent(:destroy) }
     it { is_expected.to have_many(:perf_rollups).dependent(:destroy) }
@@ -33,6 +33,11 @@ RSpec.describe Project, type: :model do
       project.name = 'My Test Project'
       project.valid?
       expect(project.slug).to eq('my-test-project')
+    end
+
+    it 'is valid without a user (user is optional)' do
+      project.user = nil
+      expect(project).to be_valid
     end
   end
 

@@ -3,10 +3,10 @@ class UsersController < ApplicationController
   before_action :authenticate_user!
   before_action :require_owner!, only: [:create, :destroy]
 
-  skip_before_action :check_onboarding_needed, only: [:new, :create]
+  skip_before_action :check_onboarding_needed, only: [:new, :create, :destroy]
   skip_before_action :set_current_tenant, only: [:new]
-  skip_before_action :set_current_project_from_slug, only: [:new, :create]
-  skip_before_action :check_quota_exceeded, only: [:new, :create]
+  skip_before_action :set_current_project_from_slug, only: [:new, :create, :destroy]
+  skip_before_action :check_quota_exceeded, only: [:new, :create, :destroy]
 
   def index
     authorize User
@@ -59,10 +59,23 @@ class UsersController < ApplicationController
   def destroy
     @user = User.find(params[:id])
     authorize @user
+
+    # Prevent deleting yourself
+    if @user == current_user
+      redirect_to users_path, alert: "You cannot delete yourself."
+      return
+    end
+
+    # Prevent deleting the last owner
+    if @user.owner? && current_account.users.where(role: "owner").count <= 1
+      redirect_to users_path, alert: "Cannot delete the last owner."
+      return
+    end
+
     if @user.destroy
       redirect_to users_path, notice: "User deleted successfully."
     else
-      redirect_to users_path, alert: "Failed to delete user."
+      redirect_to users_path, alert: "Failed to delete user: #{@user.errors.full_messages.join(', ')}"
     end
   end
 
