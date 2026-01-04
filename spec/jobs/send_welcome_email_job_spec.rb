@@ -47,4 +47,3 @@ RSpec.describe SendWelcomeEmailJob, type: :job do
     end
   end
 end
-

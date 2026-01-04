@@ -71,4 +71,3 @@ RSpec.describe WeeklyReportMailer, type: :mailer do
     end
   end
 end
-

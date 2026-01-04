@@ -153,4 +153,3 @@ RSpec.describe AlertJob, type: :job do
     end
   end
 end
-
