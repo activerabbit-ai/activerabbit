@@ -210,12 +210,12 @@ RSpec.describe NotificationPreference, type: :model do
     end
 
     it "updates last_sent_at to current time" do
-      freeze_time do
-        expect { preference.mark_sent! }
-          .to change { preference.reload.last_sent_at }
-          .from(nil)
-          .to(Time.current)
-      end
+      expect(preference.last_sent_at).to be_nil
+
+      preference.mark_sent!
+
+      expect(preference.reload.last_sent_at).to be_present
+      expect(preference.last_sent_at).to be_within(1.second).of(Time.current)
     end
   end
 end

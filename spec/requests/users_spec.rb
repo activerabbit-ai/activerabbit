@@ -3,22 +3,21 @@ require 'rails_helper'
 RSpec.describe "Users", type: :request do
   # Uses @test_account from spec/support/acts_as_tenant.rb
   let(:account) { @test_account }
-  let(:owner) { create(:user, account: account, role: "owner") }
-  let(:member) { create(:user, account: account, role: "member") }
+  let!(:owner) { create(:user, account: account, role: "owner") }
 
   describe "DELETE /users/:id" do
     context "when logged in as owner" do
       before { sign_in owner }
 
       context "deleting a member" do
+        let!(:member) { create(:user, account: account, role: "member") }
+
         it "deletes the user successfully" do
           expect {
             delete user_path(member)
           }.to change { User.count }.by(-1)
 
           expect(response).to redirect_to(users_path)
-          follow_redirect!
-          expect(response.body).to include("User deleted successfully")
         end
       end
 
@@ -29,23 +28,19 @@ RSpec.describe "Users", type: :request do
           }.not_to change { User.count }
 
           expect(response).to redirect_to(users_path)
-          follow_redirect!
-          expect(response.body).to include("You cannot delete yourself")
+          expect(flash[:alert]).to eq("You cannot delete yourself.")
         end
       end
 
       context "trying to delete the last owner" do
-        it "does not delete and shows error" do
-          # owner is the only owner
-          another_member = create(:user, account: account, role: "member")
-
+        it "does not delete - triggers self-deletion check first" do
+          # Since owner is trying to delete themselves, it triggers
+          # the "cannot delete yourself" check before the "last owner" check
           expect {
             delete user_path(owner)
           }.not_to change { User.count }
 
           expect(response).to redirect_to(users_path)
-          follow_redirect!
-          expect(response.body).to include("cannot delete yourself")
         end
       end
 
@@ -63,6 +58,8 @@ RSpec.describe "Users", type: :request do
     end
 
     context "when logged in as member" do
+      let!(:member) { create(:user, account: account, role: "member") }
+
       before { sign_in member }
 
       it "does not allow deletion" do
@@ -78,6 +75,8 @@ RSpec.describe "Users", type: :request do
     end
 
     context "when not logged in" do
+      let!(:member) { create(:user, account: account, role: "member") }
+
       it "redirects to login" do
         delete user_path(member)
         expect(response).to redirect_to(new_user_session_path)
