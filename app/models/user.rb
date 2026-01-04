@@ -14,7 +14,8 @@ class User < ApplicationRecord
   delegate :active_subscription_record, :active_subscription?, to: :account
 
   # ActiveRabbit relationships (scoped to account through acts_as_tenant)
-  has_many :projects, dependent: :destroy
+  # Don't destroy projects when user is deleted - they belong to the account
+  has_many :projects, dependent: :nullify
   belongs_to :invited_by, class_name: "User", optional: true
 
   # Validations
