@@ -1,8 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe WeeklyReportMailer, type: :mailer do
-  let(:account) { create(:account, name: "Acme Corp") }
-  let(:user) { create(:user, account: account, email: "user@example.com") }
+  # Uses @test_account from spec/support/acts_as_tenant.rb
+  let(:account) { @test_account }
+  let(:user) { create(:user, account: account) }
+
+  before do
+    account.update!(name: "Acme Corp")
+  end
   let(:report) do
     {
       period: 7.days.ago..Time.current,
@@ -17,7 +22,7 @@ RSpec.describe WeeklyReportMailer, type: :mailer do
     end
 
     it "sends to the correct recipient" do
-      expect(mail.to).to eq(["user@example.com"])
+      expect(mail.to).to eq([user.email])
     end
 
     it "includes account name in subject" do

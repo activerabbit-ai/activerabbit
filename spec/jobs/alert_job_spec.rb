@@ -1,7 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe AlertJob, type: :job do
-  let(:account) { create(:account) }
+  # Uses @test_account from spec/support/acts_as_tenant.rb
+  let(:account) { @test_account }
   let(:user) { create(:user, account: account) }
   let(:project) { create(:project, account: account, user: user) }
   let(:alert_rule) do
@@ -37,9 +38,15 @@ RSpec.describe AlertJob, type: :job do
   end
 
   describe "#perform" do
+    let!(:performance_event) do
+      ActsAsTenant.with_tenant(account) do
+        create(:performance_event, project: project, duration_ms: 5000)
+      end
+    end
+
     let(:payload) do
       {
-        "event_id" => 123,
+        "event_id" => performance_event.id,
         "duration_ms" => 5000,
         "target" => "TestController#action"
       }
@@ -47,21 +54,12 @@ RSpec.describe AlertJob, type: :job do
 
     context "when notifications are enabled and can send" do
       it "creates an AlertNotification record" do
-        # Create a performance event for the test
-        ActsAsTenant.with_tenant(account) do
-          create(:performance_event, project: project, id: 123, duration_ms: 5000)
-        end
-
         expect {
           described_class.new.perform(alert_rule.id, "performance_regression", payload)
         }.to change { AlertNotification.count }.by(1)
       end
 
       it "marks the preference as sent" do
-        ActsAsTenant.with_tenant(account) do
-          create(:performance_event, project: project, id: 123, duration_ms: 5000)
-        end
-
         expect {
           described_class.new.perform(alert_rule.id, "performance_regression", payload)
         }.to change { preference.reload.last_sent_at }.from(nil)
@@ -116,10 +114,6 @@ RSpec.describe AlertJob, type: :job do
 
     context "race condition prevention with database lock" do
       it "uses with_lock to prevent concurrent sends" do
-        ActsAsTenant.with_tenant(account) do
-          create(:performance_event, project: project, id: 123, duration_ms: 5000)
-        end
-
         # The lock should prevent duplicate sends
         # We verify by checking that preference.with_lock is called
         expect_any_instance_of(NotificationPreference).to receive(:with_lock).and_call_original
@@ -130,13 +124,23 @@ RSpec.describe AlertJob, type: :job do
   end
 
   describe "email rate limiting" do
+    let!(:performance_event) do
+      ActsAsTenant.with_tenant(account) do
+        create(:performance_event, project: project, duration_ms: 5000)
+      end
+    end
+
     context "with multiple users in account" do
       let!(:user2) { create(:user, account: account) }
       let!(:user3) { create(:user, account: account) }
-
-      before do
+      let!(:preference) do
         ActsAsTenant.with_tenant(account) do
-          create(:performance_event, project: project, id: 123, duration_ms: 5000)
+          project.notification_preferences.create!(
+            alert_type: "performance_regression",
+            enabled: true,
+            frequency: "every_2_hours",
+            last_sent_at: nil
+          )
         end
       end
 
@@ -145,7 +149,7 @@ RSpec.describe AlertJob, type: :job do
         expect_any_instance_of(described_class).to receive(:sleep).with(0.6).at_least(:once)
 
         described_class.new.perform(alert_rule.id, "performance_regression", {
-          "event_id" => 123,
+          "event_id" => performance_event.id,
           "duration_ms" => 5000,
           "target" => "TestController#action"
         })

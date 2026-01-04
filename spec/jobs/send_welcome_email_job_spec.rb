@@ -1,9 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe SendWelcomeEmailJob, type: :job do
-  include ActiveJob::TestHelper
-
-  let(:account) { create(:account) }
+  # Uses @test_account from spec/support/acts_as_tenant.rb
+  let(:account) { @test_account }
   let(:user) { create(:user, account: account) }
   let(:reset_token) { "test_reset_token_123" }
 

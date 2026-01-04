@@ -1,13 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe "Users", type: :request do
-  let(:account) { create(:account) }
+  # Uses @test_account from spec/support/acts_as_tenant.rb
+  let(:account) { @test_account }
   let(:owner) { create(:user, account: account, role: "owner") }
   let(:member) { create(:user, account: account, role: "member") }
-
-  before do
-    ActsAsTenant.current_tenant = account
-  end
 
   describe "DELETE /users/:id" do
     context "when logged in as owner" do

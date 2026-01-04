@@ -20,7 +20,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "roles" do
-    let(:account) { create(:account) }
+    let(:account) { @test_account }
 
     describe "#owner?" do
       it "returns true for owner role" do
@@ -61,7 +61,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "project association" do
-    let(:account) { create(:account) }
+    let(:account) { @test_account }
     let(:user) { create(:user, account: account) }
 
     it "has many projects with dependent nullify" do
@@ -92,7 +92,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "password requirement" do
-    let(:account) { create(:account) }
+    let(:account) { @test_account }
     let(:owner) { create(:user, account: account, role: "owner") }
 
     it "requires password when not invited" do
