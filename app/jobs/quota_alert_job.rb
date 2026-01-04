@@ -85,11 +85,11 @@ class QuotaAlertJob < ApplicationJob
   def send_appropriate_alert(account, resource_type, level, last_alert_info)
     case level
     when "80_percent"
-      QuotaAlertMailer.warning_80_percent(account, resource_type).deliver_later
+      QuotaAlertMailer.warning_80_percent(account, resource_type).deliver_now
       Rails.logger.info "[QuotaAlert] Sent 80% warning for #{account.name} - #{resource_type}"
 
     when "90_percent"
-      QuotaAlertMailer.warning_90_percent(account, resource_type).deliver_later
+      QuotaAlertMailer.warning_90_percent(account, resource_type).deliver_now
       Rails.logger.info "[QuotaAlert] Sent 90% warning for #{account.name} - #{resource_type}"
 
     when "exceeded"
@@ -99,14 +99,14 @@ class QuotaAlertJob < ApplicationJob
 
       if days_over_quota <= 1
         # First time exceeding
-        QuotaAlertMailer.quota_exceeded(account, resource_type).deliver_later
+        QuotaAlertMailer.quota_exceeded(account, resource_type).deliver_now
         Rails.logger.info "[QuotaAlert] Sent exceeded alert for #{account.name} - #{resource_type}"
 
         # Track when first exceeded
         account.last_quota_alert_sent_at[resource_type.to_s]["first_exceeded_at"] = Time.current.iso8601
       else
         # Reminder (every 2 days)
-        QuotaAlertMailer.quota_exceeded_reminder(account, resource_type, days_over_quota).deliver_later
+        QuotaAlertMailer.quota_exceeded_reminder(account, resource_type, days_over_quota).deliver_now
         Rails.logger.info "[QuotaAlert] Sent exceeded reminder (day #{days_over_quota}) for #{account.name} - #{resource_type}"
       end
     end

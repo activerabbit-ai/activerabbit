@@ -7,10 +7,13 @@ class WeeklyReportJob
         report = WeeklyReportBuilder.new(account).build
 
         account.users.find_each.with_index do |user, index|
+          # Small delay between emails to avoid Resend rate limit (2/second)
+          sleep(0.6) if index > 0
+
           WeeklyReportMailer
             .with(user: user, account: account, report: report)
             .weekly_report
-            .deliver_later(wait: index.seconds)
+            .deliver_now
         end
       end
     end

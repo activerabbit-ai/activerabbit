@@ -136,14 +136,16 @@ class AlertJob
   # ------------------------
   def send_email_alert(project, subject, body, dashboard_url: nil)
     project.account.users.find_each.with_index do |user, index|
-      # Stagger emails to avoid Resend rate limit (2/second)
+      # Small delay between emails to avoid Resend rate limit (2/second)
+      sleep(0.6) if index > 0
+
       AlertMailer.send_alert(
         to: user.email,
         subject: "#{project.name}: #{subject}",
         body: body,
         project: project,
         dashboard_url: dashboard_url
-      ).deliver_later(wait: index.seconds)
+      ).deliver_now
     end
   end
 
