@@ -148,4 +148,3 @@ RSpec.describe WeeklyReportJob, type: :job do
     end
   end
 end
-
