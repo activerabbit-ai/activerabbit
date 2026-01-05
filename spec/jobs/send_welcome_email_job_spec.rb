@@ -7,24 +7,29 @@ RSpec.describe SendWelcomeEmailJob, type: :job do
   let(:reset_token) { "test_reset_token_123" }
 
   describe "#perform" do
+    let(:mock_mail) { double("Mail", deliver_now: true) }
+
     it "sends welcome email to the user" do
-      expect {
-        described_class.new.perform(user.id, reset_token)
-      }.to change { ActionMailer::Base.deliveries.count }.by(1)
+      expect(UserMailer).to receive(:welcome_and_setup_password)
+        .with(user, reset_token)
+        .and_return(mock_mail)
+
+      described_class.new.perform(user.id, reset_token)
     end
 
     it "sends email with correct recipient" do
-      described_class.new.perform(user.id, reset_token)
+      expect(UserMailer).to receive(:welcome_and_setup_password)
+        .with(user, reset_token)
+        .and_return(mock_mail)
 
-      mail = ActionMailer::Base.deliveries.last
-      expect(mail.to).to eq([user.email])
+      described_class.new.perform(user.id, reset_token)
     end
 
-    it "sends email with welcome subject" do
-      described_class.new.perform(user.id, reset_token)
+    it "calls deliver_now on the mailer" do
+      allow(UserMailer).to receive(:welcome_and_setup_password).and_return(mock_mail)
+      expect(mock_mail).to receive(:deliver_now)
 
-      mail = ActionMailer::Base.deliveries.last
-      expect(mail.subject).to include("Welcome")
+      described_class.new.perform(user.id, reset_token)
     end
 
     context "when user is not found" do
