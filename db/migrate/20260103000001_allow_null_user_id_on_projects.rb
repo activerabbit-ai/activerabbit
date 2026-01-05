@@ -3,4 +3,3 @@ class AllowNullUserIdOnProjects < ActiveRecord::Migration[8.0]
     change_column_null :projects, :user_id, true
   end
 end
-

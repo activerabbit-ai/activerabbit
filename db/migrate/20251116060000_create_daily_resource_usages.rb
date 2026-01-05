@@ -16,4 +16,3 @@ class CreateDailyResourceUsages < ActiveRecord::Migration[8.0]
     add_index :daily_resource_usages, [:account_id, :day], unique: true
   end
 end
-

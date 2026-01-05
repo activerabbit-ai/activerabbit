@@ -14,7 +14,7 @@ class CreatePayTables < ActiveRecord::Migration[8.0]
     end
 
     create_table :pay_charges do |t|
-      t.references :customer, null: false, foreign_key: {to_table: :pay_customers}
+      t.references :customer, null: false, foreign_key: { to_table: :pay_customers }
       t.string :processor_id, null: false
       t.integer :amount, null: false
       t.string :currency
@@ -28,7 +28,7 @@ class CreatePayTables < ActiveRecord::Migration[8.0]
     end
 
     create_table :pay_subscriptions do |t|
-      t.references :customer, null: false, foreign_key: {to_table: :pay_customers}
+      t.references :customer, null: false, foreign_key: { to_table: :pay_customers }
       t.string :name, null: false
       t.string :processor_id, null: false
       t.string :processor_plan, null: false
@@ -48,7 +48,7 @@ class CreatePayTables < ActiveRecord::Migration[8.0]
     end
 
     create_table :pay_payment_methods do |t|
-      t.references :customer, null: false, foreign_key: {to_table: :pay_customers}
+      t.references :customer, null: false, foreign_key: { to_table: :pay_customers }
       t.string :processor_id, null: false
       t.boolean :default
       t.string :type

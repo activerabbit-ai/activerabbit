@@ -4,5 +4,3 @@ class AddAiSummaryToIssues < ActiveRecord::Migration[8.0]
     add_column :issues, :ai_summary_generated_at, :datetime
   end
 end
-
-

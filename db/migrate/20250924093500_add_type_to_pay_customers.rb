@@ -9,5 +9,3 @@ class AddTypeToPayCustomers < ActiveRecord::Migration[8.0]
     remove_column :pay_customers, :type
   end
 end
-
-

@@ -6,11 +6,11 @@ class CreateDailyEventCounts < ActiveRecord::Migration[8.0]
       t.integer :count, null: false, default: 0
       t.timestamps
     end
-    add_index :daily_event_counts, [ :account_id, :day ], unique: true
+    add_index :daily_event_counts, [:account_id, :day], unique: true
   end
 
   def down
-    remove_index :daily_event_counts, [ :account_id, :day ] if index_exists?(:daily_event_counts, [ :account_id, :day ])
+    remove_index :daily_event_counts, [:account_id, :day] if index_exists?(:daily_event_counts, [:account_id, :day])
     drop_table :daily_event_counts
   end
 end

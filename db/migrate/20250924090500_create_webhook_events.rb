@@ -6,7 +6,7 @@ class CreateWebhookEvents < ActiveRecord::Migration[8.0]
       t.datetime :processed_at
       t.timestamps
     end
-    add_index :webhook_events, [ :provider, :event_id ], unique: true, name: "idx_webhook_events_unique"
+    add_index :webhook_events, [:provider, :event_id], unique: true, name: "idx_webhook_events_unique"
   end
 
   def down
