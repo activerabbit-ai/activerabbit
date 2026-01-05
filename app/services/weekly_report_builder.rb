@@ -1,13 +1,12 @@
 class WeeklyReportBuilder
-  PERIOD = 7.days.ago..Time.current
-
   def initialize(account)
     @account = account
+    @period = 7.days.ago..Time.current
   end
 
   def build
     {
-      period: PERIOD,
+      period: @period,
       errors: top_errors,
       performance: slow_endpoints
     }
@@ -17,7 +16,7 @@ class WeeklyReportBuilder
     Issue
       .joins(:events)
       .where(account: @account)
-      .where(events: { occurred_at: PERIOD })
+      .where(events: { occurred_at: @period })
       .group("issues.id")
       .select(
         "issues.*,
@@ -31,7 +30,7 @@ class WeeklyReportBuilder
   def slow_endpoints
     PerformanceEvent
       .where(account: @account)
-      .where(occurred_at: PERIOD)
+      .where(occurred_at: @period)
       .group(:target)
       .select(
         "target,

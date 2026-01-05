@@ -1,21 +1,43 @@
 class WeeklyReportJob
   include Sidekiq::Job
 
-  def perform
-    Account.find_each do |account|
-      ActsAsTenant.with_tenant(account) do
-        report = WeeklyReportBuilder.new(account).build
+  # Prevent duplicate job execution within the same week
+  sidekiq_options lock: :until_executed if respond_to?(:sidekiq_options)
 
-        account.users.find_each.with_index do |user, index|
-          # Small delay between emails to avoid Resend rate limit (2/second)
-          sleep(0.6) if index > 0
+  def perform(account_id = nil)
+    week_key = Date.current.beginning_of_week.to_s
 
-          WeeklyReportMailer
-            .with(user: user, account: account, report: report)
-            .weekly_report
-            .deliver_now
-        end
-      end
+    accounts = account_id ? Account.where(id: account_id) : Account.all
+    accounts.find_each do |account|
+      send_report_for_account(account, week_key)
     end
+  end
+
+  private
+
+  def send_report_for_account(account, week_key)
+    # Skip if we've already sent reports for this account this week
+    cache_key = "weekly_report:#{account.id}:#{week_key}"
+    return if Rails.cache.exist?(cache_key)
+
+    report = ActsAsTenant.with_tenant(account) do
+      WeeklyReportBuilder.new(account).build
+    end
+
+    # Query users directly to avoid any tenant scoping issues
+    users = User.where(account_id: account.id)
+    users.find_each.with_index do |user, index|
+      # Small delay between emails to avoid Resend rate limit (2/second)
+      sleep(0.6) if index > 0
+
+      WeeklyReportMailer
+        .with(user: user, account: account, report: report)
+        .weekly_report
+        .deliver_now
+    end
+
+    # Mark this account as having received the report for this week
+    # Expires in 8 days to ensure it's cleared before next week's run
+    Rails.cache.write(cache_key, true, expires_in: 8.days)
   end
 end
