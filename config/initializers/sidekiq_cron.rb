@@ -52,7 +52,7 @@ if defined?(Sidekiq::Cron) &&
 
   jobs = {
     "weekly_report" => {
-      "cron" => "0 9 * * 0",  # Every Sunday at 9:00 AM
+      "cron" => "0 9 * * 1",  # Every Monday at 9:00 AM
       "class" => "WeeklyReportJob"
     }
   }
