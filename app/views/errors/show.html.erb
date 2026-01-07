@@ -237,51 +237,9 @@ end %>
 
   <% elsif current_tab == 'stack' %>
     <div class="px-6 py-4 border-t border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900 mb-4">Stack Trace</h3>
-      <div class="text-xs text-gray-500 mb-2"><strong>Top Frame:</strong></div>
-      <div class="bg-gray-50 rounded p-3 mb-4">
-        <code class="text-sm text-gray-800"><%= @issue.top_frame %></code>
-      </div>
-
-      <div class="text-xs text-gray-500 mb-2"><strong>Controller Action:</strong></div>
-      <div class="bg-gray-50 rounded p-3 mb-4">
-        <code class="text-sm text-gray-800"><%= @issue.controller_action %></code>
-      </div>
-
-      <% if @common_method.present? %>
-        <div class="text-xs text-gray-500 mb-2"><strong>Method:</strong></div>
-        <div class="bg-gray-50 rounded p-3 mb-4">
-          <code class="text-sm text-gray-800"><%= @common_method %></code>
-        </div>
-      <% end %>
-
-      <% if @issue.full_url.present? %>
-        <div class="text-xs text-gray-500 mb-2"><strong>Full URL:</strong></div>
-        <div class="bg-gray-50 rounded p-3 mb-4">
-          <code class="text-sm text-indigo-600 break-all"><%= @issue.full_url %></code>
-        </div>
-      <% end %>
-
-      <% if @events.first&.context&.dig('error', 'backtrace_preview') %>
-        <div class="text-xs text-gray-500 mb-2"><strong>Backtrace Preview (important frames):</strong></div>
-        <div class="bg-gray-50 rounded p-3">
-          <% important = @events.first.context['error']['backtrace_preview'].select { |l| l.include?('/app/') || l.include?('/controllers/') || l.include?('/models/') || l.include?('/services/') }
-             important = @events.first.context['error']['backtrace_preview'].first(5) if important.empty?
-             full_text = important.join("\n")
-             head_text = full_text[0, 500] || ''
-             tail_text = full_text.length > 500 ? full_text[500, full_text.length] : ''
-          %>
-          <pre class="whitespace-pre-wrap"><code class="text-sm text-gray-800"><%= head_text %></code></pre>
-          <% if tail_text.present? %>
-            <details class="mt-2">
-              <summary class="text-xs text-indigo-600 cursor-pointer select-none">More...</summary>
-              <div class="mt-2">
-                <pre class="whitespace-pre-wrap"><code class="text-sm text-gray-800"><%= tail_text %></code></pre>
-              </div>
-            </details>
-          <% end %>
-        </div>
-      <% end %>
+      <%= render "errors/stack_trace",
+        event: @stack_event,
+        stack_mode: @stack_mode %>
     </div>
 
   <% elsif current_tab == 'graph' %>

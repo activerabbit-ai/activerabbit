@@ -126,6 +126,8 @@ class ErrorsController < ApplicationController
                            .first
 
     events_scope = @issue.events
+    @stack_event = @selected_event || events_scope.first
+    @stack_mode = params[:stack] == "full" ? "full" : "relevant"
 
     # Simple filters for Samples table
     events_scope = events_scope.where(server_name: params[:server_name]) if params[:server_name].present?
