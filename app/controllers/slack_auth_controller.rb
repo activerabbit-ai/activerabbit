@@ -67,6 +67,6 @@ class SlackAuthController < ApplicationController
   end
 
   def set_project_for_authorize
-    @project = current_user.projects.find(params[:project_id] || params[:id])
+    @project = current_account.projects.find(params[:project_id] || params[:id])
   end
 end
