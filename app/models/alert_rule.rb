@@ -59,11 +59,12 @@ class AlertRule < ApplicationRecord
       next unless event.duration_ms && event.duration_ms >= rule.threshold_value
 
       target = event.target.presence || "unknown"
+      alert_key = "#{rule.id}:#{target}"
 
       recent_alert = AlertNotification
         .where(alert_rule: rule)
         .where("created_at > ?", rule.time_window_minutes.minutes.ago)
-        .where("payload ->> 'target' = ?", target)
+        .where("payload ->> 'alert_key' = ?", alert_key)
         .exists?
 
       next if recent_alert
@@ -72,7 +73,7 @@ class AlertRule < ApplicationRecord
         cooldown_alert = AlertNotification
           .where(alert_rule: rule)
           .where("created_at > ?", rule.cooldown_minutes.minutes.ago)
-          .where("payload ->> 'target' = ?", target)
+          .where("payload ->> 'alert_key' = ?", alert_key)
           .exists?
 
         next if cooldown_alert
@@ -84,7 +85,8 @@ class AlertRule < ApplicationRecord
         {
           event_id: event.id,
           duration_ms: event.duration_ms,
-          target: target
+          target: target,
+          alert_key: alert_key
         }
       )
     end
