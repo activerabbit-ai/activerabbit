@@ -59,6 +59,8 @@ env:
     - ADMIN_EMAIL_ALLOWLIST
     - RESEND_API_KEY
     - ACTIVERABBIT_SELF_MONITOR
+    - SLACK_CLIENT_ID
+    - SLACK_CLIENT_SECRET
 
   clear:
     RAILS_ENV: production
