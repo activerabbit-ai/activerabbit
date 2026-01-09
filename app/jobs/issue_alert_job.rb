@@ -64,6 +64,14 @@ class IssueAlertJob
     when "after_close"
       # Only alert if issue was previously closed (recurrence)
       return unless issue.closed_at.present?
+    else
+      # For all other modes: only alert for truly new issues or recurrences
+      # Issue is "new" if it has very few occurrences (first occurrence)
+      # Issue is "recurrence" if it was closed and is now open again
+      is_truly_new = issue.count <= 1
+      is_recurrence = issue.closed_at.present? && issue.status == "open"
+
+      return unless is_truly_new || is_recurrence || first_in_deploy
     end
 
     # Get rate limit from UI preference (per-fingerprint)
