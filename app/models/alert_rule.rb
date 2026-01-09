@@ -14,11 +14,11 @@ class AlertRule < ApplicationRecord
   scope :active, -> { where(enabled: true) }
   scope :for_type, ->(type) { where(rule_type: type) }
 
-  # Check error frequency rules with per-fingerprint rate limiting (Sentry/AppSignal style)
+  # Check error frequency rules with per-fingerprint rate limiting
   # @param issue [Issue] The issue to check
   # @param rate_limit_minutes [Integer] Rate limit from user's UI preference (NotificationPreference)
   def self.check_error_frequency_rules(issue, rate_limit_minutes: 30)
-    redis = Redis.new(url: ENV["REDIS_URL"] || "redis://localhost:6379/1")
+    redis = IssueAlertJob.redis  # Use shared thread-safe Redis connection
 
     issue.project.alert_rules.active.for_type("error_frequency").each do |rule|
       recent_count = issue.events
@@ -71,12 +71,22 @@ class AlertRule < ApplicationRecord
   end
 
   def self.check_performance_rules(event)
+    redis = IssueAlertJob.redis
+
     event.project.alert_rules.active.for_type("performance_regression").each do |rule|
       next unless event.duration_ms && event.duration_ms >= rule.threshold_value
 
       target = event.target.presence || "unknown"
       alert_key = "#{rule.id}:#{target}"
+      redis_key = "perf_alert:#{event.project_id}:#{alert_key}"
 
+      # ATOMIC check-and-set to prevent race conditions
+      ttl = [rule.time_window_minutes, rule.cooldown_minutes.to_i].max.minutes.to_i
+      ttl = 5.minutes.to_i if ttl < 5.minutes.to_i  # Minimum 5 minutes
+      lock_acquired = redis.set(redis_key, true, ex: ttl, nx: true)
+      next unless lock_acquired
+
+      # DB check as fallback (belt + suspenders)
       recent_alert = AlertNotification
         .where(alert_rule: rule)
         .where("created_at > ?", rule.time_window_minutes.minutes.ago)
@@ -84,16 +94,6 @@ class AlertRule < ApplicationRecord
         .exists?
 
       next if recent_alert
-
-      if rule.cooldown_minutes.to_i > 0
-        cooldown_alert = AlertNotification
-          .where(alert_rule: rule)
-          .where("created_at > ?", rule.cooldown_minutes.minutes.ago)
-          .where("payload ->> 'alert_key' = ?", alert_key)
-          .exists?
-
-        next if cooldown_alert
-      end
 
       AlertJob.perform_async(
         rule.id,
@@ -109,12 +109,22 @@ class AlertRule < ApplicationRecord
   end
 
   def self.check_n_plus_one_rules(project, incidents)
+    redis = IssueAlertJob.redis
+
     project.alert_rules.active.for_type("n_plus_one").each do |rule|
       high_severity = incidents.select { |i| i[:severity] == "high" }
       next if high_severity.size < rule.threshold_value
 
       alert_key = high_severity.first[:controller_action].presence || "unknown"
+      redis_key = "n1_alert:#{project.id}:#{rule.id}:#{alert_key}"
 
+      # ATOMIC check-and-set to prevent race conditions
+      ttl = [rule.time_window_minutes, rule.cooldown_minutes.to_i].max.minutes.to_i
+      ttl = 5.minutes.to_i if ttl < 5.minutes.to_i  # Minimum 5 minutes
+      lock_acquired = redis.set(redis_key, true, ex: ttl, nx: true)
+      next unless lock_acquired
+
+      # DB check as fallback
       recent_alert = AlertNotification
         .where(alert_rule: rule)
         .where("created_at > ?", rule.time_window_minutes.minutes.ago)
@@ -122,16 +132,6 @@ class AlertRule < ApplicationRecord
         .exists?
 
       next if recent_alert
-
-      if rule.cooldown_minutes.to_i > 0
-        cooldown_alert = AlertNotification
-          .where(alert_rule: rule)
-          .where("created_at > ?", rule.cooldown_minutes.minutes.ago)
-          .where("payload ->> 'controller_action' = ?", alert_key)
-          .exists?
-
-        next if cooldown_alert
-      end
 
       AlertJob.perform_async(
         rule.id,

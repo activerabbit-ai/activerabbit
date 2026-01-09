@@ -59,14 +59,14 @@ RSpec.describe IssueAlertJob, type: :job do
       issue.update!(first_seen_at: 30.minutes.ago)
 
       # The method is private, so we test directly with send
-      result = job.send(:first_occurrence_in_deploy?, issue.reload, project)
+      result = job.send(:first_occurrence_in_deploy?, issue.reload, release)
       expect(result).to be true
     end
 
     it 'returns false for issues created before deploy' do
       issue.update!(first_seen_at: 2.hours.ago, closed_at: nil)
 
-      result = job.send(:first_occurrence_in_deploy?, issue.reload, project)
+      result = job.send(:first_occurrence_in_deploy?, issue.reload, release)
       expect(result).to be false
     end
 
@@ -76,7 +76,7 @@ RSpec.describe IssueAlertJob, type: :job do
         closed_at: 90.minutes.ago # Before deploy
       )
 
-      result = job.send(:first_occurrence_in_deploy?, issue.reload, project)
+      result = job.send(:first_occurrence_in_deploy?, issue.reload, release)
       expect(result).to be true
     end
   end
