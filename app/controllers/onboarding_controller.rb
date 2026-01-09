@@ -38,6 +38,9 @@ class OnboardingController < ApplicationController
       # Create default alert rules
       @project.create_default_alert_rules!
 
+      # Enable email notifications by default
+      @project.create_default_notification_settings!
+
       # Redirect to gem installation step instead of dashboard
       redirect_to onboarding_install_gem_path(@project), notice: "Project created! Now let's install the ActiveRabbit gem."
     else
