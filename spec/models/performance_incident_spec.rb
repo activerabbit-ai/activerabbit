@@ -260,4 +260,3 @@ RSpec.describe PerformanceIncident, type: :model do
     end
   end
 end
-

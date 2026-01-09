@@ -149,4 +149,3 @@ RSpec.describe PerformanceIncidentNotificationJob, type: :job do
     end
   end
 end
-

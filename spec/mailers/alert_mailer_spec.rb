@@ -127,4 +127,3 @@ RSpec.describe AlertMailer, type: :mailer do
     end
   end
 end
-

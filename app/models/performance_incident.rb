@@ -225,4 +225,3 @@ class PerformanceIncident < ApplicationRecord
     end
   end
 end
-

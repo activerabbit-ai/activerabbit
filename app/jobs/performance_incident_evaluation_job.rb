@@ -88,4 +88,3 @@ class PerformanceIncidentEvaluationJob
     end
   end
 end
-

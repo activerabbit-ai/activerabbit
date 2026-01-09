@@ -118,8 +118,8 @@ class SlackNotificationService
 
     # Add request path if available
     if latest_event&.request_path.present?
-      request_info = latest_event.request_method.present? ? 
-        "#{latest_event.request_method} #{latest_event.request_path}" : 
+      request_info = latest_event.request_method.present? ?
+        "#{latest_event.request_method} #{latest_event.request_path}" :
         latest_event.request_path
       fields << {
         title: "Latest Request",
@@ -333,8 +333,8 @@ class SlackNotificationService
 
     # Add request path if available
     if latest_event&.request_path.present?
-      request_info = latest_event.request_method.present? ? 
-        "#{latest_event.request_method} #{latest_event.request_path}" : 
+      request_info = latest_event.request_method.present? ?
+        "#{latest_event.request_method} #{latest_event.request_path}" :
         latest_event.request_path
       fields << {
         title: "Request",

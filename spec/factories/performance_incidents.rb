@@ -45,4 +45,3 @@ FactoryBot.define do
     end
   end
 end
-

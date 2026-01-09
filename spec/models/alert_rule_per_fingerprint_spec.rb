@@ -116,4 +116,3 @@ RSpec.describe AlertRule, 'per-fingerprint rate limiting', type: :model do
     end
   end
 end
-

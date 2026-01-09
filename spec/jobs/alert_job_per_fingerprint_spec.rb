@@ -167,4 +167,3 @@ RSpec.describe AlertJob, 'per-fingerprint rate limiting bypass', type: :job do
     end
   end
 end
-
