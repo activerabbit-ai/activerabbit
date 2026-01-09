@@ -112,4 +112,3 @@ RSpec.describe PerformanceIncidentEvaluationJob, type: :job do
     end
   end
 end
-

@@ -150,4 +150,3 @@ RSpec.describe IssueAlertJob, type: :job do
     end
   end
 end
-

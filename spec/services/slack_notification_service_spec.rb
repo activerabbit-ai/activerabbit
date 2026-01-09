@@ -138,4 +138,3 @@ RSpec.describe SlackNotificationService, type: :service do
     end
   end
 end
-

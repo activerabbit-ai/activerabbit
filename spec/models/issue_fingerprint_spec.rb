@@ -215,4 +215,3 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
     end
   end
 end
-

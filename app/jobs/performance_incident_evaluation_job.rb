@@ -8,12 +8,15 @@ class PerformanceIncidentEvaluationJob
   def perform
     Rails.logger.info "[PerformanceIncidentEvaluation] Starting evaluation..."
 
-    Project.active.find_each do |project|
-      ActsAsTenant.with_tenant(project.account) do
-        evaluate_project(project)
+    # Query projects without tenant scoping since we're processing all accounts
+    ActsAsTenant.without_tenant do
+      Project.active.find_each do |project|
+        ActsAsTenant.with_tenant(project.account) do
+          evaluate_project(project)
+        end
+      rescue => e
+        Rails.logger.error "[PerformanceIncidentEvaluation] Error evaluating project #{project.id}: #{e.message}"
       end
-    rescue => e
-      Rails.logger.error "[PerformanceIncidentEvaluation] Error evaluating project #{project.id}: #{e.message}"
     end
 
     Rails.logger.info "[PerformanceIncidentEvaluation] Evaluation complete"
@@ -85,4 +88,3 @@ class PerformanceIncidentEvaluationJob
     end
   end
 end
-

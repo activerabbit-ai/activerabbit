@@ -71,7 +71,11 @@ RSpec.describe PerformanceIncidentNotificationJob, type: :job do
       let(:user) { create(:user, account: account) }
 
       before do
-        project.update!(settings: project.settings.merge('notifications' => { 'enabled' => true, 'channels' => { 'email' => true } }))
+        # Associate user with project so mailer has recipients
+        project.update!(
+          user: user,
+          settings: project.settings.merge('notifications' => { 'enabled' => true, 'channels' => { 'email' => true } })
+        )
       end
 
       it 'sends email notification' do
@@ -149,4 +153,3 @@ RSpec.describe PerformanceIncidentNotificationJob, type: :job do
     end
   end
 end
-

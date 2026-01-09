@@ -208,4 +208,3 @@ class PerformanceIncidentNotificationJob
     "#{URL_PROTOCOL}://#{URL_HOST}/#{project.slug}/performance/action/#{encoded_target}"
   end
 end
-
