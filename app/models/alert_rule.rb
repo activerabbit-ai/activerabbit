@@ -31,12 +31,13 @@ class AlertRule < ApplicationRecord
       # Rate limit is based on user's UI preference, applied per-fingerprint
       fingerprint_key = "error_freq:#{rule.id}:#{issue.fingerprint}"
 
-      # Check Redis for per-fingerprint rate limit
-      if redis.exists?(fingerprint_key)
-        next # Already alerted for this fingerprint within user's chosen window
-      end
+      # ATOMIC check-and-set to prevent race conditions
+      # SET with NX returns true only if key was set (didn't exist)
+      # This prevents multiple concurrent workers from all sending alerts
+      lock_acquired = redis.set(fingerprint_key, true, ex: rate_limit_minutes.minutes.to_i, nx: true)
+      next unless lock_acquired
 
-      # Also check DB for recent alerts (belt + suspenders)
+      # DB check as fallback (belt + suspenders for cases where Redis was cleared)
       recent_alert = AlertNotification
         .where(alert_rule: rule)
         .where("created_at > ?", rate_limit_minutes.minutes.ago)
@@ -66,9 +67,6 @@ class AlertRule < ApplicationRecord
           time_window: rule.time_window_minutes
         }
       )
-
-      # Set per-fingerprint rate limit using user's UI preference
-      redis.set(fingerprint_key, true, ex: rate_limit_minutes.minutes.to_i)
     end
   end
 

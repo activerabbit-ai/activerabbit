@@ -79,9 +79,17 @@ RSpec.describe PerformanceIncidentNotificationJob, type: :job do
       end
 
       it 'sends email notification' do
-        expect {
-          described_class.new.perform(incident.id, 'open')
-        }.to have_enqueued_mail(AlertMailer, :performance_incident_opened)
+        mailer = double('mailer')
+        allow(AlertMailer).to receive(:performance_incident_opened).and_return(mailer)
+        allow(mailer).to receive(:deliver_later)
+
+        described_class.new.perform(incident.id, 'open')
+
+        expect(AlertMailer).to have_received(:performance_incident_opened).with(
+          project: project,
+          incident: incident
+        )
+        expect(mailer).to have_received(:deliver_later)
       end
     end
   end

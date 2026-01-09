@@ -14,7 +14,7 @@ class SlackAuthController < ApplicationController
 
   def callback
     project_id = params[:state]
-    @project = current_user.projects.find(project_id)
+    @project = current_account.projects.find(project_id)
 
     code = params[:code]
     unless code

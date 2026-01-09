@@ -38,28 +38,27 @@ class PerformanceIncidentEvaluationJob
                               "COUNT(*) as sample_count"
                             )
 
-    if recent_rollups.empty?
+    unless recent_rollups.empty?
+      recent_rollups.each do |rollup|
+        target = rollup.target
+        current_p95 = rollup.avg_p95 || rollup.max_p95
+
+        next unless current_p95 && current_p95 > 0
+
+        Rails.logger.debug "[PerformanceIncidentEvaluation] #{project.slug}/#{target}: p95=#{current_p95.round(1)}ms"
+
+        PerformanceIncident.evaluate_endpoint(
+          project: project,
+          target: target,
+          current_p95_ms: current_p95,
+          environment: project.environment || "production"
+        )
+      end
+    else
       Rails.logger.debug "[PerformanceIncidentEvaluation] No recent rollups for project #{project.slug}"
-      return
     end
 
-    recent_rollups.each do |rollup|
-      target = rollup.target
-      current_p95 = rollup.avg_p95 || rollup.max_p95
-
-      next unless current_p95 && current_p95 > 0
-
-      Rails.logger.debug "[PerformanceIncidentEvaluation] #{project.slug}/#{target}: p95=#{current_p95.round(1)}ms"
-
-      PerformanceIncident.evaluate_endpoint(
-        project: project,
-        target: target,
-        current_p95_ms: current_p95,
-        environment: project.environment || "production"
-      )
-    end
-
-    # Also check for open incidents that might need to be closed
+    # Always check for open incidents that might need to be closed
     # (if their targets have no recent data, assume recovered)
     check_stale_incidents(project)
   end

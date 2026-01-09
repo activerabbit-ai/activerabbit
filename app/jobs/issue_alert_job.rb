@@ -26,21 +26,39 @@ class IssueAlertJob
   private
 
   # Check if this error is the first occurrence since the latest deploy
+  # AND we haven't already notified for this fingerprint in this deploy
   def first_occurrence_in_deploy?(issue, project)
     latest_release = project.releases.recent.first
     return false unless latest_release&.deployed_at
 
+    is_new_in_deploy = false
+
     # First occurrence if issue was created after the deploy
     if issue.first_seen_at && issue.first_seen_at >= latest_release.deployed_at
-      return true
+      is_new_in_deploy = true
     end
 
     # Recurrence: issue was closed before deploy and is now reopening
     if issue.closed_at && issue.closed_at < latest_release.deployed_at
-      return true
+      is_new_in_deploy = true
     end
 
-    false
+    return false unless is_new_in_deploy
+
+    # Check if we already notified for this fingerprint in THIS deploy
+    # This ensures we only send ONE "first in deploy" notification per fingerprint per deploy
+    deploy_key = "first_in_deploy:#{project.id}:#{latest_release.id}:#{issue.fingerprint}"
+    !REDIS.exists?(deploy_key)
+  end
+
+  # Mark that we've notified for this fingerprint in this deploy
+  def mark_notified_for_deploy(issue, project)
+    latest_release = project.releases.recent.first
+    return unless latest_release
+
+    deploy_key = "first_in_deploy:#{project.id}:#{latest_release.id}:#{issue.fingerprint}"
+    # Set for 7 days (longer than any deploy cycle)
+    REDIS.set(deploy_key, true, ex: 7.days.to_i)
   end
 
   # Error frequency rules with per-fingerprint rate limiting
@@ -78,10 +96,13 @@ class IssueAlertJob
     rate_limit_minutes = frequency_to_minutes(pref&.frequency)
     rate_limit_key = fingerprint_rate_limit_key(issue, "new_issue")
 
-    # Check per-fingerprint rate limit
-    return if REDIS.exists?(rate_limit_key)
+    # ATOMIC check-and-set to prevent race conditions
+    # SET with NX returns true only if key was set (didn't exist)
+    # This prevents multiple concurrent jobs from all sending alerts
+    lock_acquired = REDIS.set(rate_limit_key, true, ex: rate_limit_minutes.minutes.to_i, nx: true)
+    return unless lock_acquired
 
-    # Send alerts
+    # Send alerts (only one job wins the race)
     project.alert_rules.active.for_type("new_issue").each do |rule|
       AlertJob.perform_async(rule.id, "new_issue", {
         issue_id: issue.id,
@@ -90,8 +111,8 @@ class IssueAlertJob
       })
     end
 
-    # Set per-fingerprint rate limit based on user's UI preference
-    REDIS.set(rate_limit_key, true, ex: rate_limit_minutes.minutes.to_i)
+    # Mark as notified for this deploy (for first_in_deploy mode)
+    mark_notified_for_deploy(issue, project) if first_in_deploy
   end
 
   # Convert UI frequency setting to minutes
