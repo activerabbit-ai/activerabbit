@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= @subject %></title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #1a1a1a;
+    }
+    .severity-critical {
+      color: #dc2626;
+    }
+    .severity-warning {
+      color: #d97706;
+    }
+    .severity-resolved {
+      color: #059669;
+    }
+    .metrics {
+      background-color: #f8f9fa;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .metric-row:last-child {
+      border-bottom: none;
+    }
+    .metric-label {
+      font-weight: 500;
+      color: #6b7280;
+    }
+    .metric-value {
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .endpoint {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      background-color: #e5e7eb;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .cta {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .cta a {
+      display: inline-block;
+      background-color: #4f46e5;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .cta a:hover {
+      background-color: #4338ca;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>
+        <% if @incident.status == "open" %>
+          <span class="<%= @incident.severity == 'critical' ? 'severity-critical' : 'severity-warning' %>">
+            <%= @incident.severity == 'critical' ? '🔴 CRITICAL' : '🟡 WARNING' %>
+          </span>
+        <% else %>
+          <span class="severity-resolved">✅ RESOLVED</span>
+        <% end %>
+      </h1>
+      <p style="margin-top: 10px; color: #6b7280;">
+        Performance Incident - <%= @project.name %>
+      </p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric-row">
+        <span class="metric-label">Endpoint</span>
+        <span class="metric-value endpoint"><%= @incident.target %></span>
+      </div>
+
+      <% if @incident.status == "open" %>
+        <div class="metric-row">
+          <span class="metric-label">Current p95</span>
+          <span class="metric-value"><%= @incident.trigger_p95_ms.round(0) %>ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Threshold</span>
+          <span class="metric-value"><%= @incident.threshold_ms.round(0) %>ms</span>
+        </div>
+      <% else %>
+        <div class="metric-row">
+          <span class="metric-label">Duration</span>
+          <span class="metric-value"><%= @incident.duration_minutes || 0 %> minutes</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Peak p95</span>
+          <span class="metric-value"><%= @incident.peak_p95_ms&.round(0) || 'N/A' %>ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Resolved p95</span>
+          <span class="metric-value"><%= @incident.resolve_p95_ms&.round(0) || 'N/A' %>ms</span>
+        </div>
+      <% end %>
+
+      <div class="metric-row">
+        <span class="metric-label">Environment</span>
+        <span class="metric-value"><%= @incident.environment %></span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Time</span>
+        <span class="metric-value">
+          <% if @incident.status == "open" %>
+            <%= @incident.opened_at.strftime("%b %d, %Y %H:%M UTC") %>
+          <% else %>
+            <%= @incident.closed_at&.strftime("%b %d, %Y %H:%M UTC") || 'N/A' %>
+          <% end %>
+        </span>
+      </div>
+    </div>
+
+    <p style="color: #6b7280; text-align: center;">
+      <% if @incident.status == "open" %>
+        The p95 latency for this endpoint has exceeded the threshold for consecutive evaluations.
+        Please investigate the cause of the performance degradation.
+      <% else %>
+        The p95 latency has returned to normal levels. The incident is now resolved.
+      <% end %>
+    </p>
+
+    <div class="cta">
+      <a href="<%= @dashboard_url %>">View Performance Dashboard</a>
+    </div>
+
+    <div class="footer">
+      <p>
+        This alert was sent by ActiveRabbit for project <%= @project.name %>.
+        <br>
+        <a href="<%= "#{@protocol}://#{@host}/#{@project.slug}/settings" %>" style="color: #6b7280;">
+          Manage notification settings
+        </a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+

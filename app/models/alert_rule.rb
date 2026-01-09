@@ -14,7 +14,12 @@ class AlertRule < ApplicationRecord
   scope :active, -> { where(enabled: true) }
   scope :for_type, ->(type) { where(rule_type: type) }
 
-  def self.check_error_frequency_rules(issue)
+  # Check error frequency rules with per-fingerprint rate limiting (Sentry/AppSignal style)
+  # @param issue [Issue] The issue to check
+  # @param rate_limit_minutes [Integer] Rate limit from user's UI preference (NotificationPreference)
+  def self.check_error_frequency_rules(issue, rate_limit_minutes: 30)
+    redis = Redis.new(url: ENV["REDIS_URL"] || "redis://localhost:6379/1")
+
     issue.project.alert_rules.active.for_type("error_frequency").each do |rule|
       recent_count = issue.events
         .where("created_at > ?", rule.time_window_minutes.minutes.ago)
@@ -22,21 +27,30 @@ class AlertRule < ApplicationRecord
 
       next unless recent_count >= rule.threshold_value
 
-      alert_key = issue.id.to_s
+      # Per-fingerprint rate limiting (AppSignal Action Interval style)
+      # Rate limit is based on user's UI preference, applied per-fingerprint
+      fingerprint_key = "error_freq:#{rule.id}:#{issue.fingerprint}"
 
+      # Check Redis for per-fingerprint rate limit
+      if redis.exists?(fingerprint_key)
+        next # Already alerted for this fingerprint within user's chosen window
+      end
+
+      # Also check DB for recent alerts (belt + suspenders)
       recent_alert = AlertNotification
         .where(alert_rule: rule)
-        .where("created_at > ?", rule.time_window_minutes.minutes.ago)
-        .where("payload ->> 'issue_id' = ?", alert_key)
+        .where("created_at > ?", rate_limit_minutes.minutes.ago)
+        .where("payload ->> 'fingerprint' = ?", issue.fingerprint)
         .exists?
 
       next if recent_alert
 
+      # Cooldown check from rule (separate from rate limit)
       if rule.cooldown_minutes.to_i > 0
         cooldown_alert = AlertNotification
           .where(alert_rule: rule)
           .where("created_at > ?", rule.cooldown_minutes.minutes.ago)
-          .where("payload ->> 'issue_id' = ?", alert_key)
+          .where("payload ->> 'fingerprint' = ?", issue.fingerprint)
           .exists?
 
         next if cooldown_alert
@@ -47,10 +61,14 @@ class AlertRule < ApplicationRecord
         "error_frequency",
         {
           issue_id: issue.id,
+          fingerprint: issue.fingerprint,
           count: recent_count,
           time_window: rule.time_window_minutes
         }
       )
+
+      # Set per-fingerprint rate limit using user's UI preference
+      redis.set(fingerprint_key, true, ex: rate_limit_minutes.minutes.to_i)
     end
   end
 

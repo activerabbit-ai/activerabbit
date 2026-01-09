@@ -382,6 +382,30 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_03_000002) do
     t.index ["target"], name: "index_performance_events_on_target"
   end
 
+  create_table "performance_incidents", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.string "target", null: false
+    t.string "status", default: "open", null: false
+    t.string "severity", default: "warning", null: false
+    t.datetime "opened_at", null: false
+    t.datetime "closed_at"
+    t.float "trigger_p95_ms", null: false
+    t.float "peak_p95_ms"
+    t.float "resolve_p95_ms"
+    t.float "threshold_ms", null: false
+    t.integer "breach_count", default: 0, null: false
+    t.string "environment", default: "production"
+    t.boolean "open_notification_sent", default: false
+    t.boolean "close_notification_sent", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_performance_incidents_on_account_id"
+    t.index ["opened_at"], name: "index_performance_incidents_on_opened_at"
+    t.index ["project_id", "status"], name: "index_performance_incidents_on_project_id_and_status"
+    t.index ["project_id", "target", "status"], name: "idx_on_project_id_target_status_96e95642d8"
+  end
+
   create_table "performance_summaries", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "project_id", null: false
@@ -532,6 +556,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_03_000002) do
   add_foreign_key "performance_events", "accounts"
   add_foreign_key "performance_events", "projects"
   add_foreign_key "performance_events", "releases"
+  add_foreign_key "performance_incidents", "accounts"
+  add_foreign_key "performance_incidents", "projects"
   add_foreign_key "performance_summaries", "accounts"
   add_foreign_key "performance_summaries", "projects"
   add_foreign_key "projects", "accounts"

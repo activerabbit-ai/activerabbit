@@ -9,6 +9,7 @@ class Project < ApplicationRecord
   has_many :events, dependent: :destroy
   has_many :perf_rollups, dependent: :destroy
   has_many :performance_summaries, dependent: :destroy
+  has_many :performance_incidents, dependent: :destroy
   has_many :sql_fingerprints, dependent: :destroy
   has_many :releases, dependent: :destroy
   has_many :api_tokens, dependent: :destroy
@@ -42,19 +43,20 @@ class Project < ApplicationRecord
 
   def create_default_alert_rules!
     # Create default alert rules for new projects
+    # Using Sentry/AppSignal-style defaults
     alert_rules.create!([
       {
         name: "High Error Frequency",
         rule_type: "error_frequency",
         threshold_value: 10,
         time_window_minutes: 5,
-        cooldown_minutes: 30,
+        cooldown_minutes: 30,  # 30 min per-fingerprint rate limit (AppSignal Action Interval)
         enabled: true
       },
       {
         name: "Slow Response Time",
         rule_type: "performance_regression",
-        threshold_value: 2000, # 2 seconds
+        threshold_value: 1500, # Critical threshold: 1500ms (for individual request alerts)
         time_window_minutes: 1,
         cooldown_minutes: 15,
         enabled: true
@@ -72,10 +74,25 @@ class Project < ApplicationRecord
         rule_type: "new_issue",
         threshold_value: 1,
         time_window_minutes: 1,
-        cooldown_minutes: 0, # No cooldown for new issues
+        cooldown_minutes: 0, # No cooldown for new issues (uses fingerprint rate limiting instead)
         enabled: true
       }
     ])
+  end
+
+  # Set default performance thresholds (Sentry/AppSignal style)
+  # Warning: p95 > 750ms for 3 consecutive minutes
+  # Critical: p95 > 1500ms for 3 consecutive minutes
+  def create_default_performance_thresholds!
+    self.settings ||= {}
+    self.settings["performance_thresholds"] ||= {
+      "warning_ms" => PerformanceIncident::DEFAULT_WARNING_THRESHOLD_MS,   # 750ms
+      "critical_ms" => PerformanceIncident::DEFAULT_CRITICAL_THRESHOLD_MS, # 1500ms
+      "warmup_count" => PerformanceIncident::DEFAULT_WARMUP_COUNT,         # 3 minutes
+      "cooldown_minutes" => PerformanceIncident::DEFAULT_COOLDOWN_MINUTES, # 10 minutes
+      "endpoints" => {} # Per-endpoint overrides
+    }
+    save!
   end
 
   # Computed health status used for UI:

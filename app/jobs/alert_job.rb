@@ -5,6 +5,10 @@ class AlertJob
   URL_HOST = ENV.fetch("APP_HOST", "localhost:3000")
   URL_PROTOCOL = Rails.env.production? ? "https" : "http"
 
+  # Alert types that use per-fingerprint rate limiting (handled in IssueAlertJob)
+  # These should NOT use global rate limiting here
+  PER_FINGERPRINT_ALERT_TYPES = %w[new_issue error_frequency].freeze
+
   def perform(alert_rule_id, alert_type, payload)
     alert_rule = nil
     project = nil
@@ -19,15 +23,18 @@ class AlertJob
     return unless project.notifications_enabled?
 
     preference = project.notification_pref_for(alert_type)
-    return unless preference
+    return unless preference&.enabled
 
-    # Use database lock to prevent race condition - only one job can proceed
     ActsAsTenant.with_tenant(project.account) do
-      preference.with_lock do
-        return unless preference.can_send_now?
-
-        # Mark sent FIRST to prevent other jobs from sending
-        preference.mark_sent!
+      # For error alerts: per-fingerprint rate limiting is handled in IssueAlertJob
+      # Skip global rate limiting to allow different fingerprints through
+      #
+      # For other alerts (performance, n+1): use global rate limiting
+      unless PER_FINGERPRINT_ALERT_TYPES.include?(alert_type)
+        preference.with_lock do
+          return unless preference.can_send_now?
+          preference.mark_sent!
+        end
       end
 
       notification = AlertNotification.create!(

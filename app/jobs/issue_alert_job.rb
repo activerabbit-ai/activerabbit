@@ -4,29 +4,106 @@ class IssueAlertJob
 
   REDIS = Redis.new(url: ENV["REDIS_URL"] || "redis://localhost:6379/1")
 
+  # Minimum rate limit (5 minutes) to prevent spam even if user sets "immediate"
+  MIN_RATE_LIMIT_MINUTES = 5
+
   def perform(issue_id, tenant_id)
     ActsAsTenant.with_tenant(Account.find(tenant_id)) do
       issue = Issue.find(issue_id)
+      project = issue.project
 
-      # error frequency rules
-      AlertRule.check_error_frequency_rules(issue)
+      # Check if this is first occurrence after a deploy (first_in_deploy mode)
+      first_in_deploy = first_occurrence_in_deploy?(issue, project)
 
-      # new issue (dedup only)
-      key = redis_key(issue)
+      # Check error frequency rules (with per-fingerprint rate limiting from UI preference)
+      check_error_frequency_with_rate_limit(issue, project)
 
-      return if REDIS.exists?(key)
-
-      issue.project.alert_rules.active.for_type("new_issue").each do |rule|
-        AlertJob.perform_async(rule.id, "new_issue", { issue_id: issue.id })
-      end
-
-      REDIS.set(key, true, ex: 5.minutes.to_i)
+      # New issue alerts (with per-fingerprint dedup using UI preference)
+      handle_new_issue_alert(issue, project, first_in_deploy)
     end
   end
 
   private
 
-  def redis_key(issue)
-    "issue_seen:#{issue.project_id}:#{issue.fingerprint}"
+  # Check if this error is the first occurrence since the latest deploy
+  def first_occurrence_in_deploy?(issue, project)
+    latest_release = project.releases.recent.first
+    return false unless latest_release&.deployed_at
+
+    # First occurrence if issue was created after the deploy
+    if issue.first_seen_at && issue.first_seen_at >= latest_release.deployed_at
+      return true
+    end
+
+    # Recurrence: issue was closed before deploy and is now reopening
+    if issue.closed_at && issue.closed_at < latest_release.deployed_at
+      return true
+    end
+
+    false
+  end
+
+  # Error frequency rules with per-fingerprint rate limiting
+  def check_error_frequency_with_rate_limit(issue, project)
+    pref = project.notification_pref_for("error_frequency")
+    rate_limit_minutes = frequency_to_minutes(pref&.frequency)
+
+    AlertRule.check_error_frequency_rules(issue, rate_limit_minutes: rate_limit_minutes)
+  end
+
+  # Handle new issue alerts with per-fingerprint dedup
+  # Rate limit is based on user's UI preference
+  def handle_new_issue_alert(issue, project, first_in_deploy)
+    pref = project.notification_pref_for("new_issue")
+
+    # Handle special frequency modes
+    case pref&.frequency
+    when "first_in_deploy"
+      # Only alert if this is the first occurrence in this deploy
+      return unless first_in_deploy
+    when "after_close"
+      # Only alert if issue was previously closed (recurrence)
+      return unless issue.closed_at.present?
+    end
+
+    # Get rate limit from UI preference (per-fingerprint)
+    rate_limit_minutes = frequency_to_minutes(pref&.frequency)
+    rate_limit_key = fingerprint_rate_limit_key(issue, "new_issue")
+
+    # Check per-fingerprint rate limit
+    return if REDIS.exists?(rate_limit_key)
+
+    # Send alerts
+    project.alert_rules.active.for_type("new_issue").each do |rule|
+      AlertJob.perform_async(rule.id, "new_issue", {
+        issue_id: issue.id,
+        fingerprint: issue.fingerprint,
+        first_in_deploy: first_in_deploy
+      })
+    end
+
+    # Set per-fingerprint rate limit based on user's UI preference
+    REDIS.set(rate_limit_key, true, ex: rate_limit_minutes.minutes.to_i)
+  end
+
+  # Convert UI frequency setting to minutes
+  # This makes the rate limit PER-FINGERPRINT based on user's choice
+  def frequency_to_minutes(frequency)
+    case frequency
+    when "immediate"
+      MIN_RATE_LIMIT_MINUTES  # Still enforce minimum 5 min to prevent spam
+    when "every_30_minutes"
+      30
+    when "every_2_hours"
+      120
+    when "first_in_deploy", "after_close"
+      MIN_RATE_LIMIT_MINUTES  # These modes use special logic, not time-based
+    else
+      30  # Default: 30 minutes (AppSignal Action Interval default)
+    end
+  end
+
+  def fingerprint_rate_limit_key(issue, alert_type)
+    "issue_rate_limit:#{issue.project_id}:#{alert_type}:#{issue.fingerprint}"
   end
 end

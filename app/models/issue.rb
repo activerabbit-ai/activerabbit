@@ -165,15 +165,38 @@ class Issue < ApplicationRecord
 
   private
 
+  # Exception classes that should be grouped more aggressively
+  # These are "noise" errors where the specific code location doesn't matter much
+  COARSE_FINGERPRINT_EXCEPTIONS = %w[
+    ActiveRecord::RecordNotFound
+    ActionController::RoutingError
+    ActionController::UnknownFormat
+    ActionController::InvalidAuthenticityToken
+    ActionController::ParameterMissing
+  ].freeze
+
   def self.generate_fingerprint(exception_class, top_frame, controller_action)
     # Normalize top frame (remove line numbers, normalize paths)
     normalized_frame = top_frame.gsub(/:\d+/, ":N").gsub(/\/\d+\//, "/N/")
 
-    components = [
-      exception_class,
-      normalized_frame,
-      controller_action
-    ].compact
+    # For common "noise" exceptions, use coarse fingerprinting:
+    # Group by exception_class only (ignore specific code location)
+    # This prevents spam from RecordNotFound for different records/routes
+    if COARSE_FINGERPRINT_EXCEPTIONS.include?(exception_class)
+      components = [
+        exception_class,
+        # Don't include top_frame - group all RecordNotFound together
+        # Optionally include controller for some separation:
+        controller_action.to_s.split("#").first # Just controller name, not action
+      ].compact
+    else
+      # Standard fingerprinting for other errors
+      components = [
+        exception_class,
+        normalized_frame,
+        controller_action
+      ].compact
+    end
 
     Digest::SHA256.hexdigest(components.join("|"))
   end

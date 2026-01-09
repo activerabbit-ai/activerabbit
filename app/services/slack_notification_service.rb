@@ -25,6 +25,21 @@ class SlackNotificationService
     send_message(build_new_issue_message(issue))
   end
 
+  # Send a message using Slack Block Kit format (for richer messages)
+  def send_blocks(blocks:, fallback_text:)
+    return unless configured?
+
+    @client.chat_postMessage(
+      channel: @project.slack_channel_id || "#active_rabbit_alert",
+      username: @project.slack_team_name,
+      icon_emoji: ":rabbit:",
+      text: fallback_text,
+      blocks: blocks
+    )
+  rescue Slack::Web::Api::Errors::SlackError => e
+    Rails.logger.error "Failed to send Slack blocks message: #{e.message}"
+  end
+
   private
 
   def send_message(message)
