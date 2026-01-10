@@ -1,0 +1,195 @@
+<%#
+  Stack trace partial - Sentry-like display
+  Expects: @selected_event or event (with backtrace)
+  Source code context comes from the client gem's structured_stack_trace
+%>
+<% event = local_assigns[:event] || @selected_event || @events&.first %>
+<% return unless event %>
+
+<%# Parse backtrace - will use client's structured_stack_trace if available %>
+<% frames = parse_backtrace(event) %>
+<% culprit_frame = find_culprit_frame(frames) %>
+<% app_frames = frames.select { |f| f[:in_app] } %>
+<% lib_frames = frames.reject { |f| f[:in_app] } %>
+
+<div class="stack-trace" data-controller="stack-trace" data-stack-trace-filter-value="app">
+  <!-- Error Header -->
+  <div class="mb-6">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-lg font-semibold text-red-600"><%= event.exception_class %></span>
+      <% if culprit_frame %>
+        <span class="text-sm text-gray-500">in</span>
+        <span class="font-mono text-sm text-gray-700"><%= clean_method_name(culprit_frame[:method]) %></span>
+      <% end %>
+    </div>
+    <p class="text-gray-700 mb-3"><%= event.message %></p>
+
+    <% if culprit_frame && culprit_frame[:file] %>
+      <div class="flex items-center gap-2 text-sm">
+        <span class="inline-flex items-center px-2 py-1 rounded bg-indigo-100 text-indigo-800 font-medium">
+          <%= truncate_file_path(culprit_frame[:file]) %>
+        </span>
+        <span class="text-gray-500">in</span>
+        <span class="font-mono text-gray-700"><%= clean_method_name(culprit_frame[:method]) %></span>
+        <span class="text-gray-500">at line</span>
+        <span class="font-mono font-semibold text-gray-800"><%= culprit_frame[:line] %></span>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Filter Buttons (Sentry-style) -->
+  <div class="flex items-center gap-2 mb-4">
+    <div class="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+      <button type="button"
+              class="filter-btn px-4 py-2 text-sm font-medium bg-indigo-600 text-white"
+              data-action="click->stack-trace#filterFrames"
+              data-stack-trace-target="filterBtn"
+              data-filter="app">
+        App Only
+        <span class="ml-1 px-1.5 py-0.5 rounded bg-indigo-500 text-xs"><%= app_frames.count %></span>
+      </button>
+      <button type="button"
+              class="filter-btn px-4 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 border-l border-gray-300"
+              data-action="click->stack-trace#filterFrames"
+              data-stack-trace-target="filterBtn"
+              data-filter="full">
+        Full
+        <span class="ml-1 px-1.5 py-0.5 rounded bg-gray-200 text-xs"><%= frames.count %></span>
+      </button>
+    </div>
+    <span class="text-sm text-gray-500 ml-2">
+      <%= app_frames.count %> app • <%= lib_frames.count %> library frames
+    </span>
+  </div>
+
+  <!-- Stack Frames -->
+  <div class="border border-gray-200 rounded-lg overflow-hidden" data-stack-trace-target="frameList">
+    <% frames.each_with_index do |frame, index| %>
+      <% is_first = index == 0 %>
+      <% is_last = index == frames.length - 1 %>
+      <% is_culprit = culprit_frame && frame[:raw] == culprit_frame[:raw] %>
+      <% source_context = frame[:source_context] %>
+
+      <div class="stack-frame <%= is_first ? '' : 'border-t border-gray-200' %>"
+           data-stack-trace-target="frame"
+           data-in-app="<%= frame[:in_app] %>"
+           data-expanded="<%= is_culprit || is_first %>">
+
+        <!-- Frame Header (always visible) -->
+        <div class="frame-header flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors <%= is_culprit ? 'bg-red-50' : 'bg-white' %>"
+             data-action="click->stack-trace#toggleFrame">
+          <div class="flex items-center gap-3 min-w-0 flex-1">
+            <!-- Expand/Collapse Icon -->
+            <svg class="expand-icon w-4 h-4 text-gray-400 transition-transform flex-shrink-0"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+
+            <!-- File Path -->
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-mono text-sm <%= frame[:in_app] ? 'text-gray-800 font-medium' : 'text-gray-500' %> truncate">
+                <%= frame[:file] || frame[:raw] %>
+              </span>
+
+              <% if frame[:in_app] %>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700 flex-shrink-0">
+                  In App
+                </span>
+              <% end %>
+
+              <% type_label = frame_type_label(frame[:frame_type]) %>
+              <% if type_label && type_label != "Gem" %>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium <%= frame_type_badge_class(frame[:frame_type]) %> flex-shrink-0">
+                  <%= type_label %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 flex-shrink-0 ml-4">
+            <!-- Method name -->
+            <% if frame[:method] %>
+              <span class="text-sm text-gray-500">in</span>
+              <code class="text-sm font-mono <%= frame[:in_app] ? 'text-indigo-600' : 'text-gray-500' %>">
+                <%= clean_method_name(frame[:method]) %>
+              </code>
+            <% end %>
+
+            <!-- Line number -->
+            <% if frame[:line] %>
+              <span class="text-sm text-gray-500">at line</span>
+              <span class="text-sm font-mono font-semibold <%= is_culprit ? 'text-red-600' : 'text-gray-700' %>">
+                <%= frame[:line] %>
+              </span>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Frame Content (code context) - collapsible -->
+        <div class="frame-content <%= (is_culprit || is_first) && source_context ? '' : 'hidden' %>">
+          <% if source_context && source_context[:file_exists] %>
+            <div class="bg-gray-900 text-gray-100 overflow-x-auto">
+              <table class="w-full font-mono text-sm">
+                <tbody>
+                  <!-- Lines before -->
+                  <% source_context[:lines_before].each do |line_info| %>
+                    <tr class="hover:bg-gray-800">
+                      <td class="px-3 py-0.5 text-right text-gray-500 select-none w-12 border-r border-gray-700">
+                        <%= line_info[:number] %>
+                      </td>
+                      <td class="px-4 py-0.5 whitespace-pre"><%= h(line_info[:content]) %></td>
+                    </tr>
+                  <% end %>
+
+                  <!-- Error line (highlighted) -->
+                  <tr class="bg-red-900/40 border-l-4 border-red-500">
+                    <td class="px-3 py-0.5 text-right text-red-300 font-bold select-none w-12 border-r border-gray-700">
+                      <%= source_context[:line_content][:number] %>
+                    </td>
+                    <td class="px-4 py-0.5 whitespace-pre text-white"><%= h(source_context[:line_content][:content]) %></td>
+                  </tr>
+
+                  <!-- Lines after -->
+                  <% source_context[:lines_after].each do |line_info| %>
+                    <tr class="hover:bg-gray-800">
+                      <td class="px-3 py-0.5 text-right text-gray-500 select-none w-12 border-r border-gray-700">
+                        <%= line_info[:number] %>
+                      </td>
+                      <td class="px-4 py-0.5 whitespace-pre"><%= h(line_info[:content]) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% elsif frame[:in_app] && !source_context %>
+            <div class="px-4 py-3 bg-gray-50 text-sm text-gray-500 italic">
+              Source code context not available. Update activerabbit-ai gem to latest version for source capture.
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if frames.empty? %>
+      <div class="px-4 py-6 text-center text-gray-500">
+        No stack trace available
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Show/Hide all frames toggle -->
+  <% non_app_frames = frames.reject { |f| f[:in_app] } %>
+  <% if non_app_frames.any? %>
+    <div class="mt-3 flex items-center justify-between text-sm">
+      <span class="text-gray-500">
+        <%= frames.count { |f| f[:in_app] } %> app frames, <%= non_app_frames.count %> library frames
+      </span>
+      <button type="button"
+              class="text-indigo-600 hover:text-indigo-800 font-medium"
+              data-action="click->stack-trace#toggleAllFrames"
+              data-stack-trace-target="toggleButton">
+        Expand all frames
+      </button>
+    </div>
+  <% end %>
+</div>

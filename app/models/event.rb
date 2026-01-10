@@ -33,6 +33,17 @@ class Event < ApplicationRecord
       sample_message: message
     )
 
+    # Build context with structured stack trace (Sentry-style)
+    event_context = scrub_pii(payload[:context] || {})
+
+    # Store structured stack trace in context if provided by client
+    if payload[:structured_stack_trace].present?
+      event_context[:structured_stack_trace] = payload[:structured_stack_trace]
+    end
+    if payload[:culprit_frame].present?
+      event_context[:culprit_frame] = payload[:culprit_frame]
+    end
+
     # Create event (individual occurrence)
     create!(
       project: project,
@@ -47,7 +58,7 @@ class Event < ApplicationRecord
       environment: payload[:environment] || "production",
       release_version: payload[:release_version],
       user_id_hash: payload[:user_id] ? Digest::SHA256.hexdigest(payload[:user_id].to_s) : nil,
-      context: scrub_pii(payload[:context] || {}),
+      context: event_context,
       server_name: payload[:server_name],
       request_id: payload[:request_id]
     )
@@ -61,6 +72,24 @@ class Event < ApplicationRecord
   def formatted_backtrace
     return [] if backtrace.blank?
     backtrace.is_a?(Array) ? backtrace : backtrace.split("\n")
+  end
+
+  # Get structured stack trace with source code context (from client gem)
+  # Returns array of frame hashes with: file, line, method, in_app, source_context, etc.
+  def structured_stack_trace
+    ctx = context || {}
+    ctx["structured_stack_trace"] || ctx[:structured_stack_trace] || []
+  end
+
+  # Get the culprit frame (first in-app frame where error occurred)
+  def culprit_frame
+    ctx = context || {}
+    ctx["culprit_frame"] || ctx[:culprit_frame]
+  end
+
+  # Check if this event has structured stack trace data from client
+  def has_structured_stack_trace?
+    structured_stack_trace.present?
   end
 
   def event_type
