@@ -22,7 +22,32 @@
         <span class="font-mono text-sm text-gray-700"><%= clean_method_name(culprit_frame[:method]) %></span>
       <% end %>
     </div>
-    <p class="text-gray-700 mb-3"><%= event.message %></p>
+
+    <%# Error message - truncate if too long with expand option %>
+    <% message = event.message.to_s %>
+    <% message_truncated = message.length > 200 %>
+    <div class="mb-3" data-stack-trace-target="messageContainer">
+      <% if message_truncated %>
+        <p class="text-gray-700" data-stack-trace-target="messageShort">
+          <%= truncate(message, length: 200, omission: '...') %>
+          <button type="button"
+                  class="text-indigo-600 hover:text-indigo-800 text-sm font-medium ml-1"
+                  data-action="click->stack-trace#toggleMessage">
+            Show more
+          </button>
+        </p>
+        <p class="text-gray-700 hidden" data-stack-trace-target="messageFull">
+          <span class="font-mono text-sm break-all"><%= message %></span>
+          <button type="button"
+                  class="text-indigo-600 hover:text-indigo-800 text-sm font-medium ml-1"
+                  data-action="click->stack-trace#toggleMessage">
+            Show less
+          </button>
+        </p>
+      <% else %>
+        <p class="text-gray-700"><%= message %></p>
+      <% end %>
+    </div>
 
     <% if culprit_frame && culprit_frame[:file] %>
       <div class="flex items-center gap-2 text-sm">

@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="stack-trace"
 export default class extends Controller {
-  static targets = ["frame", "toggleButton", "filterBtn", "frameList"]
+  static targets = ["frame", "toggleButton", "filterBtn", "frameList", "messageShort", "messageFull", "messageContainer"]
   static values = { filter: { type: String, default: "app" } }
 
   connect() {
@@ -14,6 +14,14 @@ export default class extends Controller {
 
     // Apply initial filter
     this.applyFilter(this.filterValue)
+  }
+
+  // Toggle error message between truncated and full view
+  toggleMessage() {
+    if (this.hasMessageShortTarget && this.hasMessageFullTarget) {
+      this.messageShortTarget.classList.toggle("hidden")
+      this.messageFullTarget.classList.toggle("hidden")
+    }
   }
 
   filterFrames(event) {

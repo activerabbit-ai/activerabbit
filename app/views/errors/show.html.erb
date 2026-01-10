@@ -74,7 +74,30 @@
             <% end %>
           </h1>
           <% if @issue.sample_message.present? %>
-            <p class="text-gray-600 mt-1"><%= @issue.sample_message %></p>
+            <% title_message = @issue.sample_message.to_s %>
+            <% title_truncated = title_message.length > 100 %>
+            <div class="mt-1" data-controller="message-toggle">
+              <% if title_truncated %>
+                <p class="text-gray-600" data-message-toggle-target="short">
+                  <%= truncate(title_message, length: 100, omission: '...') %>
+                  <button type="button"
+                          class="text-indigo-600 hover:text-indigo-800 text-sm font-medium ml-1"
+                          data-action="click->message-toggle#toggle">
+                    Show more
+                  </button>
+                </p>
+                <p class="text-gray-600 hidden" data-message-toggle-target="full">
+                  <span class="font-mono text-sm break-all"><%= title_message %></span>
+                  <button type="button"
+                          class="text-indigo-600 hover:text-indigo-800 text-sm font-medium ml-1"
+                          data-action="click->message-toggle#toggle">
+                    Show less
+                  </button>
+                </p>
+              <% else %>
+                <p class="text-gray-600"><%= title_message %></p>
+              <% end %>
+            </div>
           <% end %>
           <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500">
             <span><strong>Project:</strong> <%= @issue.project&.name || 'Unknown' %></span>
