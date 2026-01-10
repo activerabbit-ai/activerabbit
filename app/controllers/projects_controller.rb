@@ -36,6 +36,7 @@ class ProjectsController < ApplicationController
     if @project.save
       @project.generate_api_token!
       @project.create_default_alert_rules!
+      @project.create_default_notification_settings!
 
       # For additional projects, also show gem installation instructions
       redirect_to onboarding_install_gem_path(@project), notice: "Project created! Now let's set up monitoring for this project."
