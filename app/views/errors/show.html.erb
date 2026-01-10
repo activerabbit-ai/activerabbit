@@ -237,49 +237,34 @@ end %>
 
   <% elsif current_tab == 'stack' %>
     <div class="px-6 py-4 border-t border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900 mb-4">Stack Trace</h3>
-      <div class="text-xs text-gray-500 mb-2"><strong>Top Frame:</strong></div>
-      <div class="bg-gray-50 rounded p-3 mb-4">
-        <code class="text-sm text-gray-800"><%= @issue.top_frame %></code>
+      <!-- Summary Info -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Controller Action</div>
+          <code class="text-sm font-medium text-gray-800"><%= @issue.controller_action %></code>
+        </div>
+
+        <% if @common_method.present? %>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">HTTP Method</div>
+            <code class="text-sm font-medium text-gray-800"><%= @common_method %></code>
+          </div>
+        <% end %>
+
+        <% if @issue.full_url.present? %>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Request URL</div>
+            <code class="text-sm text-indigo-600 break-all"><%= @issue.full_url %></code>
+          </div>
+        <% end %>
       </div>
 
-      <div class="text-xs text-gray-500 mb-2"><strong>Controller Action:</strong></div>
-      <div class="bg-gray-50 rounded p-3 mb-4">
-        <code class="text-sm text-gray-800"><%= @issue.controller_action %></code>
-      </div>
-
-      <% if @common_method.present? %>
-        <div class="text-xs text-gray-500 mb-2"><strong>Method:</strong></div>
-        <div class="bg-gray-50 rounded p-3 mb-4">
-          <code class="text-sm text-gray-800"><%= @common_method %></code>
-        </div>
-      <% end %>
-
-      <% if @issue.full_url.present? %>
-        <div class="text-xs text-gray-500 mb-2"><strong>Full URL:</strong></div>
-        <div class="bg-gray-50 rounded p-3 mb-4">
-          <code class="text-sm text-indigo-600 break-all"><%= @issue.full_url %></code>
-        </div>
-      <% end %>
-
-      <% if @events.first&.context&.dig('error', 'backtrace_preview') %>
-        <div class="text-xs text-gray-500 mb-2"><strong>Backtrace Preview (important frames):</strong></div>
-        <div class="bg-gray-50 rounded p-3">
-          <% important = @events.first.context['error']['backtrace_preview'].select { |l| l.include?('/app/') || l.include?('/controllers/') || l.include?('/models/') || l.include?('/services/') }
-             important = @events.first.context['error']['backtrace_preview'].first(5) if important.empty?
-             full_text = important.join("\n")
-             head_text = full_text[0, 500] || ''
-             tail_text = full_text.length > 500 ? full_text[500, full_text.length] : ''
-          %>
-          <pre class="whitespace-pre-wrap"><code class="text-sm text-gray-800"><%= head_text %></code></pre>
-          <% if tail_text.present? %>
-            <details class="mt-2">
-              <summary class="text-xs text-indigo-600 cursor-pointer select-none">More...</summary>
-              <div class="mt-2">
-                <pre class="whitespace-pre-wrap"><code class="text-sm text-gray-800"><%= tail_text %></code></pre>
-              </div>
-            </details>
-          <% end %>
+      <!-- Full Stack Trace with Code Context -->
+      <% if @events.first %>
+        <%= render "errors/stack_trace", event: @events.first %>
+      <% else %>
+        <div class="text-center text-gray-500 py-8">
+          No stack trace data available
         </div>
       <% end %>
     </div>
@@ -414,24 +399,73 @@ end %>
                   </div>
                 </div>
 
-                <% if @selected_event.formatted_backtrace.any? %>
+                <% if @selected_event.formatted_backtrace.any? || @selected_event.has_structured_stack_trace? %>
                   <div class="mt-4">
-                    <div class="text-sm font-medium text-gray-900 mb-1">Backtrace (important frames)</div>
-                    <div class="bg-gray-50 rounded p-3">
-                      <% imp = @selected_event.formatted_backtrace.select { |l| l.include?('/app/') || l.include?('/controllers/') || l.include?('/models/') || l.include?('/services/') }
-                         imp = @selected_event.formatted_backtrace.first(15) if imp.empty?
-                         full_text = imp.join("\n")
-                         head_text = full_text[0, 500] || ''
-                         tail_text = full_text.length > 500 ? full_text[500, full_text.length] : ''
-                      %>
-                      <pre class="whitespace-pre-wrap"><code class="block text-xs text-gray-800"><%= head_text %></code></pre>
-                      <% if tail_text.present? %>
-                        <details class="mt-2">
-                          <summary class="text-xs text-indigo-600 cursor-pointer select-none">More...</summary>
-                          <div class="mt-2">
-                            <pre class="whitespace-pre-wrap"><code class="block text-xs text-gray-800"><%= tail_text %></code></pre>
+                    <div class="text-sm font-medium text-gray-900 mb-2">Stack Trace</div>
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                      <%# Use structured stack trace from client if available %>
+                      <% frames = parse_backtrace(@selected_event) %>
+                      <% app_frames = frames.select { |f| f[:in_app] } %>
+                      <% display_frames = app_frames.any? ? app_frames.first(8) : frames.first(8) %>
+
+                      <% display_frames.each_with_index do |frame, idx| %>
+                        <% is_first = idx == 0 %>
+                        <% source_context = frame[:source_context] %>
+
+                        <div class="<%= idx > 0 ? 'border-t border-gray-200' : '' %>">
+                          <!-- Frame header -->
+                          <div class="px-3 py-2 <%= is_first ? 'bg-red-50' : 'bg-white' %> flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                              <span class="font-mono <%= frame[:in_app] ? 'text-gray-800 font-medium' : 'text-gray-500' %> truncate">
+                                <%= truncate_file_path(frame[:file] || frame[:raw], max_parts: 3) %>
+                              </span>
+                              <% if frame[:in_app] %>
+                                <span class="inline-flex px-1 py-0.5 rounded text-[9px] font-semibold bg-indigo-100 text-indigo-700">App</span>
+                              <% end %>
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-500 flex-shrink-0 ml-2">
+                              <% if frame[:method] %>
+                                <span>in <code class="<%= frame[:in_app] ? 'text-indigo-600' : '' %>"><%= clean_method_name(frame[:method]) %></code></span>
+                              <% end %>
+                              <% if frame[:line] %>
+                                <span class="font-mono <%= is_first ? 'text-red-600 font-semibold' : '' %>">:<%= frame[:line] %></span>
+                              <% end %>
+                            </div>
                           </div>
-                        </details>
+
+                          <!-- Code context for first frame (from client) -->
+                          <% if is_first && source_context && source_context[:file_exists] %>
+                            <div class="bg-gray-900 text-gray-100 overflow-x-auto text-xs">
+                              <table class="w-full font-mono">
+                                <tbody>
+                                  <% source_context[:lines_before].each do |line_info| %>
+                                    <tr>
+                                      <td class="px-2 py-0 text-right text-gray-500 select-none w-8 border-r border-gray-700"><%= line_info[:number] %></td>
+                                      <td class="px-3 py-0 whitespace-pre"><%= h(line_info[:content]) %></td>
+                                    </tr>
+                                  <% end %>
+                                  <tr class="bg-red-900/40 border-l-2 border-red-500">
+                                    <td class="px-2 py-0 text-right text-red-300 font-bold select-none w-8 border-r border-gray-700"><%= source_context[:line_content][:number] %></td>
+                                    <td class="px-3 py-0 whitespace-pre text-white"><%= h(source_context[:line_content][:content]) %></td>
+                                  </tr>
+                                  <% source_context[:lines_after].each do |line_info| %>
+                                    <tr>
+                                      <td class="px-2 py-0 text-right text-gray-500 select-none w-8 border-r border-gray-700"><%= line_info[:number] %></td>
+                                      <td class="px-3 py-0 whitespace-pre"><%= h(line_info[:content]) %></td>
+                                    </tr>
+                                  <% end %>
+                                </tbody>
+                              </table>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+
+                      <% remaining = frames.count - display_frames.count %>
+                      <% if remaining > 0 %>
+                        <div class="px-3 py-2 bg-gray-50 text-xs text-gray-500 border-t border-gray-200">
+                          + <%= remaining %> more frames (view in Stack Trace tab)
+                        </div>
                       <% end %>
                     </div>
                   </div>

@@ -25,6 +25,66 @@ RSpec.describe 'API::V1::Events', type: :request, api: true do
       expect(JSON.parse(response.body)['status']).to eq('created')
     end
 
+    it 'accepts structured_stack_trace with source context' do
+      structured_frames = [
+        {
+          file: "app/controllers/users_controller.rb",
+          line: 25,
+          method: "show",
+          raw: "app/controllers/users_controller.rb:25:in `show'",
+          in_app: true,
+          frame_type: "controller",
+          index: 0,
+          source_context: {
+            lines_before: ["  def show", "    @user = User.find(params[:id])"],
+            line_content: "    raise 'Not found'",
+            lines_after: ["  end"],
+            start_line: 23
+          }
+        },
+        {
+          file: "/gems/actionpack/lib/action_controller.rb",
+          line: 100,
+          method: "process",
+          raw: "/gems/actionpack/lib/action_controller.rb:100:in `process'",
+          in_app: false,
+          frame_type: "gem",
+          index: 1,
+          source_context: nil
+        }
+      ]
+
+      culprit_frame = structured_frames.first
+
+      body = {
+        exception_class: 'ArgumentError',
+        message: 'User not found',
+        backtrace: structured_frames.map { |f| f[:raw] },
+        structured_stack_trace: structured_frames,
+        culprit_frame: culprit_frame,
+        occurred_at: Time.current.iso8601
+      }.to_json
+
+      post '/api/v1/events/errors', params: body, headers: headers
+
+      expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+      expect(json['status']).to eq('created')
+    end
+
+    it 'works without structured_stack_trace (backward compatibility)' do
+      body = {
+        exception_class: 'StandardError',
+        message: 'Legacy error',
+        backtrace: ["app/models/user.rb:10:in `save'"],
+        occurred_at: Time.current.iso8601
+      }.to_json
+
+      post '/api/v1/events/errors', params: body, headers: headers
+
+      expect(response).to have_http_status(:created)
+    end
+
     it 'rejects missing fields' do
       body = { message: 'no class' }.to_json
       post '/api/v1/events/errors', params: body, headers: headers

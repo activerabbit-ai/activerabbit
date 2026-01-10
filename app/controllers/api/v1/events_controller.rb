@@ -188,6 +188,9 @@ class Api::V1::EventsController < Api::BaseController
       exception_class: params[:exception_class] || params["exception_class"] || params[:exception_type] || params["exception_type"] || params[:type] || params["type"],
       message: params[:message] || params["message"],
       backtrace: normalize_backtrace(params[:backtrace] || params["backtrace"] || []),
+      # NEW: Structured stack trace with source code context (Sentry-style)
+      structured_stack_trace: params[:structured_stack_trace] || params["structured_stack_trace"],
+      culprit_frame: params[:culprit_frame] || params["culprit_frame"],
       controller_action: params[:controller_action] || params["controller_action"] || extract_controller_action(request_context),
       request_path: params[:request_path] || params["request_path"] || request_context[:path] || request_context["path"],
       request_method: params[:request_method] || params["request_method"] || request_context[:method] || request_context["method"],
