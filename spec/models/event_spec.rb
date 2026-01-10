@@ -92,10 +92,11 @@ RSpec.describe Event, type: :model do
     end
 
     it 'returns structured data when present (symbol keys)' do
+      # Note: Rails JSON serialization converts symbol keys to strings
       event = build(:event, context: {
         structured_stack_trace: [{ file: "test.rb", line: 1 }]
       })
-      expect(event.structured_stack_trace).to eq([{ file: "test.rb", line: 1 }])
+      expect(event.structured_stack_trace).to eq([{ "file" => "test.rb", "line" => 1 }])
     end
   end
 

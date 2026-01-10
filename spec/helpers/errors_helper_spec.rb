@@ -290,4 +290,3 @@ RSpec.describe ErrorsHelper, type: :helper do
     end
   end
 end
-
