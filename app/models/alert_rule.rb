@@ -18,8 +18,6 @@ class AlertRule < ApplicationRecord
   # @param issue [Issue] The issue to check
   # @param rate_limit_minutes [Integer] Rate limit from user's UI preference (NotificationPreference)
   def self.check_error_frequency_rules(issue, rate_limit_minutes: 30)
-    redis = IssueAlertJob.redis  # Use shared thread-safe Redis connection
-
     issue.project.alert_rules.active.for_type("error_frequency").each do |rule|
       recent_count = issue.events
         .where("created_at > ?", rule.time_window_minutes.minutes.ago)
@@ -34,7 +32,7 @@ class AlertRule < ApplicationRecord
       # ATOMIC check-and-set to prevent race conditions
       # SET with NX returns true only if key was set (didn't exist)
       # This prevents multiple concurrent workers from all sending alerts
-      lock_acquired = redis.set(fingerprint_key, true, ex: rate_limit_minutes.minutes.to_i, nx: true)
+      lock_acquired = IssueAlertJob.with_redis { |redis| redis.set(fingerprint_key, true, ex: rate_limit_minutes.minutes.to_i, nx: true) }
       next unless lock_acquired
 
       # DB check as fallback (belt + suspenders for cases where Redis was cleared)
@@ -71,8 +69,6 @@ class AlertRule < ApplicationRecord
   end
 
   def self.check_performance_rules(event)
-    redis = IssueAlertJob.redis
-
     event.project.alert_rules.active.for_type("performance_regression").each do |rule|
       next unless event.duration_ms && event.duration_ms >= rule.threshold_value
 
@@ -83,7 +79,7 @@ class AlertRule < ApplicationRecord
       # ATOMIC check-and-set to prevent race conditions
       ttl = [rule.time_window_minutes, rule.cooldown_minutes.to_i].max.minutes.to_i
       ttl = 5.minutes.to_i if ttl < 5.minutes.to_i  # Minimum 5 minutes
-      lock_acquired = redis.set(redis_key, true, ex: ttl, nx: true)
+      lock_acquired = IssueAlertJob.with_redis { |redis| redis.set(redis_key, true, ex: ttl, nx: true) }
       next unless lock_acquired
 
       # DB check as fallback (belt + suspenders)
@@ -109,8 +105,6 @@ class AlertRule < ApplicationRecord
   end
 
   def self.check_n_plus_one_rules(project, incidents)
-    redis = IssueAlertJob.redis
-
     project.alert_rules.active.for_type("n_plus_one").each do |rule|
       high_severity = incidents.select { |i| i[:severity] == "high" }
       next if high_severity.size < rule.threshold_value
@@ -121,7 +115,7 @@ class AlertRule < ApplicationRecord
       # ATOMIC check-and-set to prevent race conditions
       ttl = [rule.time_window_minutes, rule.cooldown_minutes.to_i].max.minutes.to_i
       ttl = 5.minutes.to_i if ttl < 5.minutes.to_i  # Minimum 5 minutes
-      lock_acquired = redis.set(redis_key, true, ex: ttl, nx: true)
+      lock_acquired = IssueAlertJob.with_redis { |redis| redis.set(redis_key, true, ex: ttl, nx: true) }
       next unless lock_acquired
 
       # DB check as fallback

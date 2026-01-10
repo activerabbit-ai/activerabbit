@@ -8,11 +8,22 @@ class IssueAlertJob
   # Thread-safe Redis access
   # - In production: uses Rails.cache.redis (connection pool)
   # - In test: uses simple Redis connection (or mock)
-  def self.redis
-    @redis ||= if Rails.cache.respond_to?(:redis)
+  def self.redis_pool
+    @redis_pool ||= if Rails.cache.respond_to?(:redis)
       Rails.cache.redis
     else
       Redis.new(url: ENV["REDIS_URL"] || "redis://localhost:6379/1")
+    end
+  end
+
+  # Execute a block with a Redis connection from the pool
+  # Handles both ConnectionPool (production) and direct Redis (test) cases
+  def self.with_redis(&block)
+    pool = redis_pool
+    if pool.respond_to?(:with)
+      pool.with(&block)
+    else
+      yield pool
     end
   end
 
@@ -99,7 +110,7 @@ class IssueAlertJob
     # SET with NX returns true only if key was set (didn't exist)
     # This prevents multiple concurrent jobs from all sending alerts
     ttl = first_in_deploy ? 7.days.to_i : rate_limit_minutes.minutes.to_i
-    lock_acquired = self.class.redis.set(rate_limit_key, true, ex: ttl, nx: true)
+    lock_acquired = self.class.with_redis { |redis| redis.set(rate_limit_key, true, ex: ttl, nx: true) }
     return unless lock_acquired
 
     # Send alerts (only one job wins the race)
