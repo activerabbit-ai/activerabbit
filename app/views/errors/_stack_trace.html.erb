@@ -1,0 +1,109 @@
+<% frames =
+  stack_mode == "full" ? event.full_frames : event.relevant_frames
+%>
+
+<div class="flex items-center justify-between mb-3">
+  <h3 class="text-lg font-medium text-gray-900">Stack Trace</h3>
+
+  <div class="inline-flex bg-gray-100 p-1 rounded-full text-xs">
+    <%= link_to "Most Relevant",
+      url_for(params.permit!.to_h.merge(stack: nil)),
+      class: "px-3 py-1 rounded-full #{stack_mode != 'full' ? 'bg-white text-indigo-600 shadow' : 'text-gray-600'}" %>
+
+    <%= link_to "Full Stack Trace",
+      url_for(params.permit!.to_h.merge(stack: 'full')),
+      class: "ml-1 px-3 py-1 rounded-full #{stack_mode == 'full' ? 'bg-white text-indigo-600 shadow' : 'text-gray-600'}" %>
+  </div>
+</div>
+
+<div class="bg-white rounded-lg border border-gray-200 divide-y">
+
+  <% frames.each_with_index do |frame, idx| %>
+    <% ctx = event.github_source_context(frame) %>
+
+    <div class="stack-frame">
+
+      <!-- HEADER -->
+      <button
+        type="button"
+        class="w-full px-4 py-2 flex items-start gap-3 text-left hover:bg-gray-50 group"
+        data-stack-toggle
+      >
+        <div class="text-xs text-gray-400 w-6 text-right">
+          <%= idx + 1 %>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-mono text-gray-800 break-all">
+            <%= frame[:filename] %>:<%= frame[:lineno] %>
+          </div>
+
+          <% if frame[:function] %>
+            <div class="text-xs text-gray-500 mt-0.5 font-mono">
+              in <%= frame[:function] %>
+            </div>
+          <% end %>
+        </div>
+
+        <% if frame[:in_app] %>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">
+            app
+          </span>
+        <% end %>
+
+        <span
+          data-arrow
+          class="ml-2 text-gray-400 group-hover:text-gray-600 transition"
+        >
+          ▸
+        </span>
+      </button>
+
+      <!-- CODE -->
+      <% if ctx %>
+        <pre class="stack-code hidden bg-gray-900 text-gray-100 text-xs font-mono px-4 py-3 overflow-x-auto">
+          <% ctx[:pre].each do |l| %><span class="opacity-60"><%= l.rstrip %></span>
+          <% end %><span class="block bg-red-900/50 text-red-200 px-2"><%= ctx[:line].rstrip %></span>
+          <% ctx[:post].each do |l| %><span class="opacity-60"><%= l.rstrip %></span>
+          <% end %>
+        </pre>
+      <% else %>
+        <div class="px-4 py-2 text-xs text-gray-500">
+          Source unavailable
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  function initStackTrace() {
+    const container = document.querySelector(".stack-frame")?.parentElement;
+    if (!container) return;
+
+    // delegation: один listener на весь список
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-stack-toggle]");
+      if (!btn) return;
+
+      const code = btn.nextElementSibling;
+      if (!code || !code.classList.contains("stack-code")) return;
+
+      const arrow = btn.querySelector("[data-arrow]");
+      const isHidden = code.classList.toggle("hidden");
+
+      if (arrow) arrow.textContent = isHidden ? "▸" : "▾";
+    });
+
+    // auto-open first frame ONCE
+    const firstCode = container.querySelector(".stack-code");
+    if (firstCode && firstCode.classList.contains("hidden")) {
+      firstCode.classList.remove("hidden");
+      const firstBtn = firstCode.previousElementSibling;
+      const arrow = firstBtn?.querySelector("[data-arrow]");
+      if (arrow) arrow.textContent = "▾";
+    }
+  }
+
+  document.addEventListener("turbo:load", initStackTrace);
+</script>
