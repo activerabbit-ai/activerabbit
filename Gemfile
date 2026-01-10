@@ -106,7 +106,7 @@ group :development, :test do
 end
 
 # ActiveRabbit AI monitoring gem
-gem "activerabbit-ai", "~> 0.5.2"
+gem "activerabbit-ai", "~> 0.6.0"
 
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
