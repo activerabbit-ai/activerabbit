@@ -13,55 +13,6 @@
 <% lib_frames = frames.reject { |f| f[:in_app] } %>
 
 <div class="stack-trace" data-controller="stack-trace" data-stack-trace-filter-value="app">
-  <!-- Error Header -->
-  <div class="mb-6">
-    <div class="flex items-center gap-2 mb-2">
-      <span class="text-lg font-semibold text-red-600"><%= event.exception_class %></span>
-      <% if culprit_frame %>
-        <span class="text-sm text-gray-500">in</span>
-        <span class="font-mono text-sm text-gray-700"><%= clean_method_name(culprit_frame[:method]) %></span>
-      <% end %>
-    </div>
-
-    <%# Error message - truncate if too long with expand option %>
-    <% message = event.message.to_s %>
-    <% message_truncated = message.length > 200 %>
-    <div class="mb-3" data-stack-trace-target="messageContainer">
-      <% if message_truncated %>
-        <p class="text-gray-700" data-stack-trace-target="messageShort">
-          <%= truncate(message, length: 200, omission: '...') %>
-          <button type="button"
-                  class="text-indigo-600 hover:text-indigo-800 text-sm font-medium ml-1"
-                  data-action="click->stack-trace#toggleMessage">
-            Show more
-          </button>
-        </p>
-        <p class="text-gray-700 hidden" data-stack-trace-target="messageFull">
-          <span class="font-mono text-sm break-all"><%= message %></span>
-          <button type="button"
-                  class="text-indigo-600 hover:text-indigo-800 text-sm font-medium ml-1"
-                  data-action="click->stack-trace#toggleMessage">
-            Show less
-          </button>
-        </p>
-      <% else %>
-        <p class="text-gray-700"><%= message %></p>
-      <% end %>
-    </div>
-
-    <% if culprit_frame && culprit_frame[:file] %>
-      <div class="flex items-center gap-2 text-sm">
-        <span class="inline-flex items-center px-2 py-1 rounded bg-indigo-100 text-indigo-800 font-medium">
-          <%= truncate_file_path(culprit_frame[:file]) %>
-        </span>
-        <span class="text-gray-500">in</span>
-        <span class="font-mono text-gray-700"><%= clean_method_name(culprit_frame[:method]) %></span>
-        <span class="text-gray-500">at line</span>
-        <span class="font-mono font-semibold text-gray-800"><%= culprit_frame[:line] %></span>
-      </div>
-    <% end %>
-  </div>
-
   <!-- AI Summary Collapsible - Header always visible -->
   <% if @issue&.ai_summary.present? %>
     <div id="ai-summary-panel" class="mb-5" data-ai-inline-target="panel">
