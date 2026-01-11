@@ -242,12 +242,55 @@ end %>
 
   <% if current_tab == 'ai' %>
     <div class="px-6 py-6 border-t border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900 mb-3">AI explanation</h3>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-medium text-gray-900">AI explanation</h3>
+        <% regenerate_url = if @current_project
+                              "/#{@current_project.slug}/errors/#{@issue.id}/regenerate_ai_summary"
+                            elsif @project
+                              regenerate_ai_summary_project_error_path(@project, @issue)
+                            else
+                              regenerate_ai_summary_error_path(@issue)
+                            end %>
+        <%= link_to regenerate_url, method: :post, class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-colors", data: { turbo_method: :post } do %>
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Regenerate
+        <% end %>
+      </div>
       <% if @ai_result && @ai_result[:summary] %>
         <div class="space-y-4">
-          <div class="bg-white border border-gray-200 rounded-lg p-4">
-            <div data-controller="markdown" data-markdown-content-value="<%= CGI.escapeHTML(@ai_result[:summary]) %>"></div>
+          <!-- AI Summary Card -->
+          <div class="bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 flex items-center gap-3">
+              <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-white font-semibold text-sm">AI Analysis</h4>
+                <p class="text-indigo-100 text-xs">Powered by GPT-5.2</p>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6">
+              <div class="ai-summary-content">
+                <%= render_ai_summary(@ai_result[:summary]) %>
+              </div>
+            </div>
           </div>
+
+          <% if @issue.ai_summary_generated_at %>
+            <p class="text-xs text-slate-400 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Generated <%= time_ago_in_words(@issue.ai_summary_generated_at) %> ago
+            </p>
+          <% end %>
         </div>
       <% elsif @ai_result && @ai_result[:error] == 'missing_api_key' %>
         <div class="text-sm text-gray-600">Set <code>OPENAI_API_KEY</code> to enable AI summaries.</div>

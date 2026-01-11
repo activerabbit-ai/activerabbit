@@ -196,8 +196,10 @@ class ErrorsController < ApplicationController
     end
 
     if params[:tab] == "ai"
+      Rails.logger.info "[AI Debug] Issue ##{@issue.id} - ai_summary present: #{@issue.ai_summary.present?}, length: #{@issue.ai_summary&.length}"
       if @issue.ai_summary.present?
         @ai_result = { summary: @issue.ai_summary }
+        Rails.logger.info "[AI Debug] Set @ai_result with summary length: #{@ai_result[:summary]&.length}"
       elsif @issue.ai_summary_generated_at.present?
         # Already attempted previously and no summary was stored
         @ai_result = { error: "no_summary_available", message: "No AI summary available for this issue." }
@@ -213,6 +215,32 @@ class ErrorsController < ApplicationController
         @ai_result = result
       end
     end
+  end
+
+  def regenerate_ai_summary
+    project_scope = @current_project || @project
+    @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
+    @selected_event = @issue.events.order(occurred_at: :desc).first
+
+    # Force regeneration by clearing the previous summary
+    result = AiSummaryService.new(issue: @issue, sample_event: @selected_event).call
+
+    if result[:summary].present?
+      @issue.update(ai_summary: result[:summary], ai_summary_generated_at: Time.current)
+      flash[:notice] = "AI summary regenerated successfully."
+    else
+      @issue.update(ai_summary: nil, ai_summary_generated_at: Time.current)
+      flash[:alert] = result[:message] || "Failed to generate AI summary."
+    end
+
+    redirect_path = if @current_project
+                      "/#{@current_project.slug}/errors/#{@issue.id}?tab=ai"
+                    elsif @project
+                      project_error_path(@project, @issue, tab: "ai")
+                    else
+                      error_path(@issue, tab: "ai")
+                    end
+    redirect_to redirect_path
   end
 
   def update

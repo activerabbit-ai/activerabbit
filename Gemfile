@@ -55,6 +55,9 @@ gem "jwt", "~> 2.8"
 # Slack notifications
 gem "slack-notifier"
 
+# Markdown rendering
+gem "redcarpet"
+
 # Metrics
 gem "HDRHistogram"
 

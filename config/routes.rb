@@ -25,7 +25,11 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#index", as: "dashboard"
   get "deploys", to: "deploys#index", as: "deploys"
   get "errors", to: "errors#index", as: "errors"
-  resources :errors, only: [:show, :update, :destroy]
+  resources :errors, only: [:show, :update, :destroy] do
+    member do
+      post :regenerate_ai_summary
+    end
+  end
   get "security", to: "security#index", as: "security"
   get "settings", to: "settings#index", as: "settings"
   patch "settings/update_notification_settings", to: "settings#update_notification_settings", as: "update_notification_settings"
@@ -70,6 +74,7 @@ Rails.application.routes.draw do
   patch "projects/:project_id/errors/:id", to: "errors#update"
   delete "projects/:project_id/errors/:id", to: "errors#destroy"
   post "projects/:project_id/errors/:id/create_pr", to: "errors#create_pr", as: "project_error_create_pr"
+  post "projects/:project_id/errors/:id/regenerate_ai_summary", to: "errors#regenerate_ai_summary", as: "regenerate_ai_summary_project_error"
 
   # Projects management (non-admin)
   # Note: projects index page is hidden - dashboard shows all projects instead
@@ -204,6 +209,7 @@ Rails.application.routes.draw do
   get ":project_slug/errors/:id", to: "errors#show", as: "project_slug_error"
   patch ":project_slug/errors/:id", to: "errors#update"
   post ":project_slug/errors/:id/create_pr", to: "errors#create_pr", as: "project_slug_error_create_pr"
+  post ":project_slug/errors/:id/regenerate_ai_summary", to: "errors#regenerate_ai_summary", as: "project_slug_error_regenerate_ai_summary"
   get ":project_slug/performance", to: "performance#index", as: "project_slug_performance"
   get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"
   get ":project_slug/performance/actions/:target", to: "performance#action_detail", as: "project_slug_performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
