@@ -180,18 +180,50 @@ when 'graph' then 'graph'
 else 'stack'
 end %>
 
-<div class="bg-white rounded-lg shadow">
+<div class="bg-white rounded-lg shadow" data-controller="ai-inline">
   <div class="px-6 pt-4 pb-4 mb-4">
     <div class="flex items-center justify-between">
-      <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner" role="tablist" aria-label="Error detail tabs">
-        <%= link_to url_for(params.permit!.to_h.merge(tab: 'stack', event_id: nil)), class: "px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'stack' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'stack') } do %>
-          Stack Trace
-        <% end %>
-        <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
-          Samples
-        <% end %>
-        <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
-          Graph
+      <div class="flex items-center gap-3">
+        <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner" role="tablist" aria-label="Error detail tabs">
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'stack', event_id: nil)), class: "px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'stack' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'stack') } do %>
+            Stack Trace
+          <% end %>
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'samples')), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'samples' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'samples') } do %>
+            Samples
+          <% end %>
+          <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
+            Graph
+          <% end %>
+        </div>
+
+        <%# AI Summary Button - toggles inline panel in stack trace %>
+        <% if @issue.ai_summary.present? %>
+          <button type="button"
+                  class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold transition bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md hover:shadow-lg hover:from-indigo-600 hover:to-violet-600"
+                  data-action="click->ai-inline#toggle"
+                  data-ai-inline-target="toggleBtn">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            AI Analysis
+            <svg class="w-4 h-4 ml-1 transform transition-transform" data-ai-inline-target="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        <% else %>
+          <% regenerate_url = if @current_project
+                                "/#{@current_project.slug}/errors/#{@issue.id}/regenerate_ai_summary"
+                              elsif @project
+                                regenerate_ai_summary_project_error_path(@project, @issue)
+                              else
+                                regenerate_ai_summary_error_path(@issue)
+                              end %>
+          <%= link_to regenerate_url, method: :post, class: "inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold transition bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow hover:from-indigo-500 hover:to-violet-500", data: { turbo_method: :post } do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Generate AI
+          <% end %>
         <% end %>
       </div>
       <div class="flex items-center space-x-2">
@@ -228,80 +260,11 @@ end %>
           <% end %>
         <% end %>
 
-        <%= link_to url_for(params.permit!.to_h.merge(tab: 'ai', event_id: nil)), class: "inline-flex items-center px-4 py-2 rounded-full text-sm font-bold transition #{current_tab == 'ai' ? 'bg-white text-indigo-700 border-2 border-indigo-500 ring-2 ring-indigo-200 shadow' : 'bg-white text-gray-800 border-2 border-indigo-300 hover:border-indigo-400'}" do %>
-          <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <rect x="7" y="7" width="10" height="10" rx="2" stroke-width="2"/>
-            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.121 2.121M19 5l-2.121 2.121M5 19l2.121-2.121M19 19l-2.121-2.121" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-            <rect x="11" y="11" width="2" height="2" fill="currentColor" stroke="none"/>
-          </svg>
-          AI summary
-        <% end %>
       </div>
     </div>
   </div>
 
-  <% if current_tab == 'ai' %>
-    <div class="px-6 py-6 border-t border-gray-200">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-lg font-medium text-gray-900">AI explanation</h3>
-        <% regenerate_url = if @current_project
-                              "/#{@current_project.slug}/errors/#{@issue.id}/regenerate_ai_summary"
-                            elsif @project
-                              regenerate_ai_summary_project_error_path(@project, @issue)
-                            else
-                              regenerate_ai_summary_error_path(@issue)
-                            end %>
-        <%= link_to regenerate_url, method: :post, class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-colors", data: { turbo_method: :post } do %>
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-          Regenerate
-        <% end %>
-      </div>
-      <% if @ai_result && @ai_result[:summary] %>
-        <div class="space-y-4">
-          <!-- AI Summary Card -->
-          <div class="bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 flex items-center gap-3">
-              <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                </svg>
-              </div>
-              <div>
-                <h4 class="text-white font-semibold text-sm">AI Analysis</h4>
-                <p class="text-indigo-100 text-xs">Powered by GPT-5.2</p>
-              </div>
-            </div>
-
-            <!-- Content -->
-            <div class="p-6">
-              <div class="ai-summary-content">
-                <%= render_ai_summary(@ai_result[:summary]) %>
-              </div>
-            </div>
-          </div>
-
-          <% if @issue.ai_summary_generated_at %>
-            <p class="text-xs text-slate-400 flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Generated <%= time_ago_in_words(@issue.ai_summary_generated_at) %> ago
-            </p>
-          <% end %>
-        </div>
-      <% elsif @ai_result && @ai_result[:error] == 'missing_api_key' %>
-        <div class="text-sm text-gray-600">Set <code>OPENAI_API_KEY</code> to enable AI summaries.</div>
-      <% elsif @ai_result && @ai_result[:error] %>
-        <div class="text-sm text-red-600">AI summary failed: <%= @ai_result[:message] %></div>
-      <% else %>
-        <div class="text-sm text-gray-600">Generating summary...</div>
-      <% end %>
-    </div>
-
-  <% elsif current_tab == 'stack' %>
+  <% if current_tab == 'stack' %>
     <div class="px-6 py-4 border-t border-gray-200">
       <!-- Summary Info -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
