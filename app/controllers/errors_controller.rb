@@ -234,11 +234,11 @@ class ErrorsController < ApplicationController
     end
 
     redirect_path = if @current_project
-                      "/#{@current_project.slug}/errors/#{@issue.id}?tab=ai"
+                      project_slug_error_path(@current_project.slug, @issue, tab: "stack")
                     elsif @project
-                      project_error_path(@project, @issue, tab: "ai")
+                      project_error_path(@project, @issue, tab: "stack")
                     else
-                      error_path(@issue, tab: "ai")
+                      error_path(@issue, tab: "stack")
                     end
     redirect_to redirect_path
   end

@@ -28,18 +28,17 @@
             </div>
             <div>
               <h4 class="text-white font-semibold text-sm">AI Analysis</h4>
-              <p class="text-indigo-100 text-xs">Powered by GPT-5.2</p>
             </div>
           </div>
           <div class="flex items-center gap-3">
             <% regenerate_url = if @current_project
-                                  "/#{@current_project.slug}/errors/#{@issue.id}/regenerate_ai_summary"
+                                  project_slug_error_regenerate_ai_summary_path(@current_project.slug, @issue)
                                 elsif @project
                                   regenerate_ai_summary_project_error_path(@project, @issue)
                                 else
                                   regenerate_ai_summary_error_path(@issue)
                                 end %>
-            <%= link_to regenerate_url, method: :post, class: "inline-flex items-center px-3 py-1.5 text-xs font-medium text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors", data: { turbo_method: :post }, onclick: "event.stopPropagation();" do %>
+            <%= button_to regenerate_url, method: :post, form: { data: { turbo: false }, onclick: "event.stopPropagation();" }, class: "inline-flex items-center px-3 py-1.5 text-xs font-medium text-white/90 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer" do %>
               <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>

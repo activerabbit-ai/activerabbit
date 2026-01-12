@@ -52,7 +52,7 @@ class AiSummaryService
     http.use_ssl = true
 
     body = {
-      model: "gpt-5.2-thinking",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: content }

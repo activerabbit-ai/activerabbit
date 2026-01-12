@@ -212,13 +212,13 @@ end %>
           </button>
         <% else %>
           <% regenerate_url = if @current_project
-                                "/#{@current_project.slug}/errors/#{@issue.id}/regenerate_ai_summary"
+                                project_slug_error_regenerate_ai_summary_path(@current_project.slug, @issue)
                               elsif @project
                                 regenerate_ai_summary_project_error_path(@project, @issue)
                               else
                                 regenerate_ai_summary_error_path(@issue)
                               end %>
-          <%= link_to regenerate_url, method: :post, class: "inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold transition bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow hover:from-indigo-500 hover:to-violet-500", data: { turbo_method: :post } do %>
+          <%= button_to regenerate_url, method: :post, form: { data: { turbo: false } }, class: "inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold transition bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow hover:from-indigo-500 hover:to-violet-500 cursor-pointer" do %>
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
