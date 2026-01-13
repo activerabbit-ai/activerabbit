@@ -43,15 +43,15 @@ module MarkdownHelper
   class CustomAIRenderer < Redcarpet::Render::HTML
     def header(text, level)
       icon = case text.downcase
-             when /root cause/
+      when /root cause/
                '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-red-100 text-red-600 mr-2">🔍</span>'
-             when /fix/
+      when /fix/
                '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 mr-2">🔧</span>'
-             when /prevention/
+      when /prevention/
                '<span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 text-amber-600 mr-2">🛡️</span>'
-             else
-               ''
-             end
+      else
+               ""
+      end
 
       case level
       when 1
@@ -111,4 +111,3 @@ module MarkdownHelper
     end
   end
 end
-

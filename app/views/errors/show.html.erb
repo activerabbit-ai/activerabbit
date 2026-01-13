@@ -252,25 +252,14 @@ end %>
                              end %>
           <%= link_to "Connect GitHub", settings_link, class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
         <% elsif create_pr_path %>
-          <% if has_ai_fix %>
+          <% if has_ai_fix && !(@current_project || @project)&.settings&.dig('issue_pr_urls', @issue.id.to_s).present? %>
             <%# Show enhanced button that opens modal %>
             <button type="button"
                     data-action="click->pr-modal#open"
-                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 cursor-pointer"
-                    title="Creates a PR with the AI-suggested fix code applied to your repository">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-              </svg>
-              Push Fix to PR
-            </button>
-          <% else %>
-            <%# Show standard button that opens modal %>
-            <button type="button"
-                    data-action="click->pr-modal#open"
                     class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-white bg-[#24292e] hover:bg-black cursor-pointer"
-                    title="Creates a draft PR with error context and suggested fixes">
+                    title="Creates a PR with the AI-suggested fix code applied to your repository">
               <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-              Open PR
+              Open PR on GitHub
             </button>
           <% end %>
 
