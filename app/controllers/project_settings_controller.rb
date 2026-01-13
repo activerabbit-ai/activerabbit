@@ -126,7 +126,7 @@ class ProjectSettingsController < ApplicationController
   end
 
   def update_github_settings
-    gh_params = params.fetch(:project, {}).permit(:github_repo, :github_installation_id, :github_pat, :github_app_id, :github_app_pk, :github_app_pk_file)
+    gh_params = params.fetch(:project, {}).permit(:github_repo, :github_base_branch, :github_installation_id, :github_pat, :github_app_id, :github_app_pk, :github_app_pk_file)
     return true if gh_params.blank?
 
     settings = @project.settings || {}
@@ -143,6 +143,7 @@ class ProjectSettingsController < ApplicationController
     end
 
     set_or_clear.call("github_repo", :github_repo)
+    set_or_clear.call("github_base_branch", :github_base_branch)
     set_or_clear.call("github_installation_id", :github_installation_id)
     set_or_clear.call("github_pat", :github_pat)
     set_or_clear.call("github_app_id", :github_app_id)
@@ -191,7 +192,7 @@ class ProjectSettingsController < ApplicationController
     project_params = params[:project]
     return false unless project_params
 
-    %i[github_repo github_installation_id github_pat github_app_id github_app_pk github_app_pk_file].any? do |key|
+    %i[github_repo github_base_branch github_installation_id github_pat github_app_id github_app_pk github_app_pk_file].any? do |key|
       project_params.key?(key)
     end
   end

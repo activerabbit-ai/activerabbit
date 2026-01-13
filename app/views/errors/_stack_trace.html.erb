@@ -57,6 +57,20 @@
               <%= render_ai_summary(@issue.ai_summary) %>
             </div>
           </div>
+          <% has_code_fix = @issue.ai_summary.present? && @issue.ai_summary.include?('```') %>
+          <% github_connected = (@current_project || @project)&.settings&.dig('github_repo').present? %>
+          <% if has_code_fix && github_connected %>
+            <div class="px-5 py-3 bg-emerald-50 border-t border-emerald-200">
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-sm text-emerald-800">
+                  <strong>Ready to push!</strong> Click "Push Fix to PR" to apply this fix code directly to your repository.
+                </p>
+              </div>
+            </div>
+          <% end %>
           <% if @issue.ai_summary_generated_at %>
             <div class="px-5 py-2 bg-slate-100 border-t border-slate-200">
               <p class="text-xs text-slate-500 flex items-center gap-1.5">

@@ -50,7 +50,7 @@ class GithubPrService
   # Minimal flow: create a branch off default, create a draft PR with RCA body
   public
 
-  def create_pr_for_issue(issue)
+  def create_pr_for_issue(issue, custom_branch_name: nil)
     return { success: false, error: "GitHub integration not configured" } unless configured?
 
     owner, repo = @github_repo.split("/", 2)
@@ -64,6 +64,7 @@ class GithubPrService
     # Git refs endpoint uses 'refs' (plural)
     ref_response = github_get("/repos/#{owner}/#{repo}/git/refs/heads/#{base_branch}", token)
     Rails.logger.info "[GitHub API] Ref response: #{ref_response.inspect}"
+    Rails.logger.info "GitHub token present? #{@project_pat.present?}"
     head_sha = ref_response&.dig("object", "sha")
     unless head_sha
       # Try alternate branch names
@@ -73,9 +74,15 @@ class GithubPrService
       head_sha = ref_response&.dig("object", "sha")
       base_branch = alt_branch if head_sha
     end
-    return { success: false, error: "Base branch not found (tried: main, master). Check repo access." } unless head_sha
 
-    branch = "ar/fix-issue-#{issue.id}-#{Time.now.to_i}"
+    # Better error message with tried branches
+    unless head_sha
+      tried_branches = [@base_branch_override, "main", "master"].compact.uniq.join(", ")
+      return { success: false, error: "Base branch not found (tried: #{tried_branches}). Check repository access and set the correct branch in project settings." }
+    end
+
+    # Generate branch name: use custom, or generate via AI, or fallback
+    branch = generate_branch_name(issue, custom_branch_name)
     Rails.logger.info "[GitHub API] Creating branch #{branch} from sha=#{head_sha[0, 7]}"
     ref_resp = github_post("/repos/#{owner}/#{repo}/git/refs", token, {
       ref: "refs/heads/#{branch}",
@@ -95,6 +102,9 @@ class GithubPrService
       return { success: false, error: commit_result[:error] }
     end
 
+    # Track if actual fix was applied from commit result
+    actual_fix_applied = commit_result.is_a?(Hash) && commit_result[:actual_fix_applied]
+
     pr = github_post("/repos/#{owner}/#{repo}/pulls", token, {
       title: pr_title,
       head: branch,
@@ -104,8 +114,8 @@ class GithubPrService
     })
 
     if pr.is_a?(Hash) && pr["html_url"]
-      Rails.logger.info "[GitHub API] PR created url=#{pr['html_url']}"
-      { success: true, pr_url: pr["html_url"], branch_name: branch }
+      Rails.logger.info "[GitHub API] PR created url=#{pr['html_url']} (actual_fix_applied=#{actual_fix_applied})"
+      { success: true, pr_url: pr["html_url"], branch_name: branch, actual_fix_applied: actual_fix_applied }
     else
       { success: false, error: pr[:error] || "Unknown PR error" }
     end
@@ -156,6 +166,132 @@ class GithubPrService
     else
       "fix: #{issue.exception_class} in #{issue.controller_action.to_s.split('#').last}"
     end
+  end
+
+  # Generate branch name: use custom, or generate via AI, or fallback to simple pattern
+  def generate_branch_name(issue, custom_branch_name = nil)
+    # If user provided a custom branch name, sanitize and use it
+    if custom_branch_name.present?
+      sanitized = sanitize_branch_name(custom_branch_name)
+      Rails.logger.info "[GitHub API] Using custom branch name: #{sanitized}"
+      return sanitized
+    end
+
+    # Try to generate a meaningful branch name using AI
+    if @openai_key.present?
+      ai_branch = generate_ai_branch_name(issue)
+      if ai_branch.present?
+        Rails.logger.info "[GitHub API] Using AI-generated branch name: #{ai_branch}"
+        return ai_branch
+      end
+    end
+
+    # Fallback to programmatic generation
+    fallback_branch = generate_fallback_branch_name(issue)
+    Rails.logger.info "[GitHub API] Using fallback branch name: #{fallback_branch}"
+    fallback_branch
+  end
+
+  def sanitize_branch_name(name)
+    # Remove or replace invalid characters for git branch names
+    sanitized = name.to_s
+      .strip
+      .gsub(/[^a-zA-Z0-9\-_\/]/, "-")  # Replace invalid chars with dash
+      .gsub(/-+/, "-")                   # Collapse multiple dashes
+      .gsub(/^-|-$/, "")                 # Remove leading/trailing dashes
+      .downcase
+
+    # Ensure it starts with ai-fix/ if not already
+    unless sanitized.start_with?("ai-fix/") || sanitized.start_with?("fix/") || sanitized.include?("/")
+      sanitized = "ai-fix/#{sanitized}"
+    end
+
+    # Limit length (git has practical limits)
+    if sanitized.length > 100
+      sanitized = sanitized[0, 100].sub(/-$/, "")
+    end
+
+    sanitized
+  end
+
+  def generate_ai_branch_name(issue)
+    prompt = <<~PROMPT
+      Generate a short, descriptive git branch name for fixing this error.
+      
+      Error: #{issue.exception_class}
+      Message: #{issue.sample_message.to_s[0, 200]}
+      Location: #{issue.controller_action}
+      
+      Rules:
+      - Start with "ai-fix/"
+      - Use lowercase letters, numbers, and hyphens only
+      - Maximum 50 characters total
+      - Be descriptive but concise
+      - No spaces or special characters
+      
+      Examples:
+      - ai-fix/nil-user-profile
+      - ai-fix/missing-auth-token
+      - ai-fix/invalid-date-format
+      
+      Return ONLY the branch name, nothing else.
+    PROMPT
+
+    begin
+      response = openai_chat_completion(prompt)
+      return nil if response.blank?
+
+      # Clean up the response
+      branch = response.strip
+        .gsub(/^["']|["']$/, "")  # Remove quotes
+        .gsub(/\s+/, "-")          # Replace spaces with dashes
+        .downcase
+
+      # Validate format
+      return nil unless branch.match?(/^ai-fix\/[a-z0-9\-]+$/)
+      return nil if branch.length > 60
+
+      branch
+    rescue => e
+      Rails.logger.error "[GitHub API] AI branch name generation failed: #{e.message}"
+      nil
+    end
+  end
+
+  def generate_fallback_branch_name(issue)
+    # Generate a meaningful name programmatically
+    exception_part = issue.exception_class.to_s
+      .gsub(/Error$/, "")
+      .gsub(/Exception$/, "")
+      .gsub(/([a-z])([A-Z])/, '\1-\2')  # CamelCase to kebab-case
+      .downcase
+      .gsub(/[^a-z0-9]/, "-")
+      .gsub(/-+/, "-")
+      .gsub(/^-|-$/, "")
+
+    action_part = issue.controller_action.to_s
+      .split("#").last.to_s
+      .gsub(/[^a-z0-9]/i, "-")
+      .downcase
+      .gsub(/-+/, "-")
+      .gsub(/^-|-$/, "")
+
+    # Combine parts
+    if action_part.present? && exception_part.present?
+      branch = "ai-fix/#{exception_part}-in-#{action_part}"
+    elsif exception_part.present?
+      branch = "ai-fix/#{exception_part}"
+    else
+      branch = "ai-fix/issue-#{issue.id}"
+    end
+
+    # Limit length and add unique suffix if needed
+    if branch.length > 80
+      branch = branch[0, 80].sub(/-$/, "")
+    end
+
+    # Add short timestamp to ensure uniqueness
+    "#{branch}-#{Time.now.strftime('%m%d%H%M')}"
   end
 
   def parse_ai_summary(summary)
@@ -430,7 +566,9 @@ class GithubPrService
     actual_fix_applied = false
 
     if sample_event&.has_structured_stack_trace?
-      fix_result = try_apply_actual_fix(owner, repo, token, sample_event, issue)
+      # Pass the existing AI summary fix code to try_apply_actual_fix
+      # This ensures we use the same fix the user saw in the AI Analysis panel
+      fix_result = try_apply_actual_fix(owner, repo, token, sample_event, issue, code_fix)
       if fix_result[:success]
         tree_entries << fix_result[:tree_entry]
         commit_msg_parts << "fix: #{fix_result[:file_path]}"
@@ -489,7 +627,8 @@ class GithubPrService
   end
 
   # Try to apply actual code fix to the source file
-  def try_apply_actual_fix(owner, repo, token, sample_event, issue)
+  # If existing_fix_code is provided (from AI summary), use it instead of generating a new fix
+  def try_apply_actual_fix(owner, repo, token, sample_event, issue, existing_fix_code = nil)
     # Get the error frame with source context
     frames = sample_event.structured_stack_trace || []
     error_frame = frames.find { |f| (f["in_app"] || f[:in_app]) && (f["source_context"] || f[:source_context]) }
@@ -512,9 +651,15 @@ class GithubPrService
     current_content = Base64.decode64(file_response["content"])
     current_lines = current_content.lines
 
-    # Generate the fixed code using AI
-    fixed_code = generate_code_fix(issue, sample_event, error_frame, current_content)
-    return { success: false, reason: "AI could not generate fix" } unless fixed_code
+    # Use existing fix code from AI summary if available, otherwise generate a new one
+    fixed_code = if existing_fix_code.present?
+      Rails.logger.info "[GitHub API] Using existing fix code from AI summary"
+      existing_fix_code
+    else
+      Rails.logger.info "[GitHub API] Generating new fix code with AI"
+      generate_code_fix(issue, sample_event, error_frame, current_content)
+    end
+    return { success: false, reason: "No fix code available" } unless fixed_code
 
     # Apply the fix to the file content
     new_content = apply_fix_to_content(current_lines, line_number, source_ctx, fixed_code)
