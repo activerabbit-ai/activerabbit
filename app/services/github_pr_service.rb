@@ -805,5 +805,4 @@ class GithubPrService
 
     suggestions
   end
-
 end
