@@ -21,20 +21,23 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
     # This enables OPEN/CLOSE notifications with warm-up periods
     "performance_incident_evaluation" => {
       "cron" => "* * * * *",  # Every minute
-      "class" => "PerformanceIncidentEvaluationJob"
+      "class" => "PerformanceIncidentEvaluationJob",
+      "cron_timezone" => "America/Los_Angeles"
     },
 
     # Aggregate performance rollups (minute -> hour)
     "minute_rollup" => {
       "cron" => "* * * * *",  # Every minute
       "class" => "PerfRollupJob",
-      "args" => ["minute"]
+      "args" => ["minute"],
+      "cron_timezone" => "America/Los_Angeles"
     },
 
     "hourly_rollup" => {
-      "cron" => "5 * * * *",  # 5 minutes past every hour
+      "cron" => "5 * * * *",  # 5 minutes past every hour PST
       "class" => "PerfRollupJob",
-      "args" => ["hour"]
+      "args" => ["hour"],
+      "cron_timezone" => "America/Los_Angeles"
     },
 
     # ========================================
@@ -42,13 +45,15 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
     # ========================================
 
     "report_usage_daily" => {
-      "cron" => "0 1 * * *",  # Daily at 1:00 AM - aggregate usage
-      "class" => "ReportUsageDailyLoader"
+      "cron" => "0 1 * * *",  # Daily at 1:00 AM PST - aggregate usage
+      "class" => "ReportUsageDailyLoader",
+      "cron_timezone" => "America/Los_Angeles"
     },
 
     "quota_alerts_daily" => {
-      "cron" => "0 10 * * *",  # Daily at 10:00 AM - send quota alerts
-      "class" => "QuotaAlertJob"
+      "cron" => "0 10 * * *",  # Daily at 10:00 AM PST - send quota alerts
+      "class" => "QuotaAlertJob",
+      "cron_timezone" => "America/Los_Angeles"
     },
 
     # ========================================
@@ -56,8 +61,9 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
     # ========================================
 
     "weekly_report" => {
-      "cron" => "0 9 * * 1",  # Every Monday at 9:00 AM
-      "class" => "WeeklyReportJob"
+      "cron" => "0 9 * * 1",  # Every Monday at 9:00 AM PST
+      "class" => "WeeklyReportJob",
+      "cron_timezone" => "America/Los_Angeles"
     }
   }
 
