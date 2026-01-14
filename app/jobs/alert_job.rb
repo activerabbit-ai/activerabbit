@@ -168,7 +168,10 @@ class AlertJob
   # Slack message builders (reuse старые методы)
   # ------------------------
   def build_error_frequency_email(issue, payload)
-    <<~EMAIL
+    request_paths = payload["request_paths"] || []
+    latest_event = issue.events.order(occurred_at: :desc).first
+
+    email_body = <<~EMAIL
       🚨 HIGH ERROR FREQUENCY
       Project:
         #{issue.project.name}
@@ -176,12 +179,41 @@ class AlertJob
       Issue:
         #{issue.title}
 
+      Message:
+        #{issue.sample_message || latest_event&.message || 'No message'}
+
       Frequency:
         #{payload['count']} occurrences in #{payload['time_window']} minutes
+        Total: #{issue.count} total occurrences
 
       Controller/Action:
         #{issue.controller_action || 'Unknown'}
     EMAIL
+
+    # Add request paths if available
+    if request_paths.present?
+      if request_paths.size == 1
+        email_body += "\n      Request:\n        #{request_paths.first}\n"
+      elsif request_paths.size <= 10
+        email_body += "\n      Affected URLs (#{request_paths.size}):\n"
+        request_paths.each do |path|
+          email_body += "        • #{path}\n"
+        end
+      else
+        email_body += "\n      Affected URLs (#{request_paths.size}):\n"
+        request_paths.first(10).each do |path|
+          email_body += "        • #{path}\n"
+        end
+        email_body += "        ... and #{request_paths.size - 10} more\n"
+      end
+    elsif latest_event&.request_path.present?
+      request_info = latest_event.request_method.present? ?
+        "#{latest_event.request_method} #{latest_event.request_path}" :
+        latest_event.request_path
+      email_body += "\n      Latest Request:\n        #{request_info}\n"
+    end
+
+    email_body
   end
 
   def build_performance_email(event, payload)

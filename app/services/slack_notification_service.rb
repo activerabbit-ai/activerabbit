@@ -116,14 +116,42 @@ class SlackNotificationService
       }
     ]
 
-    # Add request path if available
-    if latest_event&.request_path.present?
+    # Add request paths - show all URLs where the error occurred
+    request_paths = payload["request_paths"] || []
+    if request_paths.present?
+      if request_paths.size == 1
+        # Single URL - show as "Latest Request" for consistency
+        fields << {
+          title: "Request",
+          value: truncate_text(request_paths.first, 200),
+          short: false
+        }
+      elsif request_paths.size <= 10
+        # Multiple URLs (up to 10) - show all
+        paths_text = request_paths.map { |path| "• #{path}" }.join("\n")
+        fields << {
+          title: "Affected URLs (#{request_paths.size})",
+          value: truncate_text(paths_text, 1000),
+          short: false
+        }
+      else
+        # Many URLs - show count and first 10 examples
+        paths_text = request_paths.first(10).map { |path| "• #{path}" }.join("\n")
+        paths_text += "\n... and #{request_paths.size - 10} more"
+        fields << {
+          title: "Affected URLs (#{request_paths.size})",
+          value: truncate_text(paths_text, 1000),
+          short: false
+        }
+      end
+    elsif latest_event&.request_path.present?
+      # Fallback: if no paths in payload, show latest request
       request_info = latest_event.request_method.present? ?
         "#{latest_event.request_method} #{latest_event.request_path}" :
         latest_event.request_path
       fields << {
         title: "Latest Request",
-        value: truncate_text(request_info, 150),
+        value: truncate_text(request_info, 200),
         short: false
       }
     end

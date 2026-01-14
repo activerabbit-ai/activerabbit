@@ -20,7 +20,7 @@ class AlertRule < ApplicationRecord
   def self.check_error_frequency_rules(issue, rate_limit_minutes: 30)
     issue.project.alert_rules.active.for_type("error_frequency").each do |rule|
       recent_count = issue.events
-        .where("created_at > ?", rule.time_window_minutes.minutes.ago)
+        .where("occurred_at > ?", rule.time_window_minutes.minutes.ago)
         .count
 
       next unless recent_count >= rule.threshold_value
@@ -55,6 +55,18 @@ class AlertRule < ApplicationRecord
         next if cooldown_alert
       end
 
+      # Collect unique request paths for this error over the time window
+      # This groups all URLs where the same error occurred into one notification
+      recent_events = issue.events
+        .where("occurred_at > ?", rule.time_window_minutes.minutes.ago)
+        .where.not(request_path: nil)
+
+      unique_request_paths = recent_events
+        .distinct
+        .pluck(:request_path)
+        .compact
+        .sort
+
       AlertJob.perform_async(
         rule.id,
         "error_frequency",
@@ -62,7 +74,8 @@ class AlertRule < ApplicationRecord
           issue_id: issue.id,
           fingerprint: issue.fingerprint,
           count: recent_count,
-          time_window: rule.time_window_minutes
+          time_window: rule.time_window_minutes,
+          request_paths: unique_request_paths
         }
       )
     end
