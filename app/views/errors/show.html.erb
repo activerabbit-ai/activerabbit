@@ -226,7 +226,12 @@ end %>
           <% end %>
         <% end %>
       </div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-2"
+           data-controller="pr-modal"
+           data-pr-modal-issue-id-value="<%= @issue.id %>"
+           data-pr-modal-exception-class-value="<%= @issue.exception_class %>"
+           data-pr-modal-controller-action-value="<%= @issue.controller_action %>"
+           data-action="keydown@window->pr-modal#closeOnEscape">
         <% connect_required = (@current_project || @project)&.settings&.dig('github_repo').blank? %>
         <% create_pr_path = if @current_project
                               project_slug_error_create_pr_path(@current_project.slug, @issue)
@@ -235,6 +240,7 @@ end %>
                             else
                               nil
                             end %>
+        <% has_ai_fix = @issue.ai_summary.present? && @issue.ai_summary.include?('```') %>
 
         <% if connect_required %>
           <% settings_link = if @current_project
@@ -246,16 +252,121 @@ end %>
                              end %>
           <%= link_to "Connect GitHub", settings_link, class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
         <% elsif create_pr_path %>
-          <%= button_to create_pr_path, method: :post, form: { target: '_blank', data: { turbo: false } }, class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-white bg-[#24292e] hover:bg-black cursor-pointer" do %>
-            <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-            Open PR
+          <% if has_ai_fix && !(@current_project || @project)&.settings&.dig('issue_pr_urls', @issue.id.to_s).present? %>
+            <%# Show enhanced button that opens modal %>
+            <button type="button"
+                    data-action="click->pr-modal#open"
+                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-white bg-[#24292e] hover:bg-black cursor-pointer"
+                    title="Creates a PR with the AI-suggested fix code applied to your repository">
+              <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+              Open PR on GitHub
+            </button>
           <% end %>
+
+          <%# PR Creation Modal %>
+          <div data-pr-modal-target="modal"
+               data-action="click->pr-modal#closeOnBackdrop"
+               class="hidden fixed inset-0 z-50 overflow-y-auto"
+               aria-labelledby="modal-title"
+               role="dialog"
+               aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+              <%# Background overlay %>
+              <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+              <%# Modal panel %>
+              <div class="relative inline-block align-bottom border border-gray-200 bg-white rounded-lg w-[420px] max-w-full px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl shadow-lg transform transition-all sm:my-8 sm:align-middle sm:p-6">
+                <div class="absolute top-0 right-0 pt-4 pr-4">
+                  <button type="button"
+                          data-action="click->pr-modal#close"
+                          class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none mr-3">
+                    <span class="sr-only">Close</span>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="sm:flex sm:items-start">
+                  <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg class="h-6 w-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                      Create Pull Request
+                    </h3>
+                    <div class="mt-2">
+                      <p class="text-sm text-gray-500 mb-4">
+                        <% if has_ai_fix %>
+                          PR will be created with AI-generated fix for the error <strong><%= @issue.exception_class %></strong>
+                        <% else %>
+                          PR will be created with the error description and suggestions for fixing.
+                        <% end %>
+                      </p>
+
+                      <%= form_with url: create_pr_path, method: :post, local: false, html: { data: { turbo: false, pr_modal_target: 'form', action: 'submit->pr-modal#submit' } } do |f| %>
+                        <div class="mb-4">
+                          <label for="branch_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Branch Name
+                          </label>
+                          <%= f.text_field :branch_name,
+                                           data: { pr_modal_target: 'branchInput' },
+                                           placeholder: "Leave empty for AI generation",
+                                           class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" %>
+                          <p class="mt-1 text-xs text-gray-500">
+                            Leave empty, and AI will generate the name automatically
+                          </p>
+                        </div>
+
+                        <div class="mb-4 p-3 bg-gray-50 rounded-md">
+                          <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-500">Suggested name:</span>
+                            <button type="button"
+                                    data-action="click->pr-modal#useSuggested"
+                                    class="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                              Use
+                            </button>
+                          </div>
+                          <code data-pr-modal-target="suggestedBranch" class="block mt-1 text-sm font-mono text-gray-700">ai-fix/loading...</code>
+                        </div>
+
+                        <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                          <%= f.submit "Create PR",
+                                       data: { pr_modal_target: 'submitButton' },
+                                       class: "w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-base font-medium text-white hover:from-indigo-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm cursor-pointer ml-2 disabled:opacity-50 disabled:cursor-not-allowed" %>
+                          <button type="button"
+                                  data-action="click->pr-modal#close"
+                                  data-pr-modal-target="cancelButton"
+                                  class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
+                            Cancel
+                          </button>
+                        </div>
+                        
+                        <!-- Loading indicator -->
+                        <div data-pr-modal-target="loadingIndicator" class="hidden mt-4 text-center">
+                          <div class="inline-flex items-center px-4 py-2 bg-indigo-50 rounded-lg">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-indigo-700">Creating PR and opening in new tab...</span>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <% pr_url = (@current_project || @project)&.settings&.dig('issue_pr_urls', @issue.id.to_s) %>
           <% if pr_url.present? %>
             <%= link_to pr_url, target: "_blank", rel: "noopener", class: "inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-normal rounded-md text-white bg-[#24292e] hover:bg-black cursor-pointer" do %>
               <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-              Open on GitHub
+              View PR
             <% end %>
           <% end %>
         <% end %>

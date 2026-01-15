@@ -339,8 +339,11 @@ class ErrorsController < ApplicationController
       flash.now[:warning] = warning_msg if warning_msg
     end
 
+    # Get custom branch name from params (may be empty for AI generation)
+    custom_branch_name = params[:branch_name].presence
+
     pr_service = GithubPrService.new(project_scope || @issue.project)
-    result = pr_service.create_pr_for_issue(@issue)
+    result = pr_service.create_pr_for_issue(@issue, custom_branch_name: custom_branch_name)
 
     redirect_path = if @current_project
                       "/#{@current_project.slug}/errors/#{@issue.id}"
@@ -372,10 +375,24 @@ class ErrorsController < ApplicationController
         )
       end
 
-      # Open PR in the new tab by redirecting directly to GitHub
-      redirect_to result[:pr_url], allow_other_host: true
+      # Log whether actual code fix was applied
+      if result[:actual_fix_applied]
+        Rails.logger.info "[PR Creation] Created PR with actual code fix applied for issue ##{@issue.id}"
+      else
+        Rails.logger.info "[PR Creation] Created PR with suggestion file only for issue ##{@issue.id}"
+      end
+
+      if request.xhr? || request.format.json?
+        render json: { success: true, pr_url: result[:pr_url] }
+      else
+        redirect_to result[:pr_url], allow_other_host: true
+      end
     else
-      redirect_to redirect_path, alert: (result[:error] || "Failed to open PR")
+      if request.xhr? || request.format.json?
+        render json: { success: false, error: result[:error] || "Failed to create PR" }, status: :unprocessable_entity
+      else
+        redirect_to redirect_path, alert: (result[:error] || "Failed to open PR")
+      end
     end
   end
 
