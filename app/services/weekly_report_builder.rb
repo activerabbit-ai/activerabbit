@@ -14,6 +14,7 @@ class WeeklyReportBuilder
 
   def top_errors
     Issue
+      .includes(:project)
       .joins(:events)
       .where(account: @account)
       .where(events: { occurred_at: @period })
@@ -31,9 +32,10 @@ class WeeklyReportBuilder
     PerformanceEvent
       .where(account: @account)
       .where(occurred_at: @period)
-      .group(:target)
+      .group(:target, :project_id)
       .select(
         "target,
+        project_id,
         COUNT(*) AS requests,
         AVG(duration_ms) AS avg_ms,
         MAX(duration_ms) AS max_ms"
