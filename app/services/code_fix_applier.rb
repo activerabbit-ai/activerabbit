@@ -238,6 +238,16 @@ class CodeFixApplier
 
     Rails.logger.info "[GitHub API] After normalization (first 200 chars): #{fixed_code[0..200]}"
 
+    # Check if this is an ERB file (template file) - use precise line replacement
+    error_line_idx = error_line_number - 1
+    error_line = current_lines[error_line_idx] if error_line_idx >= 0 && error_line_idx < current_lines.size
+    is_erb_file = error_line&.include?("<%") || error_line&.include?("<%=") || fixed_code.include?("<%") || fixed_code.include?("<%=")
+
+    if is_erb_file
+      Rails.logger.info "[GitHub API] Detected ERB file - using precise line replacement"
+      return apply_erb_fix(current_lines, error_line_number, source_ctx, fixed_code)
+    end
+
     # Try to find method boundaries first
     method_name = extract_method_name_from_fix(fixed_code)
     Rails.logger.info "[GitHub API] Extracted method name from fix: #{method_name}"
@@ -456,6 +466,313 @@ class CodeFixApplier
     end
 
     false
+  end
+
+  def apply_erb_fix(current_lines, error_line_number, source_ctx, fixed_code)
+    error_line_idx = error_line_number - 1
+    return nil if error_line_idx < 0 || error_line_idx >= current_lines.size
+
+    original_error_line = current_lines[error_line_idx]
+    original_indent = original_error_line.match(/^(\s*)/)[1] || ""
+
+    Rails.logger.info "[GitHub API] ERB fix - original line: #{original_error_line.chomp}"
+    Rails.logger.info "[GitHub API] ERB fix - original indent: #{original_indent.inspect} (#{original_indent.length} spaces)"
+
+    # Get the error content for comparison
+    error_line_content = source_ctx["line_content"] || source_ctx[:line_content]
+    error_content = if error_line_content.is_a?(Hash)
+      error_line_content[:content] || error_line_content["content"]
+    else
+      error_line_content
+    end
+    error_content_str = error_content.to_s.strip
+
+    Rails.logger.info "[GitHub API] ERB fix - error content: #{error_content_str}"
+
+    # Extract the fixed line(s) from fixed_code
+    # First, try to find "After" section if present
+    fixed_code_normalized = fixed_code.strip
+
+    # Check if fixed_code contains "Before" and "After" markers
+    if fixed_code_normalized =~ /(?:^|\n)\s*\*\*after\*\*|\*\*after\*\*|after:|after\s+code/i
+      Rails.logger.info "[GitHub API] ERB fix - found 'After' marker in fixed_code"
+      # Extract everything after "After" marker
+      after_match = fixed_code_normalized.match(/(?:^|\n)\s*(?:\*\*after\*\*|after:)\s*\n?(.*)/mi)
+      if after_match
+        fixed_code_normalized = after_match[1].strip
+        Rails.logger.info "[GitHub API] ERB fix - extracted 'After' section: #{fixed_code_normalized[0..200]}"
+      end
+    end
+
+    # Remove code block markers
+    fixed_code_normalized = fixed_code_normalized.sub(/^```(?:erb|ruby|rb|html)?\s*\n?/i, "").sub(/\n?\s*```\s*$/i, "").strip
+
+    # Split into lines and find the line that contains the actual fix
+    fixed_lines = fixed_code_normalized.lines.map(&:chomp).reject(&:blank?)
+
+    if fixed_lines.empty?
+      Rails.logger.warn "[GitHub API] ERB fix - no fixed lines found in fixed_code"
+      return nil
+    end
+
+    # If we have only one line, use it directly (most common case for simple fixes)
+    if fixed_lines.size == 1
+      fixed_line = fixed_lines.first.strip
+      Rails.logger.info "[GitHub API] ERB fix - single line fix detected: #{fixed_line}"
+    else
+      # Find the line that contains the fix (different from error, contains corrected attribute)
+      fixed_line = nil
+
+      # Strategy 1: Look for a line that contains common fix patterns
+      fixed_line = fixed_lines.find { |line|
+        line.strip.include?("product.name") ||
+        (line.strip != error_content_str &&
+         (line.include?("product.") || line.include?("<%=") || line.include?("<% ")))
+      }
+
+      # Strategy 2: If error contains "first_name", look for line with "name" instead
+      if !fixed_line && error_content_str.include?("first_name")
+        fixed_line = fixed_lines.find { |line|
+          line.include?("product.name") && !line.include?("first_name")
+        }
+      end
+
+      # Strategy 3: Find line that's most similar to error but with the fix
+      if !fixed_line && error_content_str.present?
+        # Look for line that has same structure but different attribute
+        fixed_line = fixed_lines.find { |line|
+          # Same ERB structure but different content
+          line.strip != error_content_str &&
+          (line.include?("<%=") || line.include?("<% ")) &&
+          line.length > 10 # Not too short
+        }
+      end
+
+      # Strategy 4: Use the last line if it's different from error
+      if !fixed_line
+        fixed_line = fixed_lines.find { |line| line.strip != error_content_str } || fixed_lines.last
+      end
+
+      # Fallback: use first line
+      fixed_line ||= fixed_lines.first
+      fixed_line = fixed_line.strip
+
+      Rails.logger.info "[GitHub API] ERB fix - selected from #{fixed_lines.size} lines: #{fixed_line}"
+    end
+
+    # Clean up the fixed line - remove any prefixes like "After:", "Fixed:", etc.
+    fixed_line = fixed_line.sub(/^(?:after|fixed|correct|solution):\s*/i, "").strip
+
+    # If fixed_line contains multiple lines (HTML blocks), extract only the line with the fix
+    # This handles cases where AI returns a full HTML block but we only need one line
+    if fixed_line.include?("\n")
+      fixed_line_lines = fixed_line.lines.map(&:chomp).reject(&:blank?)
+      # Try to find the line that matches the error structure but with the fix
+      matching_line = fixed_line_lines.find { |line|
+        # Same ERB pattern but with corrected attribute
+        (line.include?("<%=") || line.include?("<% ")) &&
+        line.strip != error_content_str
+      }
+      fixed_line = matching_line || fixed_line_lines.first
+      fixed_line = fixed_line.strip
+      Rails.logger.info "[GitHub API] ERB fix - extracted single line from multi-line block: #{fixed_line}"
+    end
+
+    # Check if the fix contains a conditional block (if/unless/begin/rescue)
+    # If so, we need to handle it as a multi-line replacement
+    is_conditional_fix = fixed_line.match?(/^\s*<%?\s*(if|unless|begin|rescue)/i)
+
+    # Check if fixed_code contains a complete block (if + content + end)
+    # A complete block should have both "if" and "end" with content between them
+    if_count = fixed_code_normalized.scan(/<%?\s*(if|unless)/i).size
+    end_count = fixed_code_normalized.scan(/<%?\s*end\s*%?>/i).size
+    has_complete_block = (if_count > 0 && end_count >= if_count) &&
+                        fixed_code_normalized.include?("end")
+
+    # Check if the original error line should be preserved inside the conditional
+    # We should preserve it if:
+    # 1. It contains important content (image_tag, ERB output, etc.)
+    # 2. The fixed_code doesn't already contain this content (meaning it's just adding a condition)
+    original_line_content = original_error_line.strip
+
+    # Check if fixed_code contains the same content as original (maybe with fix applied)
+    fixed_contains_original_content = fixed_code_normalized.include?(original_line_content) ||
+                                     (original_line_content.include?("image_tag") &&
+                                      fixed_code_normalized.include?("image_tag"))
+
+    should_preserve_original = (original_line_content.include?("image_tag") ||
+                               original_line_content.include?("<%=") ||
+                               original_line_content.include?("product.")) &&
+                               !fixed_contains_original_content &&
+                               !has_complete_block
+
+    Rails.logger.info "[GitHub API] ERB fix - is_conditional: #{is_conditional_fix}, has_complete_block: #{has_complete_block}, should_preserve_original: #{should_preserve_original}"
+
+    # If this is a conditional fix and we should preserve the original line
+    if is_conditional_fix && should_preserve_original && !has_complete_block
+      Rails.logger.info "[GitHub API] ERB fix - conditional fix detected, preserving original line inside condition"
+
+      # Extract the actual content that should be inside the conditional
+      # Look for image_tag or similar in the fixed_code
+      content_inside_conditional = nil
+
+      # Try to find the content that should be inside the if block in fixed_code
+      fixed_code_normalized.lines.each do |line|
+        line_stripped = line.strip
+        # Skip the if line itself
+        next if line_stripped.match?(/^\s*<%?\s*(if|unless|end)/i)
+        # Look for image_tag or ERB output
+        if line_stripped.include?("image_tag") ||
+           (line_stripped.include?("<%=") && line_stripped.length > 10)
+          content_inside_conditional = line_stripped
+          break
+        end
+      end
+
+      # If we didn't find content in fixed_code, use the original line (it might just need the conditional wrapper)
+      content_inside_conditional ||= original_line_content
+
+      # Build the multi-line replacement: if condition, original line (with proper indent), end
+      indent_increment = 2 # Standard 2-space increment for nested content
+      inner_indent = original_indent + (" " * indent_increment)
+
+      replacement_lines = []
+      replacement_lines << "#{original_indent}#{fixed_line}"
+      replacement_lines << "#{inner_indent}#{content_inside_conditional}"
+      replacement_lines << "#{original_indent}<% end %>"
+
+      Rails.logger.info "[GitHub API] ERB fix - multi-line replacement:"
+      replacement_lines.each_with_index do |line, idx|
+        Rails.logger.info "[GitHub API]   Line #{idx + 1}: #{line}"
+      end
+
+      # Replace the error line with the multi-line block
+      new_lines = current_lines.dup
+      new_lines[error_line_idx] = replacement_lines.map { |line| "#{line}\n" }.join
+
+      result = new_lines.join
+    elsif has_complete_block
+      # The fixed_code contains a complete block (if + content + end)
+      # Extract all lines of the block with proper indentation
+      Rails.logger.info "[GitHub API] ERB fix - complete block detected, extracting all lines"
+
+      # Extract the block lines from fixed_code
+      block_lines = fixed_code_normalized.lines.map(&:chomp).reject(&:blank?)
+
+      # Find where the block starts (the if line)
+      block_start_idx = block_lines.find_index { |line| line.strip.match?(/^\s*<%?\s*(if|unless)/i) }
+
+      if block_start_idx
+        # Extract the block (if line to end line)
+        # Find the matching end for this if
+        block_content = []
+        if_level = 0
+        found_if = false
+
+        block_lines[block_start_idx..-1].each do |line|
+          line_stripped = line.strip
+          if line_stripped.match?(/^\s*<%?\s*(if|unless)/i)
+            if_level += 1
+            found_if = true
+          elsif line_stripped.match?(/^\s*<%?\s*end\s*%?>/i)
+            if_level -= 1
+          end
+
+          block_content << line
+          break if found_if && if_level == 0
+        end
+
+        # Check if the block contains important content (image_tag, ERB output, etc.)
+        block_has_content = block_content.any? { |line|
+          line.include?("image_tag") ||
+          (line.include?("<%=") && line.length > 20) ||
+          line.include?("product.")
+        }
+
+        # Check if original line should be preserved (independent of has_complete_block check)
+        original_has_important_content = (original_line_content.include?("image_tag") ||
+                                          original_line_content.include?("<%=") ||
+                                          original_line_content.include?("product."))
+
+        # If the block doesn't have important content and original line does, preserve original
+        if !block_has_content && original_has_important_content
+          Rails.logger.info "[GitHub API] ERB fix - complete block lacks content, preserving original line inside condition"
+
+          # Use the if line from the block, but keep original content
+          if_line = block_content.first.strip
+          indent_increment = 2
+          inner_indent = original_indent + (" " * indent_increment)
+
+          replacement_lines = []
+          replacement_lines << "#{original_indent}#{if_line}"
+          replacement_lines << "#{inner_indent}#{original_line_content}"
+          replacement_lines << "#{original_indent}<% end %>"
+
+          new_lines = current_lines.dup
+          new_lines[error_line_idx] = replacement_lines.map { |line| "#{line}\n" }.join
+          result = new_lines.join
+        else
+          # Use the complete block as-is
+          # Normalize indentation - find minimum indent in the block
+          min_indent = block_content.map { |line| line.match(/^(\s*)/)[1].length }.min || 0
+
+          # Adjust all lines to have correct relative indentation
+          replacement_lines = block_content.map do |line|
+            line_indent = line.match(/^(\s*)/)[1].length
+            relative_indent = line_indent - min_indent
+            new_indent = original_indent + (" " * relative_indent)
+            content = line.strip
+            "#{new_indent}#{content}"
+          end
+
+          Rails.logger.info "[GitHub API] ERB fix - complete block replacement (#{replacement_lines.size} lines):"
+          replacement_lines.each_with_index do |line, idx|
+            Rails.logger.info "[GitHub API]   Line #{idx + 1}: #{line}"
+          end
+
+          # Replace the error line with the complete block
+          new_lines = current_lines.dup
+          new_lines[error_line_idx] = replacement_lines.map { |line| "#{line}\n" }.join
+
+          result = new_lines.join
+        end
+      else
+        # Fallback to single line if we can't find the block
+        fixed_line_with_indent = "#{original_indent}#{fixed_line}"
+        new_lines = current_lines.dup
+        new_lines[error_line_idx] = "#{fixed_line_with_indent}\n"
+        result = new_lines.join
+      end
+    else
+      # Simple single-line replacement
+      fixed_line_with_indent = "#{original_indent}#{fixed_line}"
+
+      Rails.logger.info "[GitHub API] ERB fix - selected fixed line: #{fixed_line}"
+      Rails.logger.info "[GitHub API] ERB fix - with indent: #{fixed_line_with_indent}"
+
+      # Replace ONLY the error line, keep all other lines unchanged
+      new_lines = current_lines.dup
+      new_lines[error_line_idx] = "#{fixed_line_with_indent}\n"
+
+      result = new_lines.join
+    end
+
+    result = new_lines.join
+
+    # Verify the fix was applied correctly
+    result_line = result.lines[error_line_idx]&.chomp
+    if result_line&.include?(fixed_line.strip) && result_line != original_error_line.chomp
+      Rails.logger.info "[GitHub API] ERB fix successfully applied - replaced line #{error_line_number}"
+      Rails.logger.info "[GitHub API] ERB fix - before: #{original_error_line.chomp}"
+      Rails.logger.info "[GitHub API] ERB fix - after:  #{result_line}"
+      result
+    else
+      Rails.logger.warn "[GitHub API] ERB fix verification failed"
+      Rails.logger.warn "[GitHub API] Original: #{original_error_line.chomp}"
+      Rails.logger.warn "[GitHub API] Result:   #{result_line}"
+      # Still return the result, as the replacement was attempted
+      result
+    end
   end
 
   def apply_fix_fallback(current_lines, error_line_number, source_ctx, fixed_code)

@@ -306,7 +306,7 @@ end %>
                         <% end %>
                       </p>
 
-                      <%= form_with url: create_pr_path, method: :post, local: false, html: { target: '_blank', data: { turbo: false, pr_modal_target: 'form' } } do |f| %>
+                      <%= form_with url: create_pr_path, method: :post, local: false, html: { data: { turbo: false, pr_modal_target: 'form', action: 'submit->pr-modal#submit' } } do |f| %>
                         <div class="mb-4">
                           <label for="branch_name" class="block text-sm font-medium text-gray-700 mb-1">
                             Branch Name
@@ -334,12 +334,25 @@ end %>
 
                         <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                           <%= f.submit "Create PR",
-                                       class: "w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-base font-medium text-white hover:from-indigo-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm cursor-pointer ml-2" %>
+                                       data: { pr_modal_target: 'submitButton' },
+                                       class: "w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-base font-medium text-white hover:from-indigo-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm cursor-pointer ml-2 disabled:opacity-50 disabled:cursor-not-allowed" %>
                           <button type="button"
                                   data-action="click->pr-modal#close"
+                                  data-pr-modal-target="cancelButton"
                                   class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
                             Cancel
                           </button>
+                        </div>
+                        
+                        <!-- Loading indicator -->
+                        <div data-pr-modal-target="loadingIndicator" class="hidden mt-4 text-center">
+                          <div class="inline-flex items-center px-4 py-2 bg-indigo-50 rounded-lg">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-indigo-700">Creating PR and opening in new tab...</span>
+                          </div>
                         </div>
                       <% end %>
                     </div>

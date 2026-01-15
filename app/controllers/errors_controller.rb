@@ -382,10 +382,17 @@ class ErrorsController < ApplicationController
         Rails.logger.info "[PR Creation] Created PR with suggestion file only for issue ##{@issue.id}"
       end
 
-      # Open PR in the new tab by redirecting directly to GitHub
-      redirect_to result[:pr_url], allow_other_host: true
+      if request.xhr? || request.format.json?
+        render json: { success: true, pr_url: result[:pr_url] }
+      else
+        redirect_to result[:pr_url], allow_other_host: true
+      end
     else
-      redirect_to redirect_path, alert: (result[:error] || "Failed to open PR")
+      if request.xhr? || request.format.json?
+        render json: { success: false, error: result[:error] || "Failed to create PR" }, status: :unprocessable_entity
+      else
+        redirect_to redirect_path, alert: (result[:error] || "Failed to open PR")
+      end
     end
   end
 
