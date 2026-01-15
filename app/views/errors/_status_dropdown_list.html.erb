@@ -31,9 +31,9 @@
         <%= form_with model: issue,
                       url: (current_proj ? "/#{current_proj.slug}/errors/#{issue.id}" : (project ? project_error_path(project, issue) : error_path(issue))),
                       method: :patch,
-                      data: { turbo: true },
+                      data: { turbo_frame: "_top" },
                       class: "block" do |f| %>
-          <%= f.hidden_field :from_list, value: true %>
+          <%= hidden_field_tag :from_list, true %>
           <%= f.hidden_field :status, value: status %>
           <button type="submit"
                   onclick="event.stopPropagation();"

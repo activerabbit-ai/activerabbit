@@ -5,6 +5,8 @@ export default class extends Controller {
 
   connect() {
     this.close = this.close.bind(this)
+    this.closeFromEvent = this.closeFromEvent.bind(this)
+    document.addEventListener("dropdown:open", this.closeFromEvent)
   }
 
   toggle(event) {
@@ -18,6 +20,9 @@ export default class extends Controller {
   }
 
   open(event) {
+    // Close all other dropdowns first
+    document.dispatchEvent(new CustomEvent("dropdown:open", { detail: { controller: this } }))
+
     // Position the menu using fixed positioning relative to the button
     const button = event.currentTarget
     const rect = button.getBoundingClientRect()
@@ -39,8 +44,18 @@ export default class extends Controller {
     }
   }
 
+  // Close this dropdown when another one opens
+  closeFromEvent(event) {
+    if (event.detail.controller !== this) {
+      this.menuTarget.classList.add("hidden")
+      document.removeEventListener("click", this.close)
+      window.removeEventListener("scroll", this.close, true)
+    }
+  }
+
   disconnect() {
     document.removeEventListener("click", this.close)
     window.removeEventListener("scroll", this.close, true)
+    document.removeEventListener("dropdown:open", this.closeFromEvent)
   }
 }
