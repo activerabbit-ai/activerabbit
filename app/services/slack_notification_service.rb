@@ -25,6 +25,10 @@ class SlackNotificationService
     send_message(build_new_issue_message(issue))
   end
 
+  def send_custom_alert(title, message, color: "warning")
+    send_message(build_custom_message(title, message, color))
+  end
+
   # Send a message using Slack Block Kit format (for richer messages)
   def send_blocks(blocks:, fallback_text:)
     return unless configured?
