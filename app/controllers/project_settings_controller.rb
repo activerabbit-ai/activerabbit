@@ -42,16 +42,44 @@ class ProjectSettingsController < ApplicationController
 
     begin
       slack_service = SlackNotificationService.new(@project)
-      slack_service.send_custom_alert(
-        "🧪 *Test Notification*",
-        "This is a test message from ActiveRabbit to verify your Slack integration is working correctly!",
-        color: "good"
-      )
 
-      redirect_to project_settings_path(@project), notice: "Test notification sent successfully! Check your Slack channel."
+      # Try to send real notification with actual project data
+      latest_issue = @project.issues.recent.first
+
+      if latest_issue
+        # Send real notification about the latest issue
+        slack_service.send_new_issue_alert(latest_issue)
+        redirect_to project_settings_path(@project),
+                    notice: "Real notification sent successfully with latest issue data! Check your Slack channel."
+      else
+        # If no issues, send notification with real project statistics
+        issue_count = @project.issues.count
+        event_count = @project.events.count
+        last_event_at = @project.events.maximum(:occurred_at)
+
+        stats_message = "Project Statistics:\n" \
+                       "• Total Issues: #{issue_count}\n" \
+                       "• Total Events: #{event_count}\n" \
+                       "• Environment: #{@project.environment}\n"
+
+        if last_event_at
+          stats_message += "• Last Event: #{last_event_at.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        else
+          stats_message += "• No events recorded yet"
+        end
+
+        slack_service.send_custom_alert(
+          "📊 *Project Status: #{@project.name}*",
+          stats_message,
+          color: "good"
+        )
+
+        redirect_to project_settings_path(@project),
+                    notice: "Notification sent with real project data! Check your Slack channel."
+      end
     rescue StandardError => e
       Rails.logger.error "Slack test failed: #{e.message}"
-      redirect_to project_settings_path(@project), alert: "Failed to send test notification: #{e.message}"
+      redirect_to project_settings_path(@project), alert: "Failed to send notification: #{e.message}"
     end
   end
 

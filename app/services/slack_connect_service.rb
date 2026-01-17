@@ -18,6 +18,8 @@ class SlackConnectService
     if data["ok"]
       data["channel"]["id"]
     else
+      error_msg = data["error"] || "Unknown error"
+      Rails.logger.warn "Failed to create Slack channel '#{name}': #{error_msg}. Attempting to find existing channel..."
       find_channel(name)
     end
   end
@@ -25,8 +27,17 @@ class SlackConnectService
   def find_channel(name)
     response = @conn.get("conversations.list", { types: "public_channel,private_channel" }, { "Authorization" => "Bearer #{@token}" })
     data = JSON.parse(response.body)
-    return nil unless data["ok"]
+    unless data["ok"]
+      Rails.logger.error "Failed to list Slack channels: #{data['error'] || 'Unknown error'}"
+      return nil
+    end
     channel = data["channels"].find { |c| c["name"] == name }
-    channel ? channel["id"] : nil
+    if channel
+      Rails.logger.info "Found existing Slack channel '#{name}' with ID: #{channel['id']}"
+      channel["id"]
+    else
+      Rails.logger.warn "Slack channel '#{name}' not found in workspace"
+      nil
+    end
   end
 end

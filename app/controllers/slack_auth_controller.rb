@@ -5,7 +5,7 @@ class SlackAuthController < ApplicationController
 
   def authorize
     client_id = ENV["SLACK_CLIENT_ID"]
-    scopes = %w[chat:write channels:read groups:read].join(",")
+    scopes = %w[chat:write channels:read channels:manage groups:read].join(",")
 
     slack_url = "https://slack.com/oauth/v2/authorize?client_id=#{client_id}&scope=#{scopes}&redirect_uri=#{callback_url}&state=#{@project.id}"
 
@@ -29,9 +29,13 @@ class SlackAuthController < ApplicationController
       slack_service = SlackConnectService.new(@project.slack_access_token)
       channel_id = slack_service.create_channel("active_rabbit_alert")
 
-      @project.update(slack_channel_id: channel_id) if channel_id
-
-      redirect_to @project, notice: "Slack connected successfully"
+      if channel_id
+        @project.update(slack_channel_id: channel_id)
+        redirect_to @project, notice: "Slack connected successfully"
+      else
+        logger.error "Failed to create or find Slack channel for project #{@project.id}"
+        redirect_to @project, alert: "Slack connected but channel could not be created. Please create the channel manually or check permissions."
+      end
     else
       logger.error "Slack OAuth error: #{data.inspect}"
       redirect_to @project, alert: "Failed to connect Slack"
