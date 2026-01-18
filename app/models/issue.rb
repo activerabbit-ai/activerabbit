@@ -180,14 +180,13 @@ class Issue < ApplicationRecord
     normalized_frame = top_frame.gsub(/:\d+/, ":N").gsub(/\/\d+\//, "/N/")
 
     # For common "noise" exceptions, use coarse fingerprinting:
-    # Group by exception_class only (ignore specific code location)
-    # This prevents spam from RecordNotFound for different records/routes
+    # Group by exception_class + controller#action (ignore specific code location/line)
+    # This ensures ONE issue per action, ONE notification per action per rate limit period
+    # Example: 10,000 RecordNotFound from CompaniesController#show → 1 issue → 1 notification
     if COARSE_FINGERPRINT_EXCEPTIONS.include?(exception_class)
       components = [
         exception_class,
-        # Don't include top_frame - group all RecordNotFound together
-        # Optionally include controller for some separation:
-        controller_action.to_s.split("#").first # Just controller name, not action
+        controller_action # Full controller#action for per-action grouping
       ].compact
     else
       # Standard fingerprinting for other errors

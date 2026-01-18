@@ -72,8 +72,23 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
     end
 
     describe 'coarse fingerprinting for noise exceptions' do
-      it 'groups RecordNotFound by controller only' do
-        # Same controller, different actions
+      it 'groups RecordNotFound by controller#action (same action = same fingerprint)' do
+        # Same controller#action, different line numbers → same fingerprint
+        fp1 = Issue.send(:generate_fingerprint,
+          'ActiveRecord::RecordNotFound',
+          'app/controllers/jobs_controller.rb:42',
+          'JobsController#show'
+        )
+        fp2 = Issue.send(:generate_fingerprint,
+          'ActiveRecord::RecordNotFound',
+          'app/controllers/jobs_controller.rb:100', # Different line
+          'JobsController#show' # Same action
+        )
+
+        expect(fp1).to eq(fp2) # Same action -> same fingerprint (1 notification per action)
+      end
+
+      it 'separates RecordNotFound by action (different actions = different fingerprints)' do
         fp1 = Issue.send(:generate_fingerprint,
           'ActiveRecord::RecordNotFound',
           'app/controllers/jobs_controller.rb:42',
@@ -82,10 +97,10 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
         fp2 = Issue.send(:generate_fingerprint,
           'ActiveRecord::RecordNotFound',
           'app/controllers/jobs_controller.rb:100',
-          'JobsController#index'
+          'JobsController#index' # Different action
         )
 
-        expect(fp1).to eq(fp2) # Same controller -> same fingerprint
+        expect(fp1).not_to eq(fp2) # Different actions -> different fingerprints
       end
 
       it 'separates RecordNotFound by controller' do
@@ -103,7 +118,7 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
         expect(fp1).not_to eq(fp2) # Different controllers -> different fingerprints
       end
 
-      it 'groups RoutingError by controller only' do
+      it 'groups RoutingError by controller#action (same action = same fingerprint)' do
         fp1 = Issue.send(:generate_fingerprint,
           'ActionController::RoutingError',
           'somewhere/in/rails.rb:100',
@@ -111,14 +126,14 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
         )
         fp2 = Issue.send(:generate_fingerprint,
           'ActionController::RoutingError',
-          'somewhere/else/in/rails.rb:200',
-          'ApplicationController#handle_error'
+          'somewhere/else/in/rails.rb:200', # Different location
+          'ApplicationController#not_found'  # Same action
         )
 
-        expect(fp1).to eq(fp2) # Same controller (ApplicationController)
+        expect(fp1).to eq(fp2) # Same action -> same fingerprint
       end
 
-      it 'groups InvalidAuthenticityToken by controller only' do
+      it 'groups InvalidAuthenticityToken by controller#action' do
         fp1 = Issue.send(:generate_fingerprint,
           'ActionController::InvalidAuthenticityToken',
           'somewhere.rb:1',
@@ -127,13 +142,13 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
         fp2 = Issue.send(:generate_fingerprint,
           'ActionController::InvalidAuthenticityToken',
           'elsewhere.rb:99',
-          'SessionsController#destroy'
+          'SessionsController#create' # Same action
         )
 
         expect(fp1).to eq(fp2)
       end
 
-      it 'groups ParameterMissing by controller only' do
+      it 'groups ParameterMissing by controller#action' do
         fp1 = Issue.send(:generate_fingerprint,
           'ActionController::ParameterMissing',
           'somewhere.rb:1',
@@ -142,7 +157,7 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
         fp2 = Issue.send(:generate_fingerprint,
           'ActionController::ParameterMissing',
           'elsewhere.rb:99',
-          'UsersController#update'
+          'UsersController#create' # Same action
         )
 
         expect(fp1).to eq(fp2)
@@ -193,7 +208,8 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
       expect(issue2.count).to eq(2)
     end
 
-    it 'groups RecordNotFound from same controller' do
+    it 'groups RecordNotFound from same controller#action' do
+      # Same action, different line numbers/messages → same issue
       issue1 = Issue.find_or_create_by_fingerprint(
         project: project,
         exception_class: 'ActiveRecord::RecordNotFound',
@@ -206,12 +222,32 @@ RSpec.describe Issue, 'fingerprint generation', type: :model do
         project: project,
         exception_class: 'ActiveRecord::RecordNotFound',
         top_frame: 'app/controllers/jobs_controller.rb:100',
-        controller_action: 'JobsController#index',
+        controller_action: 'JobsController#show', # Same action
         sample_message: "can't find record with friendly id: \"centerbase\""
       )
 
-      expect(issue1.id).to eq(issue2.id) # Same issue!
+      expect(issue1.id).to eq(issue2.id) # Same issue! (1 notification for 10,000 errors)
       expect(issue2.count).to eq(2)
+    end
+
+    it 'separates RecordNotFound from different actions in same controller' do
+      issue1 = Issue.find_or_create_by_fingerprint(
+        project: project,
+        exception_class: 'ActiveRecord::RecordNotFound',
+        top_frame: 'app/controllers/jobs_controller.rb:42',
+        controller_action: 'JobsController#show',
+        sample_message: "can't find record"
+      )
+
+      issue2 = Issue.find_or_create_by_fingerprint(
+        project: project,
+        exception_class: 'ActiveRecord::RecordNotFound',
+        top_frame: 'app/controllers/jobs_controller.rb:100',
+        controller_action: 'JobsController#index', # Different action
+        sample_message: "can't find record"
+      )
+
+      expect(issue1.id).not_to eq(issue2.id) # Different issues (separate notifications)
     end
   end
 end
