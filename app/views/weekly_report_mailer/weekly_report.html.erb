@@ -141,8 +141,11 @@
           <% @report[:errors].each do |issue| %>
             <tr>
               <td>
-                <strong><%= issue.exception_class %></strong><br>
-                <span class="muted"><%= issue.controller_action %></span>
+                <% error_url = issue.project ? project_slug_error_url(issue.project.slug, issue.id, host: ENV.fetch("APP_HOST", "localhost:3000")) : error_url(issue.id, host: ENV.fetch("APP_HOST", "localhost:3000")) %>
+                <a href="<%= error_url %>" style="color: #667eea; text-decoration: none;">
+                  <strong><%= issue.exception_class %></strong><br>
+                  <span class="muted"><%= issue.controller_action %></span>
+                </a>
               </td>
               <td class="right"><%= issue.occurrences %></td>
               <td><%= issue.last_seen.strftime("%Y-%m-%d %H:%M") %></td>
@@ -164,7 +167,17 @@
           </tr>
           <% @report[:performance].each do |p| %>
             <tr>
-              <td><%= p.target %></td>
+              <td>
+                <% if p.project_id && @performance_projects&.dig(p.project_id) %>
+                  <% project = @performance_projects[p.project_id] %>
+                  <% perf_url = project_slug_performance_action_detail_url(project.slug, target: p.target, host: ENV.fetch("APP_HOST", "localhost:3000")) %>
+                <% else %>
+                  <% perf_url = performance_action_detail_url(target: p.target, host: ENV.fetch("APP_HOST", "localhost:3000")) %>
+                <% end %>
+                <a href="<%= perf_url %>" style="color: #667eea; text-decoration: none;">
+                  <%= p.target %>
+                </a>
+              </td>
               <td class="right"><%= p.requests %></td>
               <td class="right"><%= p.avg_ms.round %> ms</td>
               <td class="right"><%= p.max_ms.round %> ms</td>
