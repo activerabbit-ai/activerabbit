@@ -41,6 +41,15 @@ class Project < ApplicationRecord
     api_tokens.active.first&.token
   end
 
+  def create_default_notification_settings!
+    self.settings ||= {}
+    self.settings["notifications"] ||= {}
+    self.settings["notifications"]["enabled"] = true
+    self.settings["notifications"]["channels"] ||= {}
+    self.settings["notifications"]["channels"]["email"] = true
+    save!
+  end
+
   def create_default_alert_rules!
     # Create default alert rules for new projects
     # Using Sentry/AppSignal-style defaults
