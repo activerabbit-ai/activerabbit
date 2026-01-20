@@ -28,7 +28,7 @@ class UserPolicy < ApplicationPolicy
       if record == user
         [:email, :password, :password_confirmation, :current_password]
       else
-        [:role]
+        [:email, :role]
       end
     elsif record == user
       [:email, :password, :password_confirmation, :current_password]

@@ -27,6 +27,11 @@ class UsersController < ApplicationController
     @user = current_account.users.new(user_params)
     @user.invited_by = current_user
 
+    # Only allow role assignment if current user is owner
+    if current_user.owner? && params.dig(:user, :role).present?
+      @user.role = params.dig(:user, :role)
+    end
+
     authorize @user
 
     unless @user.save
@@ -111,7 +116,7 @@ class UsersController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:email, :role, :password, :password_confirmation, :current_password)
+    params.require(:user).permit(:email, :password, :password_confirmation, :current_password)
   end
 
   def current_account
