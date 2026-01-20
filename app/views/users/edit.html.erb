@@ -1,26 +1,124 @@
 <% content_for :page_title do %>
-  Update User
+  <%= @user == current_user ? "Edit Profile" : "Update User" %>
 <% end %>
 
 <div class="max-w-lg mx-auto bg-white rounded-lg shadow p-6 space-y-6">
-  <h2 class="text-xl font-semibold text-gray-900">Update User</h2>
+  <h2 class="text-xl font-semibold text-gray-900"><%= @user == current_user ? "Edit Profile" : "Update User" %></h2>
+
+  <% if @user.errors.any? %>
+    <div class="rounded-xl bg-red-50 p-4 border border-red-200">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            <%= pluralize(@user.errors.count, "error") %> prohibited this account from being saved:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc pl-5 space-y-1">
+              <% @user.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
 
   <%= form_with model: @user, local: true do |f| %>
     <div class="space-y-4">
-      <%= f.hidden_field :email, value: @user.email %>
+      <% if @user == current_user %>
+        <div>
+          <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+              </svg>
+            </div>
+            <%= f.email_field :email,
+                  autofocus: true,
+                  autocomplete: "email",
+                  placeholder: "Enter your email address",
+                  class: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+          </div>
+        </div>
 
-      <!-- Role -->
-      <div>
-        <label for="account_slack_webhook_url" class="block text-sm font-medium text-gray-700 mb-2">
-          Role
-          <span class="text-red-500">*</span>
-        </label>
-        <%= f.select :role, User::ROLES.map { |r| [r.titleize, r] }, { required: true }, class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
-      </div>
+        <div>
+          <%= f.label :current_password, "Current Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <%= f.password_field :current_password,
+                  autocomplete: "current-password",
+                  placeholder: "Enter current password to change password",
+                  required: true,
+                  class: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">Required only if you want to change your password</p>
+        </div>
+
+        <div>
+          <%= f.label :password, "New Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <%= f.password_field :password,
+                  autocomplete: "new-password",
+                  placeholder: "Leave blank if you don't want to change it",
+                  class: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+          </div>
+        </div>
+
+        <div>
+          <%= f.label :password_confirmation, "Confirm New Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <%= f.password_field :password_confirmation,
+                  autocomplete: "new-password",
+                  placeholder: "Confirm your new password",
+                  class: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if current_user.owner? %>
+        <div>
+          <%= f.label :role, class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.select :role, User::ROLES.map { |r| [r.titleize, r] }, { required: true }, class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
+        </div>
+      <% elsif @user != current_user %>
+        <div>
+          <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+              </svg>
+            </div>
+            <%= f.email_field :email, disabled: true, class: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500" %>
+          </div>
+        </div>
+      <% end %>
 
       <!-- Submit -->
-      <div class="pt-4">
-        <%= f.submit "Update User", class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors" %>
+      <div class="flex items-center justify-end gap-2">
+        <%= f.submit @user == current_user ? "Update Profile" : "Update User", class: "inline-flex items-center justify-center px-4 py-2 h-9 bg-indigo-600 text-sm text-white font-medium rounded-md hover:bg-indigo-700 transition-colors" %>
+        <%= link_to "Back", dashboard_path, class: "inline-flex items-center justify-center px-4 py-2 h-9 text-sm font-medium rounded-md text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50 transition-colors" %>
       </div>
     </div>
   <% end %>
