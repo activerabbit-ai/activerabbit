@@ -103,6 +103,82 @@
       color: #777;
       border-top: 1px solid #e5e5e5;
     }
+
+    .chart-section {
+      margin: 24px 0;
+    }
+
+    .chart-header {
+      margin-bottom: 12px;
+    }
+
+    .chart-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .chart-total {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .chart-link {
+      font-size: 13px;
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .chart-container {
+      margin-top: 16px;
+      padding: 12px 0;
+    }
+
+    .chart-bar-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .chart-bar-row {
+      height: 32px;
+    }
+
+    .chart-bar-label-cell {
+      width: 50px;
+      font-size: 12px;
+      color: #666;
+      vertical-align: middle;
+      padding-right: 8px;
+    }
+
+    .chart-bar-cell {
+      vertical-align: middle;
+      padding: 0;
+    }
+
+    .chart-bar-bg {
+      height: 24px;
+      background-color: #f0f0f0;
+      border-radius: 3px;
+      position: relative;
+    }
+
+    .chart-bar-fill {
+      height: 24px;
+      background-color: #667eea;
+      border-radius: 3px;
+      min-width: 2px;
+    }
+
+    .chart-bar-value {
+      font-size: 11px;
+      font-weight: 600;
+      color: #333;
+      padding-left: 8px;
+      line-height: 24px;
+    }
   </style>
 </head>
 
@@ -130,6 +206,82 @@
     </div>
 
     <div class="content">
+      <% if @report[:errors_by_day] && @report[:errors_by_day].any? %>
+        <div class="chart-section">
+          <div class="chart-header">
+            <div class="chart-title">Total Project Errors</div>
+            <div class="chart-total"><%= (@report[:total_errors] || 0).to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
+            <a href="<%= @errors_url %>" class="chart-link">View All Errors</a>
+          </div>
+          <div class="chart-container">
+            <% max_errors = @report[:errors_by_day].values.max || 1 %>
+            <table class="chart-bar-table" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+              <% @report[:errors_by_day].each do |date, count| %>
+                <% date_obj = date.is_a?(Date) ? date : Date.parse(date.to_s) %>
+                <% bar_width = [((count.to_f / max_errors) * 100).round, 2].max %>
+                <tr style="height: 32px;">
+                  <td style="width: 50px; font-size: 12px; color: #666; vertical-align: middle; padding-right: 8px;"><%= date_obj.strftime("%a") %></td>
+                  <td style="vertical-align: middle; width: 100%;">
+                    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                      <tr>
+                        <td style="width: <%= bar_width %>%; padding: 0;">
+                          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                            <tr>
+                              <td style="background-color: #667eea; height: 24px; border-radius: 3px; min-width: 2px; width: 100%;"></td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="width: <%= 100 - bar_width %>%; padding-left: 8px; vertical-align: middle;">
+                          <span style="font-size: 11px; font-weight: 600; color: #333;"><%= count.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              <% end %>
+            </table>
+          </div>
+        </div>
+      <% end %>
+
+      <% if @report[:performance_by_day] && @report[:performance_by_day].any? %>
+        <div class="chart-section">
+          <div class="chart-header">
+            <div class="chart-title">Total Project Performance</div>
+            <div class="chart-total"><%= (@report[:total_performance] || 0).to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
+            <a href="<%= @performance_url %>" class="chart-link">View All Performance</a>
+          </div>
+          <div class="chart-container">
+            <% max_performance = @report[:performance_by_day].values.max || 1 %>
+            <table class="chart-bar-table" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+              <% @report[:performance_by_day].each do |date, count| %>
+                <% date_obj = date.is_a?(Date) ? date : Date.parse(date.to_s) %>
+                <% bar_width = [((count.to_f / max_performance) * 100).round, 2].max %>
+                <tr style="height: 32px;">
+                  <td style="width: 50px; font-size: 12px; color: #666; vertical-align: middle; padding-right: 8px;"><%= date_obj.strftime("%a") %></td>
+                  <td style="vertical-align: middle; width: 100%;">
+                    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                      <tr>
+                        <td style="width: <%= bar_width %>%; padding: 0;">
+                          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                            <tr>
+                              <td style="background-color: #667eea; height: 24px; border-radius: 3px; min-width: 2px; width: 100%;"></td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="width: <%= 100 - bar_width %>%; padding-left: 8px; vertical-align: middle;">
+                          <span style="font-size: 11px; font-weight: 600; color: #333;"><%= count.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              <% end %>
+            </table>
+          </div>
+        </div>
+      <% end %>
+
       <h2>Top Errors</h2>
       <% if @report[:errors].any? %>
         <table>
