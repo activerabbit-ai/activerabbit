@@ -110,14 +110,8 @@ class QuotaAlertMailer < ApplicationMailer
     when :status_pages
       @account.status_pages_used
     else
-      0
-    end
-  end
-
-  def pricing_url
-    Rails.application.routes.url_helpers.pricing_url(
-      host: ENV.fetch("APP_HOST", "localhost:3000"),
-      protocol: Rails.env.production? ? "https" : "http"
-    )
-  end
+# config/routes.rb
+Rails.application.routes.draw do
+  # Add this line to define the pricing route
+  get 'pricing', to: 'pages#pricing', as: 'pricing'
 end
