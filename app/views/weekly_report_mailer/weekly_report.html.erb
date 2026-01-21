@@ -179,6 +179,94 @@
       padding-left: 8px;
       line-height: 24px;
     }
+
+    .vchart {
+      margin-top: 8px;
+    }
+
+    .vchart-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .vchart-bars td {
+      vertical-align: bottom;
+      padding: 0 3px;
+    }
+
+    .vchart-bar-bg {
+      height: 76px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .vchart-bar-fill {
+      background: #667eea;
+      border-radius: 4px;
+      width: 100%;
+      height: 100%;
+      min-height: 2px;
+    }
+
+    .vchart-value {
+      font-size: 10px;
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+      margin-top: 6px;
+      white-space: nowrap;
+    }
+
+    .vchart-label {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      padding-top: 6px;
+      white-space: nowrap;
+    }
+
+    .chart-grid {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin: 0 auto 8px;
+    }
+
+    .chart-grid > tbody > tr > td {
+      vertical-align: top;
+      width: 50%;
+    }
+
+    .chart-card {
+      border: 1px solid #eaeaea;
+      border-radius: 8px;
+      padding: 14px 14px 10px;
+      background: #ffffff;
+    }
+
+    .chart-card + .chart-card {
+      margin-left: 12px;
+    }
+
+    .chart-total {
+      margin-bottom: 6px;
+    }
+
+    @media only screen and (max-width: 640px) {
+      .chart-grid,
+      .chart-grid > tbody,
+      .chart-grid > tbody > tr,
+      .chart-grid > tbody > tr > td {
+        display: block !important;
+        width: 100% !important;
+      }
+
+      .chart-grid > tbody > tr > td + td {
+        margin-top: 12px !important;
+      }
+    }
   </style>
 </head>
 
@@ -206,80 +294,96 @@
     </div>
 
     <div class="content">
-      <% if @report[:errors_by_day] && @report[:errors_by_day].any? %>
-        <div class="chart-section">
-          <div class="chart-header">
-            <div class="chart-title">Total Project Errors</div>
-            <div class="chart-total"><%= (@report[:total_errors] || 0).to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
-            <a href="<%= @errors_url %>" class="chart-link">View All Errors</a>
-          </div>
-          <div class="chart-container">
-            <% max_errors = @report[:errors_by_day].values.max || 1 %>
-            <table class="chart-bar-table" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-              <% @report[:errors_by_day].each do |date, count| %>
-                <% date_obj = date.is_a?(Date) ? date : Date.parse(date.to_s) %>
-                <% bar_width = [((count.to_f / max_errors) * 100).round, 2].max %>
-                <tr style="height: 32px;">
-                  <td style="width: 50px; font-size: 12px; color: #666; vertical-align: middle; padding-right: 8px;"><%= date_obj.strftime("%a") %></td>
-                  <td style="vertical-align: middle; width: 100%;">
-                    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-                      <tr>
-                        <td style="width: <%= bar_width %>%; padding: 0;">
-                          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-                            <tr>
-                              <td style="background-color: #667eea; height: 24px; border-radius: 3px; min-width: 2px; width: 100%;"></td>
-                            </tr>
-                          </table>
-                        </td>
-                        <td style="width: <%= 100 - bar_width %>%; padding-left: 8px; vertical-align: middle;">
-                          <span style="font-size: 11px; font-weight: 600; color: #333;"><%= count.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              <% end %>
-            </table>
-          </div>
-        </div>
-      <% end %>
+      <% show_errors_chart = @report[:errors_by_day].present? && @report[:errors_by_day].any? %>
+      <% show_performance_chart = @report[:performance_by_day].present? && @report[:performance_by_day].any? %>
 
-      <% if @report[:performance_by_day] && @report[:performance_by_day].any? %>
-        <div class="chart-section">
-          <div class="chart-header">
-            <div class="chart-title">Total Project Performance</div>
-            <div class="chart-total"><%= (@report[:total_performance] || 0).to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
-            <a href="<%= @performance_url %>" class="chart-link">View All Performance</a>
-          </div>
-          <div class="chart-container">
-            <% max_performance = @report[:performance_by_day].values.max || 1 %>
-            <table class="chart-bar-table" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-              <% @report[:performance_by_day].each do |date, count| %>
-                <% date_obj = date.is_a?(Date) ? date : Date.parse(date.to_s) %>
-                <% bar_width = [((count.to_f / max_performance) * 100).round, 2].max %>
-                <tr style="height: 32px;">
-                  <td style="width: 50px; font-size: 12px; color: #666; vertical-align: middle; padding-right: 8px;"><%= date_obj.strftime("%a") %></td>
-                  <td style="vertical-align: middle; width: 100%;">
-                    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-                      <tr>
-                        <td style="width: <%= bar_width %>%; padding: 0;">
-                          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-                            <tr>
-                              <td style="background-color: #667eea; height: 24px; border-radius: 3px; min-width: 2px; width: 100%;"></td>
-                            </tr>
-                          </table>
-                        </td>
-                        <td style="width: <%= 100 - bar_width %>%; padding-left: 8px; vertical-align: middle;">
-                          <span style="font-size: 11px; font-weight: 600; color: #333;"><%= count.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
+      <% if show_errors_chart || show_performance_chart %>
+        <table class="chart-grid" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="padding-right: 6px;">
+              <% if show_errors_chart %>
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <div class="chart-title">Total Project Errors</div>
+                    <div class="chart-total"><%= (@report[:total_errors] || 0).to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
+                    <a href="<%= @errors_url %>" class="chart-link">View All Errors</a>
+                  </div>
+                  <div class="chart-container">
+                    <% max_errors = @report[:errors_by_day].values.max || 1 %>
+                    <% max_bar_height = 76 %>
+                    <div class="vchart">
+                      <table class="vchart-table" cellpadding="0" cellspacing="0" border="0">
+                        <tr class="vchart-bars">
+                          <% @report[:errors_by_day].each do |date, count| %>
+                            <% date_obj = date.is_a?(Date) ? date : Date.parse(date.to_s) %>
+                            <% pct = max_errors.to_f > 0 ? ((count.to_f / max_errors.to_f) * 1.0) : 0 %>
+                            <% bar_height = [(pct * max_bar_height).round, 2].max %>
+                            <% spacer_height = [max_bar_height - bar_height, 0].max %>
+                            <td>
+                              <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; height: <%= max_bar_height %>px;">
+                                <tr>
+                                  <td style="padding: 0; height: <%= spacer_height %>px;"></td>
+                                </tr>
+                                <tr>
+                                  <td style="padding: 0; height: <%= bar_height %>px;">
+                                    <div class="vchart-bar-fill"></div>
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="vchart-value"><%= count.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
+                              <div class="vchart-label"><%= date_obj.strftime("%a") %></div>
+                            </td>
+                          <% end %>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               <% end %>
-            </table>
-          </div>
-        </div>
+            </td>
+            <td style="padding-left: 6px;">
+              <% if show_performance_chart %>
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <div class="chart-title">Total Project Performance</div>
+                    <div class="chart-total"><%= (@report[:total_performance] || 0).to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
+                    <a href="<%= @performance_url %>" class="chart-link">View All Performance</a>
+                  </div>
+                  <div class="chart-container">
+                    <% max_performance = @report[:performance_by_day].values.max || 1 %>
+                    <% max_bar_height = 76 %>
+                    <div class="vchart">
+                      <table class="vchart-table" cellpadding="0" cellspacing="0" border="0">
+                        <tr class="vchart-bars">
+                          <% @report[:performance_by_day].each do |date, count| %>
+                            <% date_obj = date.is_a?(Date) ? date : Date.parse(date.to_s) %>
+                            <% pct = max_performance.to_f > 0 ? ((count.to_f / max_performance.to_f) * 1.0) : 0 %>
+                            <% bar_height = [(pct * max_bar_height).round, 2].max %>
+                            <% spacer_height = [max_bar_height - bar_height, 0].max %>
+                            <td>
+                              <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; height: <%= max_bar_height %>px;">
+                                <tr>
+                                  <td style="padding: 0; height: <%= spacer_height %>px;"></td>
+                                </tr>
+                                <tr>
+                                  <td style="padding: 0; height: <%= bar_height %>px;">
+                                    <div class="vchart-bar-fill"></div>
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="vchart-value"><%= count.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse %></div>
+                              <div class="vchart-label"><%= date_obj.strftime("%a") %></div>
+                            </td>
+                          <% end %>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </td>
+          </tr>
+        </table>
       <% end %>
 
       <h2>Top Errors</h2>
