@@ -14,7 +14,14 @@ RSpec.describe ResourceQuotas, type: :model do
                     :event_usage_period_start,
                     :event_usage_period_end,
                     :trial_flag,
-                    :active_subscription_flag
+                    :active_subscription_flag,
+                    :cached_events_used,
+                    :cached_ai_summaries_used,
+                    :cached_pull_requests_used,
+                    :cached_uptime_monitors_used,
+                    :cached_status_pages_used,
+                    :cached_projects_used,
+                    :usage_cached_at
 
       def on_trial?
         !!trial_flag
@@ -259,11 +266,13 @@ RSpec.describe ResourceQuotas, type: :model do
 
     context "when quota is zero" do
       before do
-        allow(account).to receive(:event_quota_value).and_return(0)
+        account.current_plan = "free"
+        account.cached_uptime_monitors_used = 0
+        # Free plan has 0 uptime_monitors quota
       end
 
       it "returns 0.0" do
-        expect(account.usage_percentage(:events)).to eq(0.0)
+        expect(account.usage_percentage(:uptime_monitors)).to eq(0.0)
       end
     end
 
@@ -277,11 +286,13 @@ RSpec.describe ResourceQuotas, type: :model do
   describe "#usage_summary" do
     before do
       account.current_plan = "team"
-      allow(account).to receive(:events_used_in_billing_period).and_return(10_000)
-      allow(account).to receive(:ai_summaries_used_in_period).and_return(25)
-      allow(account).to receive(:pull_requests_used_in_period).and_return(3)
-      allow(account).to receive(:uptime_monitors_used).and_return(2)
-      allow(account).to receive(:status_pages_used).and_return(1)
+      # Set cached columns directly (these are now read from DB, not computed)
+      account.cached_events_used = 10_000
+      account.cached_ai_summaries_used = 25
+      account.cached_pull_requests_used = 3
+      account.cached_uptime_monitors_used = 2
+      account.cached_status_pages_used = 1
+      account.cached_projects_used = 5
     end
 
     it "returns a hash with all resource types" do
@@ -326,7 +337,7 @@ RSpec.describe ResourceQuotas, type: :model do
 
     context "when over quota" do
       before do
-        allow(account).to receive(:ai_summaries_used_in_period).and_return(350)
+        account.cached_ai_summaries_used = 350
       end
 
       it "shows remaining as 0" do

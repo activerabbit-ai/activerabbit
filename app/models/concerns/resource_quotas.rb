@@ -81,72 +81,37 @@ module ResourceQuotas
 
   # ============================================================================
   # USAGE TRACKING METHODS - Return current usage for each resource type
-  # All methods are memoized to avoid duplicate queries within a request
+  # Reads from cached columns (updated hourly by UsageSnapshotJob)
+  # Returns 0 if cache is empty - view should show "Calculating..." message
   # ============================================================================
 
   def events_used_in_billing_period
-    @_events_used_in_billing_period ||= begin
-      start_at = billing_period_start
-      end_at   = billing_period_end
-
-      # Handle ActsAsTenant scoping
-      ActsAsTenant.without_tenant do
-        Event.where(account_id: id).where(occurred_at: start_at..end_at).count
-      end
-    end
+    cached_events_used || 0
   end
 
   def ai_summaries_used_in_period
-    @_ai_summaries_used_in_period ||= begin
-      start_at = billing_period_start
-      end_at   = billing_period_end
-
-      # Handle ActsAsTenant scoping
-      ActsAsTenant.without_tenant do
-        Issue.where(account_id: id)
-             .where(ai_summary_generated_at: start_at..end_at)
-             .count
-      end
-    end
+    cached_ai_summaries_used || 0
   end
 
   def pull_requests_used_in_period
-    @_pull_requests_used_in_period ||= begin
-      start_at = billing_period_start
-      end_at   = billing_period_end
-
-      # Handle ActsAsTenant scoping
-      ActsAsTenant.without_tenant do
-        AiRequest.where(account_id: id, request_type: "pull_request")
-                 .where(occurred_at: start_at..end_at)
-                 .count
-      end
-    end
+    cached_pull_requests_used || 0
   end
 
   def uptime_monitors_used
-    @_uptime_monitors_used ||= begin
-      # Handle ActsAsTenant scoping
-      ActsAsTenant.without_tenant do
-        Healthcheck.where(account_id: id, enabled: true).count
-      end
-    end
+    cached_uptime_monitors_used || 0
   end
 
   def status_pages_used
-    @_status_pages_used ||= begin
-      # Count projects with status pages enabled
-      projects.where("settings->>'status_page_enabled' = 'true'").count
-    end
+    cached_status_pages_used || 0
   end
 
   def projects_used
-    @_projects_used ||= begin
-      # Handle ActsAsTenant scoping
-      ActsAsTenant.without_tenant do
-        Project.where(account_id: id).count
-      end
-    end
+    cached_projects_used || 0
+  end
+
+  # Check if usage data has been cached yet
+  def usage_data_available?
+    usage_cached_at.present?
   end
 
   # ============================================================================
@@ -186,6 +151,7 @@ module ResourceQuotas
   end
 
   # Get usage summary for all resources
+  # Memoized to avoid repeated expensive queries within a request
   #
   # @return [Hash] usage summary with quotas, used, and remaining for all resources
   #
@@ -197,17 +163,23 @@ module ResourceQuotas
   #   #   ...
   #   # }
   def usage_summary
-    %i[events ai_summaries pull_requests uptime_monitors status_pages projects].each_with_object({}) do |resource, hash|
-      quota = quota_for_resource_by_type(resource)
-      used = usage_for_resource(resource)
+    @_usage_summary ||= begin
+      # Pre-compute plan key once to avoid repeated effective_plan_key calls
+      plan_key = effective_plan_key
+      plan_quotas = PLAN_QUOTAS[plan_key] || PLAN_QUOTAS[DEFAULT_PLAN]
 
-      hash[resource] = {
-        quota: quota,
-        used: used,
-        remaining: [quota - used, 0].max,
-        percentage: usage_percentage(resource),
-        within_quota: within_quota?(resource)
-      }
+      %i[events ai_summaries pull_requests uptime_monitors status_pages projects].each_with_object({}) do |resource, hash|
+        quota = plan_quotas[resource] || 0
+        used = usage_for_resource(resource)
+
+        hash[resource] = {
+          quota: quota,
+          used: used,
+          remaining: [quota - used, 0].max,
+          percentage: quota.zero? ? 0.0 : ((used.to_f / quota) * 100).round(2),
+          within_quota: used < quota
+        }
+      end
     end
   end
 

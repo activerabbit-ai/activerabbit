@@ -8,6 +8,8 @@ class PricingController < ApplicationController
     @current_plan_label = "Current plan"
 
     if @account
+      @usage_data_available = @account.usage_data_available?
+
       begin
         set_usage_data
         build_free_plan_comparison_if_on_trial!
@@ -52,60 +54,51 @@ class PricingController < ApplicationController
   def set_usage_data
     return unless @account
 
-    # Rolling 30-day usage window (for requests totals)
-    # IMPORTANT: Must scope to account_id for correct data AND performance
-    window_start = 30.days.ago
-    account_id = @account.id
+    # All usage data is now read from cached columns on the account (INSTANT!)
+    # Cached data is updated hourly by UsageSnapshotJob
 
-    # Use ActsAsTenant.without_tenant to bypass tenant scoping and use explicit account_id
-    ActsAsTenant.without_tenant do
-      @events_last_30_days =
-        Event.where(account_id: account_id).where("occurred_at > ?", window_start).count
+    # Get plan quotas and usage in one call (reads from cached columns)
+    plan_quotas = @account.usage_summary
 
-      @ai_summaries_last_30_days =
-        Issue.where(account_id: account_id).where("ai_summary_generated_at > ?", window_start).count
+    # 30-day data from DailyResourceUsage (still fast - small table)
+    thirty_days_ago = 30.days.ago.to_date
+    today = Date.current
+    last_30_days_usage = DailyResourceUsage.usage_for_period(@account.id, thirty_days_ago, today)
 
-      @pull_requests_last_30_days =
-        AiRequest.where(account_id: account_id, request_type: "pull_request")
-                 .where("occurred_at > ?", window_start)
-                 .count
+    @events_last_30_days = last_30_days_usage&.total_errors.to_i
+    @ai_summaries_last_30_days = last_30_days_usage&.total_ai_summaries.to_i
+    @pull_requests_last_30_days = last_30_days_usage&.total_pull_requests.to_i
+    @requests_total_last_30_days = @events_last_30_days + @ai_summaries_last_30_days + @pull_requests_last_30_days
 
-      perf_requests_last_30_days =
-        PerformanceEvent.where(account_id: account_id).where("occurred_at > ?", window_start).count
-    end
-
-    @requests_total_last_30_days =
-      @events_last_30_days + @ai_summaries_last_30_days + @pull_requests_last_30_days + perf_requests_last_30_days
-
-    # Event/Error tracking usage (current billing period)
-    @event_quota = @account.event_quota_value
-    @events_used = @account.events_used_in_billing_period
-    @events_remaining = [@event_quota - @events_used, 0].max
+    # Event/Error tracking usage (from cached columns - instant!)
+    @event_quota = plan_quotas[:events][:quota]
+    @events_used = plan_quotas[:events][:used]
+    @events_remaining = plan_quotas[:events][:remaining]
 
     # AI Summaries usage
-    @ai_summaries_quota = @account.ai_summaries_quota
-    @ai_summaries_used = @account.ai_summaries_used_in_period
-    @ai_summaries_remaining = [@ai_summaries_quota - @ai_summaries_used, 0].max
+    @ai_summaries_quota = plan_quotas[:ai_summaries][:quota]
+    @ai_summaries_used = plan_quotas[:ai_summaries][:used]
+    @ai_summaries_remaining = plan_quotas[:ai_summaries][:remaining]
 
     # Pull Requests usage
-    @pull_requests_quota = @account.pull_requests_quota
-    @pull_requests_used = @account.pull_requests_used_in_period
-    @pull_requests_remaining = [@pull_requests_quota - @pull_requests_used, 0].max
+    @pull_requests_quota = plan_quotas[:pull_requests][:quota]
+    @pull_requests_used = plan_quotas[:pull_requests][:used]
+    @pull_requests_remaining = plan_quotas[:pull_requests][:remaining]
 
     # Uptime Monitors usage
-    @uptime_monitors_quota = @account.uptime_monitors_quota
-    @uptime_monitors_used = @account.uptime_monitors_used
-    @uptime_monitors_remaining = [@uptime_monitors_quota - @uptime_monitors_used, 0].max
+    @uptime_monitors_quota = plan_quotas[:uptime_monitors][:quota]
+    @uptime_monitors_used = plan_quotas[:uptime_monitors][:used]
+    @uptime_monitors_remaining = plan_quotas[:uptime_monitors][:remaining]
 
     # Status Pages usage
-    @status_pages_quota = @account.status_pages_quota
-    @status_pages_used = @account.status_pages_used
-    @status_pages_remaining = [@status_pages_quota - @status_pages_used, 0].max
+    @status_pages_quota = plan_quotas[:status_pages][:quota]
+    @status_pages_used = plan_quotas[:status_pages][:used]
+    @status_pages_remaining = plan_quotas[:status_pages][:remaining]
 
     # Projects usage
-    @projects_quota = @account.projects_quota
-    @projects_used = @account.projects_used
-    @projects_remaining = [@projects_quota - @projects_used, 0].max
+    @projects_quota = plan_quotas[:projects][:quota]
+    @projects_used = plan_quotas[:projects][:used]
+    @projects_remaining = plan_quotas[:projects][:remaining]
   end
 
   # Build comparison data showing what the user's current usage would look like

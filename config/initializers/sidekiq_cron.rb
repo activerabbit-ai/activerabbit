@@ -50,6 +50,12 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
       "cron_timezone" => "America/Los_Angeles"
     },
 
+    "usage_snapshot_hourly" => {
+      "cron" => "0 * * * *",  # Every hour at minute 0 - cache usage for instant page loads
+      "class" => "UsageSnapshotJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
     "quota_alerts_daily" => {
       "cron" => "0 10 * * *",  # Daily at 10:00 AM PST - send quota alerts
       "class" => "QuotaAlertJob",

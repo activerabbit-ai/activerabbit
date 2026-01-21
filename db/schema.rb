@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_03_000002) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_21_212100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -31,6 +31,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_03_000002) do
     t.string "overage_subscription_item_id"
     t.string "ai_overage_subscription_item_id"
     t.jsonb "last_quota_alert_sent_at"
+    t.integer "cached_events_used", default: 0, null: false
+    t.integer "cached_ai_summaries_used", default: 0, null: false
+    t.integer "cached_pull_requests_used", default: 0, null: false
+    t.integer "cached_uptime_monitors_used", default: 0, null: false
+    t.integer "cached_status_pages_used", default: 0, null: false
+    t.integer "cached_projects_used", default: 0, null: false
+    t.datetime "usage_cached_at"
+    t.integer "cached_performance_events_used", default: 0, null: false
     t.index ["name"], name: "index_accounts_on_name"
   end
 

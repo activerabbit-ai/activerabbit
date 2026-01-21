@@ -63,6 +63,12 @@
         <p class="text-sm text-gray-500 mt-1">
           Billing Period: <%= (@account.event_usage_period_start || Time.current.beginning_of_month).strftime('%b %d') %> - <%= (@account.event_usage_period_end || Time.current.end_of_month).strftime('%b %d, %Y') %>
         </p>
+        <p class="text-xs text-gray-400 mt-1">
+          <% if @account.usage_cached_at %>
+            Last updated: <%= time_ago_in_words(@account.usage_cached_at) %> ago •
+          <% end %>
+          Data updates every hour
+        </p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
