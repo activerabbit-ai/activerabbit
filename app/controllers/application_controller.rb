@@ -2,6 +2,18 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   # allow_browser versions: :modern  # Temporarily disabled for deployment testing
 
+  # Controllers that should be accessible even without projects (during onboarding)
+  ONBOARDING_EXEMPT_CONTROLLERS = %w[
+    onboarding
+    projects
+    pricing
+    billing_portal
+    checkouts
+    subscriptions
+    account_settings
+    settings
+  ].freeze
+
   # Include Pagy backend for pagination
   include Pagy::Backend
 
@@ -107,8 +119,7 @@ class ApplicationController < ActionController::Base
   def check_onboarding_needed
     return unless user_signed_in?
     return if devise_controller?
-    return if controller_name == "onboarding"
-    return if controller_name == "projects" # Allow access to projects controller during onboarding
+    return if ONBOARDING_EXEMPT_CONTROLLERS.include?(controller_name)
 
     begin
       if current_user.needs_onboarding?

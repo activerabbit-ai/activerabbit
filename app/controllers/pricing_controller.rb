@@ -8,8 +8,14 @@ class PricingController < ApplicationController
     @current_plan_label = "Current plan"
 
     if @account
-      set_usage_data
-      build_free_plan_comparison_if_on_trial!
+      begin
+        set_usage_data
+        build_free_plan_comparison_if_on_trial!
+      rescue => e
+        Rails.logger.error "[PricingController#usage] Error loading usage data: #{e.class}: #{e.message}"
+        Rails.logger.error e.backtrace.first(10).join("\n")
+        flash.now[:alert] = "Could not load some usage data. Please try again."
+      end
     end
 
     if (pay_sub = @account&.active_subscription_record)

@@ -81,58 +81,71 @@ module ResourceQuotas
 
   # ============================================================================
   # USAGE TRACKING METHODS - Return current usage for each resource type
+  # All methods are memoized to avoid duplicate queries within a request
   # ============================================================================
 
   def events_used_in_billing_period
-    start_at = billing_period_start
-    end_at   = billing_period_end
+    @_events_used_in_billing_period ||= begin
+      start_at = billing_period_start
+      end_at   = billing_period_end
 
-    # Handle ActsAsTenant scoping
-    ActsAsTenant.without_tenant do
-      Event.where(account_id: id).where(occurred_at: start_at..end_at).count
+      # Handle ActsAsTenant scoping
+      ActsAsTenant.without_tenant do
+        Event.where(account_id: id).where(occurred_at: start_at..end_at).count
+      end
     end
   end
 
   def ai_summaries_used_in_period
-    start_at = billing_period_start
-    end_at   = billing_period_end
+    @_ai_summaries_used_in_period ||= begin
+      start_at = billing_period_start
+      end_at   = billing_period_end
 
-    # Handle ActsAsTenant scoping
-    ActsAsTenant.without_tenant do
-      Issue.where(account_id: id)
-           .where(ai_summary_generated_at: start_at..end_at)
-           .count
+      # Handle ActsAsTenant scoping
+      ActsAsTenant.without_tenant do
+        Issue.where(account_id: id)
+             .where(ai_summary_generated_at: start_at..end_at)
+             .count
+      end
     end
   end
 
   def pull_requests_used_in_period
-    start_at = billing_period_start
-    end_at   = billing_period_end
+    @_pull_requests_used_in_period ||= begin
+      start_at = billing_period_start
+      end_at   = billing_period_end
 
-    # Handle ActsAsTenant scoping
-    ActsAsTenant.without_tenant do
-      AiRequest.where(account_id: id, request_type: "pull_request")
-               .where(occurred_at: start_at..end_at)
-               .count
+      # Handle ActsAsTenant scoping
+      ActsAsTenant.without_tenant do
+        AiRequest.where(account_id: id, request_type: "pull_request")
+                 .where(occurred_at: start_at..end_at)
+                 .count
+      end
     end
   end
 
   def uptime_monitors_used
-    # Handle ActsAsTenant scoping
-    ActsAsTenant.without_tenant do
-      Healthcheck.where(account_id: id, enabled: true).count
+    @_uptime_monitors_used ||= begin
+      # Handle ActsAsTenant scoping
+      ActsAsTenant.without_tenant do
+        Healthcheck.where(account_id: id, enabled: true).count
+      end
     end
   end
 
   def status_pages_used
-    # Count projects with status pages enabled
-    projects.where("settings->>'status_page_enabled' = 'true'").count
+    @_status_pages_used ||= begin
+      # Count projects with status pages enabled
+      projects.where("settings->>'status_page_enabled' = 'true'").count
+    end
   end
 
   def projects_used
-    # Handle ActsAsTenant scoping
-    ActsAsTenant.without_tenant do
-      Project.where(account_id: id).count
+    @_projects_used ||= begin
+      # Handle ActsAsTenant scoping
+      ActsAsTenant.without_tenant do
+        Project.where(account_id: id).count
+      end
     end
   end
 
@@ -256,6 +269,7 @@ module ResourceQuotas
   end
 
   def effective_plan_key
+    # Note: Not memoized because current_plan can change within a request
     # During trial we treat the account as on the Team plan, regardless of
     # what current_plan string is stored. This ensures quotas and messaging
     # match the product behavior: "14‑day Team trial".
@@ -287,13 +301,13 @@ module ResourceQuotas
   #
   # @return [Time]
   def billing_period_start
-    event_usage_period_start || Time.current.beginning_of_month
+    @_billing_period_start ||= event_usage_period_start || Time.current.beginning_of_month
   end
 
   # Get billing period end date
   #
   # @return [Time]
   def billing_period_end
-    event_usage_period_end || Time.current.end_of_month
+    @_billing_period_end ||= event_usage_period_end || Time.current.end_of_month
   end
 end
