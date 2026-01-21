@@ -53,21 +53,26 @@ class PricingController < ApplicationController
     return unless @account
 
     # Rolling 30-day usage window (for requests totals)
+    # IMPORTANT: Must scope to account_id for correct data AND performance
     window_start = 30.days.ago
+    account_id = @account.id
 
-    @events_last_30_days =
-      Event.where("occurred_at > ?", window_start).count
+    # Use ActsAsTenant.without_tenant to bypass tenant scoping and use explicit account_id
+    ActsAsTenant.without_tenant do
+      @events_last_30_days =
+        Event.where(account_id: account_id).where("occurred_at > ?", window_start).count
 
-    @ai_summaries_last_30_days =
-      Issue.where("ai_summary_generated_at > ?", window_start).count
+      @ai_summaries_last_30_days =
+        Issue.where(account_id: account_id).where("ai_summary_generated_at > ?", window_start).count
 
-    @pull_requests_last_30_days =
-      AiRequest.where(request_type: "pull_request")
-               .where("occurred_at > ?", window_start)
-               .count
+      @pull_requests_last_30_days =
+        AiRequest.where(account_id: account_id, request_type: "pull_request")
+                 .where("occurred_at > ?", window_start)
+                 .count
 
-    perf_requests_last_30_days =
-      PerformanceEvent.where("occurred_at > ?", window_start).count
+      perf_requests_last_30_days =
+        PerformanceEvent.where(account_id: account_id).where("occurred_at > ?", window_start).count
+    end
 
     @requests_total_last_30_days =
       @events_last_30_days + @ai_summaries_last_30_days + @pull_requests_last_30_days + perf_requests_last_30_days
