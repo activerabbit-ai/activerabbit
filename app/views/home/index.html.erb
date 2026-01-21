@@ -8,7 +8,7 @@
         <% if user_signed_in? %>
           <span class="text-gray-700">Hello, <%= current_user.email %>!</span>
           <%= link_to "Admin", admin_root_path, class: "text-indigo-600 hover:text-indigo-500" %>
-          <%= link_to "Settings", edit_user_registration_path, class: "text-indigo-600 hover:text-indigo-500" %>
+          <%= link_to "Settings", edit_user_path(current_user), class: "text-indigo-600 hover:text-indigo-500" %>
           <%= link_to "Sidekiq", "/sidekiq", class: "text-indigo-600 hover:text-indigo-500", target: "_blank" %>
           <%= link_to "Sign out", destroy_user_session_path,
               data: { turbo_method: :delete },

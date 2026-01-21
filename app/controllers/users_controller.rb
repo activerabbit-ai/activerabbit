@@ -27,6 +27,11 @@ class UsersController < ApplicationController
     @user = current_account.users.new(user_params)
     @user.invited_by = current_user
 
+    # Only allow role assignment if current user is owner
+    if current_user.owner? && params.dig(:user, :role).present?
+      @user.role = params.dig(:user, :role)
+    end
+
     authorize @user
 
     unless @user.save
@@ -49,8 +54,37 @@ class UsersController < ApplicationController
     @user = User.find(params[:id])
     authorize @user
 
-    if @user.update(permitted_attributes(@user))
-      redirect_to users_path, notice: "User updated successfully."
+    update_params = permitted_attributes(@user)
+
+    if @user == current_user
+      if update_params[:password].present?
+        if update_params[:current_password].blank?
+          @user.errors.add(:current_password, "can't be blank")
+          render :edit
+          return
+        end
+
+        success = @user.update_with_password(update_params)
+      else
+        update_params.delete(:password)
+        update_params.delete(:password_confirmation)
+        update_params.delete(:current_password)
+
+        success = @user.update(update_params)
+      end
+    else
+      update_params.delete(:password)
+      update_params.delete(:password_confirmation)
+      update_params.delete(:current_password)
+      success = @user.update(update_params)
+    end
+
+    if success
+      if @user == current_user
+        redirect_to settings_path, notice: "Profile updated successfully."
+      else
+        redirect_to users_path, notice: "User updated successfully."
+      end
     else
       render :edit
     end
@@ -82,7 +116,7 @@ class UsersController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:email, :role, :password, :password_confirmation)
+    params.require(:user).permit(:email, :password, :password_confirmation, :current_password)
   end
 
   def current_account

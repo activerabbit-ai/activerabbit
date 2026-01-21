@@ -25,7 +25,13 @@ class UserPolicy < ApplicationPolicy
 
   def permitted_attributes
     if user.owner?
-      [:role]
+      if record == user
+        [:email, :password, :password_confirmation, :current_password]
+      else
+        [:email, :role]
+      end
+    elsif record == user
+      [:email, :password, :password_confirmation, :current_password]
     else
       []
     end
