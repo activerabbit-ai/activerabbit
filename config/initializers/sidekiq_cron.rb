@@ -57,6 +57,16 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
     },
 
     # ========================================
+    # Data Retention & Cleanup
+    # ========================================
+
+    # "data_retention_daily" => {
+    #   "cron" => "0 3 * * *",  # Daily at 3:00 AM PST - delete old data
+    #   "class" => "DataRetentionJob",
+    #   "cron_timezone" => "America/Los_Angeles"
+    # },
+
+    # ========================================
     # Reports
     # ========================================
 
