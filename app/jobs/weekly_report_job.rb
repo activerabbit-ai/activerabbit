@@ -29,17 +29,6 @@ class WeeklyReportJob
       users = User.where(account_id: account.id)
       users.find_each.with_index do |user, index|
         # Small delay between emails to avoid Resend rate limit (2/second)
-        sleep(0.6) if index > 0
-
-        WeeklyReportMailer
-          .with(user: user, account: account, report: report)
-          .weekly_report
-          .deliver_now
-      end
-    end
-
-    # Mark this account as having received the report for this week
-    # Expires in 8 days to ensure it's cleared before next week's run
-    Rails.cache.write(cache_key, true, expires_in: 8.days)
+sleep(0.5) if index > 0    Rails.cache.write(cache_key, true, expires_in: 8.days)
   end
 end
