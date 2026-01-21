@@ -237,7 +237,7 @@ class SlackNotificationService
             },
             {
               title: "Endpoint",
-              value: payload["controller_action"] || "Unknown",
+              value: event.target.presence || payload["target"] || payload["controller_action"] || event.request_path || "Unknown",
               short: false
             },
             {
