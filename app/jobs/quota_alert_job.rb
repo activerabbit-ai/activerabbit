@@ -65,10 +65,10 @@ class QuotaAlertJob < ApplicationJob
     # If usage has escalated to a higher level, send immediately
     return true if level_escalated?(last_level, level)
 
-    # For exceeded quota, send reminder every 2 days
+    # For exceeded quota, send reminder every 3 days
     if level == "exceeded" && percentage >= 100
       days_since_last = (Time.current - last_sent_at) / 1.day
-      return days_since_last >= 2
+      return days_since_last >= 3
     end
 
     # For 80% and 90% warnings, only send once per level

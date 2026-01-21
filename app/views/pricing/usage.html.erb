@@ -3,23 +3,47 @@
 <% end %>
 
 <% if @account %>
-  <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6 mx-auto" style="width: 85%">
+  <%
+    needs_payment = @account.needs_payment_method_warning? || @account.trial_expired_without_payment?
+    plan_display = @account.effective_plan_name
+  %>
+  <div class="<%= needs_payment ? 'bg-red-50 border-red-300' : 'bg-indigo-50 border-indigo-200' %> border rounded-lg p-4 mb-6 mx-auto" style="width: 85%">
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-lg font-semibold text-indigo-900">Current Plan: <%= @account.current_plan&.titleize %></h2>
-        <% if @next_payment_date %>
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-semibold <%= needs_payment ? 'text-red-900' : 'text-indigo-900' %>">
+            Current Plan: <%= plan_display %>
+          </h2>
+          <% if needs_payment %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              ⚠️ No Payment Method
+            </span>
+          <% elsif @account.on_trial? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+              Trial
+            </span>
+          <% end %>
+        </div>
+        <% if needs_payment %>
+          <p class="text-sm text-red-700 mt-1">
+            <% if @account.trial_expired_without_payment? %>
+              Your trial ended. You're now on the Free plan. Upgrade to Team for higher limits.
+            <% else %>
+              Add a payment method before your trial ends to keep Team plan benefits.
+            <% end %>
+          </p>
+        <% elsif @next_payment_date %>
           <p class="text-sm text-indigo-700">
             Next payment on <%= @next_payment_date %>
           </p>
         <% end %>
       </div>
       <div class="flex space-x-2">
-        <%= link_to plan_path, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700" do %>
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-          </svg>
-          View Plans
+        <% if needs_payment %>
+          <%= button_to "💳 Add Payment Method", billing_portal_index_path,
+                method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700" %>
         <% end %>
+<%= link_to "🏷️ View Plans", plan_path, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700" %>
         <%= button_to "View Invoices", billing_portal_index_path,
               method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>
         <%= button_to "Manage Plan", billing_portal_index_path,
@@ -43,17 +67,23 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Error Tracking -->
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-indigo-500">
+        <% events_pct = @account.usage_percentage(:events) %>
+        <% events_over = events_pct >= 100 %>
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= events_over ? 'border-red-500 ring-2 ring-red-200' : 'border-indigo-500' %>">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-lg font-semibold text-gray-900">Error Tracking</h3>
-            <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
+            <% if events_over %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
+            <% else %>
+              <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            <% end %>
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Used (billing period):</span>
-              <span class="font-bold text-gray-900"><%= number_with_delimiter(@events_used) %></span>
+              <span class="font-bold <%= events_over ? 'text-red-600' : 'text-gray-900' %>"><%= number_with_delimiter(@events_used) %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Quota:</span>
@@ -72,26 +102,32 @@
               </div>
             <% end %>
             <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-              <div class="bg-indigo-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:events), 100].min %>%"></div>
+              <div class="<%= events_over ? 'bg-red-500' : 'bg-indigo-500' %> h-3 rounded-full transition-all" style="width: <%= [events_pct, 100].min %>%"></div>
             </div>
-            <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:events) >= 90 ? '#ef4444' : @account.usage_percentage(:events) >= 80 ? '#f59e0b' : '#10b981' %>">
-              <%= @account.usage_percentage(:events).round(1) %>%
+            <div class="text-right text-sm font-bold <%= events_over ? 'text-red-600' : (events_pct >= 90 ? 'text-orange-500' : events_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+              <%= events_pct.round(1) %>%
             </div>
           </div>
         </div>
 
         <!-- AI Summaries -->
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-purple-500">
+        <% ai_pct = @account.usage_percentage(:ai_summaries) %>
+        <% ai_over = ai_pct >= 100 %>
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= ai_over ? 'border-red-500 ring-2 ring-red-200' : 'border-purple-500' %>">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-lg font-semibold text-gray-900">AI Summaries</h3>
-            <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-            </svg>
+            <% if ai_over %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
+            <% else %>
+              <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+            <% end %>
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Used (billing period):</span>
-              <span class="font-bold text-gray-900"><%= @ai_summaries_used %></span>
+              <span class="font-bold <%= ai_over ? 'text-red-600' : 'text-gray-900' %>"><%= @ai_summaries_used %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Quota:</span>
@@ -110,26 +146,32 @@
               </div>
             <% end %>
             <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-              <div class="bg-purple-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:ai_summaries), 100].min %>%"></div>
+              <div class="<%= ai_over ? 'bg-red-500' : 'bg-purple-500' %> h-3 rounded-full transition-all" style="width: <%= [ai_pct, 100].min %>%"></div>
             </div>
-            <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:ai_summaries) >= 90 ? '#ef4444' : @account.usage_percentage(:ai_summaries) >= 80 ? '#f59e0b' : '#10b981' %>">
-              <%= @account.usage_percentage(:ai_summaries).round(1) %>%
+            <div class="text-right text-sm font-bold <%= ai_over ? 'text-red-600' : (ai_pct >= 90 ? 'text-orange-500' : ai_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+              <%= ai_pct.round(1) %>%
             </div>
           </div>
         </div>
 
         <!-- Pull Requests -->
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-pink-500">
+        <% pr_pct = @account.usage_percentage(:pull_requests) %>
+        <% pr_over = pr_pct >= 100 %>
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= pr_over ? 'border-red-500 ring-2 ring-red-200' : 'border-pink-500' %>">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-lg font-semibold text-gray-900">Pull Requests</h3>
-            <svg class="w-8 h-8 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-            </svg>
+            <% if pr_over %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
+            <% else %>
+              <svg class="w-8 h-8 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+              </svg>
+            <% end %>
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Used (billing period):</span>
-              <span class="font-bold text-gray-900"><%= @pull_requests_used %></span>
+              <span class="font-bold <%= pr_over ? 'text-red-600' : 'text-gray-900' %>"><%= @pull_requests_used %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Quota:</span>
@@ -148,33 +190,39 @@
               </div>
             <% end %>
             <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-              <div class="bg-pink-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:pull_requests), 100].min %>%"></div>
+              <div class="<%= pr_over ? 'bg-red-500' : 'bg-pink-500' %> h-3 rounded-full transition-all" style="width: <%= [pr_pct, 100].min %>%"></div>
             </div>
-            <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:pull_requests) >= 90 ? '#ef4444' : @account.usage_percentage(:pull_requests) >= 80 ? '#f59e0b' : '#10b981' %>">
-              <%= @account.usage_percentage(:pull_requests).round(1) %>%
+            <div class="text-right text-sm font-bold <%= pr_over ? 'text-red-600' : (pr_pct >= 90 ? 'text-orange-500' : pr_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+              <%= pr_pct.round(1) %>%
             </div>
           </div>
         </div>
 
         <!-- Projects -->
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-green-500">
+        <% proj_pct = @account.usage_percentage(:projects) %>
+        <% proj_over = proj_pct >= 100 %>
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= proj_over ? 'border-red-500 ring-2 ring-red-200' : 'border-green-500' %>">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-lg font-semibold text-gray-900">Projects</h3>
-            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-            </svg>
+            <% if proj_over %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
+            <% else %>
+              <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+              </svg>
+            <% end %>
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Used:</span>
-              <span class="font-bold text-gray-900"><%= @projects_used %></span>
+              <span class="font-bold <%= proj_over ? 'text-red-600' : 'text-gray-900' %>"><%= @projects_used %></span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Quota:</span>
               <span class="font-medium text-gray-700"><%= @projects_quota %></span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
-              <div class="bg-green-500 h-3 rounded-full transition-all" style="width: <%= [@account.usage_percentage(:projects), 100].min %>%"></div>
+              <div class="<%= proj_over ? 'bg-red-500' : 'bg-green-500' %> h-3 rounded-full transition-all" style="width: <%= [proj_pct, 100].min %>%"></div>
             </div>
             <% if @account.on_trial? && @free_plan_usage.present? %>
               <div class="flex justify-between text-xs mt-1">
@@ -184,8 +232,8 @@
                 </span>
               </div>
             <% end %>
-            <div class="text-right text-sm font-semibold" style="color: <%= @account.usage_percentage(:projects) >= 90 ? '#ef4444' : @account.usage_percentage(:projects) >= 80 ? '#f59e0b' : '#10b981' %>">
-              <%= @account.usage_percentage(:projects).round(1) %>%
+            <div class="text-right text-sm font-bold <%= proj_over ? 'text-red-600' : (proj_pct >= 90 ? 'text-orange-500' : proj_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+              <%= proj_pct.round(1) %>%
             </div>
           </div>
         </div>

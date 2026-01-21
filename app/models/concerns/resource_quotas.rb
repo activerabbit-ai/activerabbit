@@ -260,6 +260,16 @@ module ResourceQuotas
     # what current_plan string is stored. This ensures quotas and messaging
     # match the product behavior: "14‑day Team trial".
     return :team if on_trial?
+
+    # After trial expires without payment method → Free plan
+    # (only if they don't have an active subscription)
+    # Use respond_to? to safely handle mock objects in tests
+    if respond_to?(:trial_expired?) && trial_expired? &&
+       respond_to?(:has_payment_method?) && !has_payment_method? &&
+       respond_to?(:active_subscription?) && !active_subscription?
+      return :free
+    end
+
     normalized_plan_key
   end
 

@@ -42,6 +42,15 @@ class Account < ApplicationRecord
   def has_payment_method?
     return @_has_payment_method if defined?(@_has_payment_method)
 
+    # Skip Stripe API call if no API key is configured
+    unless Stripe.api_key.present? || ENV["STRIPE_SECRET_KEY"].present?
+      @_has_payment_method = false
+      return @_has_payment_method
+    end
+
+    # Ensure API key is set
+    Stripe.api_key ||= ENV["STRIPE_SECRET_KEY"]
+
     @_has_payment_method = users.any? do |user|
       next false unless user.payment_processor&.processor_id.present?
 
@@ -51,7 +60,7 @@ class Account < ApplicationRecord
           type: "card"
         )
         payment_methods.data.any?
-      rescue Stripe::InvalidRequestError => e
+      rescue Stripe::StripeError => e
         Rails.logger.warn "Stripe error checking payment method for user #{user.id}: #{e.message}"
         false
       end
