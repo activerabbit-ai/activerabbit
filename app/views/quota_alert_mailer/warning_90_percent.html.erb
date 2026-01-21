@@ -4,94 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-    .alert-box { background: #fecaca; border-left: 4px solid #dc2626; padding: 20px; margin: 20px 0; border-radius: 4px; }
-    .stats { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-    .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-    .stat-row:last-child { border-bottom: none; }
-    .stat-label { font-weight: 600; color: #6b7280; }
-    .stat-value { font-weight: 700; color: #1f2937; }
-    .progress-bar { width: 100%; height: 30px; background: #e5e7eb; border-radius: 15px; overflow: hidden; margin: 10px 0; }
-    .progress-fill { height: 100%; background: #dc2626; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; }
-    .button { display: inline-block; background: #dc2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
-    .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      color: #374151;
+      background-color: #f9fafb;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 32px;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 16px 0;
+    }
+    p {
+      margin: 0 0 16px 0;
+      color: #4b5563;
+      font-size: 14px;
+    }
+    .button {
+      display: inline-block;
+      background: #000;
+      color: #fff !important;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      margin: 8px 0 24px 0;
+    }
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 12px;
+      color: #9ca3af;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1 style="margin: 0; font-size: 24px;">🚨 Urgent: Usage Alert</h1>
-    <p style="margin: 10px 0 0 0; opacity: 0.9;">You're close to exceeding your <%= @resource_name %> limit</p>
-  </div>
+  <div class="container">
+    <div class="logo">ActiveRabbit</div>
 
-  <div class="content">
-    <div class="alert-box">
-      <h2 style="margin-top: 0; color: #991b1b;">
-        You've used <%= @percentage.round %>% of your <%= @resource_name %> quota!
-      </h2>
-      <p style="margin-bottom: 0; color: #7f1d1d; font-size: 16px;">
-        <strong>Only <%= number_with_delimiter(@remaining) %> remaining</strong> on your <strong><%= @account.current_plan.titleize %></strong> plan
-      </p>
-    </div>
+    <h1>You're almost at your <%= @resource_name.downcase %> limit</h1>
 
-    <div class="stats">
-      <div class="stat-row">
-        <span class="stat-label">Quota</span>
-        <span class="stat-value"><%= number_with_delimiter(@quota) %></span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Used</span>
-        <span class="stat-value"><%= number_with_delimiter(@used) %></span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Remaining</span>
-        <span class="stat-value" style="color: #dc2626;"><%= number_with_delimiter(@remaining) %></span>
-      </div>
-    </div>
-
-    <div class="progress-bar">
-      <div class="progress-fill" style="width: <%= [@percentage, 100].min %>%">
-        <%= @percentage.round %>%
-      </div>
-    </div>
-
-    <h3 style="color: #dc2626;">⚠️ Action Required</h3>
     <p>
-      <strong>You're about to reach your <%= @resource_name %> limit.</strong>
-      To avoid any service interruption and continue using this feature, we recommend upgrading your plan now.
+      You have reached <strong><%= @percentage.round %>%</strong> of your monthly quota for the team <strong><%= @account.name %></strong>. Upgrade your plan now to avoid hitting your limit.
     </p>
 
-    <div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0;">
-      <p style="margin: 0; color: #78350f;">
-        <strong>💡 Tip:</strong> Upgrade now to unlock higher limits and advanced features!
-      </p>
-    </div>
-
-    <div style="text-align: center;">
-      <a href="<%= @upgrade_url %>" class="button">
-        🚀 Upgrade Your Plan Now
-      </a>
-    </div>
-
-    <h3>What's included in higher plans?</h3>
-    <ul style="padding-left: 20px;">
-      <li>Higher <%= @resource_name %> quotas</li>
-      <li>More AI-powered features</li>
-      <li>Priority support</li>
-      <li>Advanced analytics</li>
-    </ul>
+    <a href="<%= @upgrade_url %>" class="button">Upgrade Now</a>
 
     <div class="footer">
-      <p>
-        <strong>ActiveRabbit</strong><br>
-        AI-Powered Error Tracking & APM for Rails
-      </p>
-      <p style="font-size: 12px; color: #9ca3af;">
-        Need help? Contact us at support@activerabbit.ai
-      </p>
+      ActiveRabbit<br>
+      AI-Powered Error Tracking for Rails
     </div>
   </div>
 </body>
 </html>
-

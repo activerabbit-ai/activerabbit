@@ -15,10 +15,62 @@ class Account < ApplicationRecord
 
   # Scopes
   scope :active, -> { where(active: true) }
+  scope :with_expired_trial, -> { where("trial_ends_at < ?", Time.current) }
+  scope :needing_payment_reminder, -> {
+    with_expired_trial
+      .where.not(current_plan: "free")
+      .where("NOT EXISTS (
+        SELECT 1 FROM pay_subscriptions ps
+        JOIN pay_customers pc ON ps.customer_id = pc.id
+        WHERE pc.owner_type = 'User'
+        AND pc.owner_id IN (SELECT id FROM users WHERE account_id = accounts.id)
+        AND ps.status = 'active'
+      )")
+  }
 
   # Billing helpers
   def on_trial?
     trial_ends_at.present? && Time.current < trial_ends_at
+  end
+
+  def trial_expired?
+    trial_ends_at.present? && Time.current >= trial_ends_at
+  end
+
+  # Check if the account has a payment method on file via Stripe
+  # Returns true if any user in the account has a valid payment method
+  def has_payment_method?
+    return @_has_payment_method if defined?(@_has_payment_method)
+
+    @_has_payment_method = users.any? do |user|
+      next false unless user.payment_processor&.processor_id.present?
+
+      begin
+        payment_methods = Stripe::PaymentMethod.list(
+          customer: user.payment_processor.processor_id,
+          type: "card"
+        )
+        payment_methods.data.any?
+      rescue Stripe::InvalidRequestError => e
+        Rails.logger.warn "Stripe error checking payment method for user #{user.id}: #{e.message}"
+        false
+      end
+    end
+  end
+
+  # Check if account needs a payment method warning (during trial)
+  def needs_payment_method_warning?
+    on_trial? && !has_payment_method? && !active_subscription?
+  end
+
+  # Check if trial expired without payment method (account still gets Team plan but needs warning)
+  def trial_expired_without_payment?
+    trial_expired? && !has_payment_method? && !active_subscription?
+  end
+
+  # Check if account is in grace period (trial expired, no payment, but still providing Team access)
+  def in_payment_grace_period?
+    trial_expired_without_payment?
   end
 
   def active_subscription_record

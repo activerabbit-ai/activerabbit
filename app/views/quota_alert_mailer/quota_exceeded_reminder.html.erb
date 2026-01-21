@@ -4,124 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-    .alert-box { background: #fee2e2; border-left: 4px solid #dc2626; padding: 20px; margin: 20px 0; border-radius: 4px; }
-    .stats { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-    .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-    .stat-row:last-child { border-bottom: none; }
-    .stat-label { font-weight: 600; color: #6b7280; }
-    .stat-value { font-weight: 700; color: #1f2937; }
-    .exceeded { color: #dc2626; font-weight: 700; }
-    .button { display: inline-block; background: #dc2626; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; font-size: 16px; }
-    .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      color: #374151;
+      background-color: #f9fafb;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 32px;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 16px 0;
+    }
+    p {
+      margin: 0 0 16px 0;
+      color: #4b5563;
+      font-size: 14px;
+    }
+    .button {
+      display: inline-block;
+      background: #000;
+      color: #fff !important;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      margin: 8px 0 24px 0;
+    }
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 12px;
+      color: #9ca3af;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1 style="margin: 0; font-size: 28px;">🔴 Reminder: Quota Exceeded</h1>
-    <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Day <%= @days_over_quota %> - <%= @resource_name %> still over limit</p>
-  </div>
+  <div class="container">
+    <div class="logo">ActiveRabbit</div>
 
-  <div class="content">
-    <div class="alert-box">
-      <h2 style="margin-top: 0; color: #991b1b;">
-        Still <%= @percentage.round %>% Used - <%= number_with_delimiter(@over_by) %> Over Quota
-      </h2>
-      <p style="margin-bottom: 0; color: #7f1d1d; font-size: 16px;">
-        It's been <strong><%= @days_over_quota %> days</strong> since you exceeded your <%= @resource_name %> limit on the <strong><%= @account.current_plan.titleize %></strong> plan.
-      </p>
-    </div>
+    <h1><%= @resource_name %> Quota Exceeded</h1>
 
-    <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <p style="margin: 0; color: #78350f; font-size: 16px;">
-        <strong>⏰ Don't wait!</strong> Upgrade your plan today to restore full access to all ActiveRabbit features.
-      </p>
-    </div>
-
-    <div class="stats">
-      <div class="stat-row">
-        <span class="stat-label">Current Quota</span>
-        <span class="stat-value"><%= number_with_delimiter(@quota) %></span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Your Usage</span>
-        <span class="stat-value exceeded"><%= number_with_delimiter(@used) %></span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Over Quota By</span>
-        <span class="stat-value exceeded">+<%= number_with_delimiter(@over_by) %></span>
-      </div>
-    </div>
-
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="<%= @upgrade_url %>" class="button">
-        🚀 Upgrade Your Plan Now
-      </a>
-    </div>
-
-    <div style="background: white; padding: 25px; border-radius: 8px; margin: 20px 0; border: 2px solid #4f46e5;">
-      <h3 style="margin-top: 0; color: #4f46e5;">✨ What You'll Get After Upgrading</h3>
-
-      <% if @account.current_plan == "free" %>
-        <div style="margin: 15px 0; padding: 15px; background: #f3f4f6; border-radius: 6px;">
-          <strong style="color: #1f2937;">Team Plan ($29/mo):</strong>
-          <ul style="margin: 10px 0; padding-left: 20px; color: #4b5563;">
-            <li>50,000 errors/month (vs 3,000)</li>
-            <li>50 AI summaries (vs 5)</li>
-            <li>10 pull requests (vs 5)</li>
-            <li>5 uptime monitors (vs 1)</li>
-          </ul>
-        </div>
-
-        <div style="margin: 15px 0; padding: 15px; background: #fef3c7; border-radius: 6px;">
-          <strong style="color: #1f2937;">Business Plan ($80/mo):</strong>
-          <ul style="margin: 10px 0; padding-left: 20px; color: #78350f;">
-            <li>50,000 errors/month</li>
-            <li>100 AI summaries</li>
-            <li>20 pull requests</li>
-            <li>5 uptime monitors</li>
-            <li>Priority support</li>
-          </ul>
-        </div>
-      <% elsif @account.current_plan == "team" %>
-        <div style="margin: 15px 0; padding: 15px; background: #fef3c7; border-radius: 6px;">
-          <strong style="color: #1f2937;">Business Plan ($80/mo):</strong>
-          <ul style="margin: 10px 0; padding-left: 20px; color: #78350f;">
-            <li>Same error tracking (50,000/month)</li>
-            <li>100 AI summaries (vs 50)</li>
-            <li>20 pull requests (vs 10)</li>
-            <li>Priority support</li>
-            <li>Advanced features</li>
-          </ul>
-        </div>
-      <% end %>
-    </div>
-
-    <h3 style="color: #6b7280;">Need Help Choosing?</h3>
     <p>
-      Our team is here to help! Reply to this email or contact us at <a href="mailto:support@activerabbit.ai" style="color: #4f46e5;">support@activerabbit.ai</a>
-      and we'll help you find the perfect plan for your needs.
+      You have reached <strong><%= @percentage.round %>%</strong> of your monthly quota for the team <strong><%= @account.name %></strong>. Upgrade your plan to increase your limits and continue using all features.
     </p>
 
-    <div style="background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
-      <p style="margin: 0; font-size: 14px; color: #6b7280;">
-        <strong>Note:</strong> You'll continue to receive these reminders every 2 days until your plan is upgraded.
-        Upgrade now to stop receiving these reminders.
-      </p>
-    </div>
+    <a href="<%= @upgrade_url %>" class="button">Upgrade Now</a>
 
     <div class="footer">
-      <p>
-        <strong>ActiveRabbit</strong><br>
-        AI-Powered Error Tracking & APM for Rails
-      </p>
-      <p style="font-size: 12px; color: #9ca3af;">
-        Account: <%= @account.name %> | Plan: <%= @account.current_plan.titleize %>
-      </p>
+      ActiveRabbit<br>
+      AI-Powered Error Tracking for Rails
     </div>
   </div>
 </body>
 </html>
-

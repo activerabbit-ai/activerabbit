@@ -16,7 +16,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "⚠️ #{@resource_name} Usage at #{@percentage.round}%"
+      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
     )
   end
 
@@ -35,7 +35,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "🚨 #{@resource_name} Usage at #{@percentage.round}% - Upgrade Recommended"
+      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
     )
   end
 
@@ -54,7 +54,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "❌ #{@resource_name} Quota Exceeded - Please Upgrade"
+      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
     )
   end
 
@@ -74,7 +74,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "🔴 Reminder: #{@resource_name} Quota Exceeded (Day #{@days_over_quota})"
+      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
     )
   end
 
