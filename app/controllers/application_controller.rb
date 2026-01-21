@@ -43,13 +43,13 @@ class ApplicationController < ActionController::Base
     # Safely check onboarding status
     begin
       if resource.needs_onboarding?
-        onboarding_welcome_path
+        new_project_path
       else
         stored_location_for(resource) || dashboard_path
       end
     rescue ActsAsTenant::Errors::NoTenantSet
       # If tenant isn't set yet, assume onboarding is needed
-      stored_location_for(resource) || onboarding_welcome_path
+      stored_location_for(resource) || new_project_path
     end
   end
 
@@ -107,11 +107,11 @@ class ApplicationController < ActionController::Base
 
     begin
       if current_user.needs_onboarding?
-        redirect_to onboarding_welcome_path
+        redirect_to new_project_path
       end
     rescue ActsAsTenant::Errors::NoTenantSet
-      # If tenant isn't set, redirect to onboarding
-      redirect_to onboarding_welcome_path
+      # If tenant isn't set, redirect to new project
+      redirect_to new_project_path
     end
   end
 
