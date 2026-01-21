@@ -48,8 +48,13 @@ class ApplicationController < ActionController::Base
         stored_location_for(resource) || dashboard_path
       end
     rescue ActsAsTenant::Errors::NoTenantSet
-      # If tenant isn't set yet, assume onboarding is needed
-      stored_location_for(resource) || new_project_path
+      # If tenant isn't set yet, check if user has projects without tenant scoping
+      has_projects = ActsAsTenant.without_tenant { resource.account&.projects&.exists? }
+      if has_projects
+        stored_location_for(resource) || dashboard_path
+      else
+        stored_location_for(resource) || new_project_path
+      end
     end
   end
 
@@ -110,8 +115,9 @@ class ApplicationController < ActionController::Base
         redirect_to new_project_path
       end
     rescue ActsAsTenant::Errors::NoTenantSet
-      # If tenant isn't set, redirect to new project
-      redirect_to new_project_path
+      # If tenant isn't set, check if user has projects without tenant scoping
+      has_projects = ActsAsTenant.without_tenant { current_user.account&.projects&.exists? }
+      redirect_to new_project_path unless has_projects
     end
   end
 

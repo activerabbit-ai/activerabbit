@@ -29,7 +29,11 @@ class User < ApplicationRecord
   def needs_onboarding?
     return true if account.blank?
 
-    !account.projects.exists?
+    # Use without_tenant to bypass scoping issues during sign-in
+    # when the tenant may not be set yet
+    ActsAsTenant.without_tenant do
+      !account.projects.exists?
+    end
   end
 
   def self.from_omniauth(auth)
