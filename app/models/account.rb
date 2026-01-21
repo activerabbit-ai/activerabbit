@@ -45,6 +45,7 @@ class Account < ApplicationRecord
   # - Only checks users with Stripe customer IDs
   # - Stops at first user with a payment method
   # - Uses limit: 1 on Stripe API to minimize response time
+  # - 3 second timeout to prevent page hangs
   def has_payment_method?
     return @_has_payment_method if defined?(@_has_payment_method)
 
@@ -62,45 +63,32 @@ class Account < ApplicationRecord
       return @_has_payment_method
     end
 
-    # Ensure API key is set
-    Stripe.api_key ||= ENV["STRIPE_SECRET_KEY"]
-
-    # Only load users that have a Stripe customer - use a single efficient query
-    # This avoids N+1 and only checks users who could have payment methods
-    users_with_stripe = users
-      .joins("INNER JOIN pay_customers ON pay_customers.owner_id = users.id AND pay_customers.owner_type = 'User'")
-      .where.not(pay_customers: { processor_id: [nil, ""] })
-      .select("users.id, pay_customers.processor_id AS stripe_customer_id")
-      .limit(5) # Only check first 5 users max - if one has payment, we're done
-
-    result = users_with_stripe.any? do |user_data|
-      begin
-        # Use limit: 1 to minimize Stripe API response time
-        payment_methods = Stripe::PaymentMethod.list(
-          customer: user_data.stripe_customer_id,
-          type: "card",
-          limit: 1
-        )
-        payment_methods.data.any?
-      rescue Stripe::StripeError => e
-        Rails.logger.warn "Stripe error checking payment method for customer #{user_data.stripe_customer_id}: #{e.message}"
-        false
-      end
+    # Wrap in timeout to prevent page hangs if Stripe is slow
+    result = Timeout.timeout(3) do
+      check_stripe_payment_methods
     end
 
     # Cache the result for 5 minutes
     Rails.cache.write(cache_key, result, expires_in: 5.minutes)
     @_has_payment_method = result
+  rescue Timeout::Error
+    Rails.logger.warn "[Account#has_payment_method?] Stripe API timeout for account #{id}"
+    # Don't cache timeout - try again next request
+    @_has_payment_method = false
   end
 
   # Check if account needs a payment method warning (during trial)
+  # Memoized since it's called multiple times per request (view + banner)
   def needs_payment_method_warning?
-    on_trial? && !has_payment_method? && !active_subscription?
+    return @_needs_payment_method_warning if defined?(@_needs_payment_method_warning)
+    @_needs_payment_method_warning = on_trial? && !has_payment_method? && !active_subscription?
   end
 
   # Check if trial expired without payment method (account still gets Team plan but needs warning)
+  # Memoized since it's called multiple times per request (view + banner)
   def trial_expired_without_payment?
-    trial_expired? && !has_payment_method? && !active_subscription?
+    return @_trial_expired_without_payment if defined?(@_trial_expired_without_payment)
+    @_trial_expired_without_payment = trial_expired? && !has_payment_method? && !active_subscription?
   end
 
   # Check if account is in grace period (trial expired, no payment, but still providing Team access)
@@ -201,6 +189,34 @@ class Account < ApplicationRecord
   end
 
   private
+
+  def check_stripe_payment_methods
+    # Ensure API key is set
+    Stripe.api_key ||= ENV["STRIPE_SECRET_KEY"]
+
+    # Only load users that have a Stripe customer - use a single efficient query
+    # This avoids N+1 and only checks users who could have payment methods
+    users_with_stripe = users
+      .joins("INNER JOIN pay_customers ON pay_customers.owner_id = users.id AND pay_customers.owner_type = 'User'")
+      .where.not(pay_customers: { processor_id: [nil, ""] })
+      .select("users.id, pay_customers.processor_id AS stripe_customer_id")
+      .limit(5) # Only check first 5 users max - if one has payment, we're done
+
+    users_with_stripe.any? do |user_data|
+      begin
+        # Use limit: 1 to minimize Stripe API response time
+        payment_methods = Stripe::PaymentMethod.list(
+          customer: user_data.stripe_customer_id,
+          type: "card",
+          limit: 1
+        )
+        payment_methods.data.any?
+      rescue Stripe::StripeError => e
+        Rails.logger.warn "Stripe error checking payment method for customer #{user_data.stripe_customer_id}: #{e.message}"
+        false
+      end
+    end
+  end
 
   def default_user_preferences
     {

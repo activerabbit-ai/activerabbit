@@ -33,9 +33,8 @@ class PricingController < ApplicationController
     @account = current_user.account
     @current_plan_label = "Current plan"
 
-    if @account
-      set_usage_data
-    end
+    # Note: Plan page doesn't need usage data - only subscription info
+    # Don't call set_usage_data here to avoid unnecessary queries
 
     if (pay_sub = @account&.active_subscription_record)
       @subscription = pay_sub
