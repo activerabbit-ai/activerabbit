@@ -40,6 +40,9 @@ Rails.application.routes.draw do
   get  "slack/oauth/authorize", to: "slack_auth#authorize"
   get  "slack/oauth/callback",  to: "slack_auth#callback"
 
+  # GitHub App installation callback and webhook
+  get  "github/app/callback",   to: "github_app#callback"
+  post "github/app/webhook",    to: "github_app#webhook"
 
   # Account-wide settings
   resource :account_settings, path: "account/settings", only: [:show, :update] do

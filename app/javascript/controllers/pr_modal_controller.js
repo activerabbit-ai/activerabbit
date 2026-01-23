@@ -84,6 +84,55 @@ export default class extends Controller {
     const form = this.formTarget
     const formData = new FormData(form)
     
+    // IMPORTANT: Open window immediately on user action to avoid popup blocker
+    // We'll navigate it to the PR URL once we have it
+    const prWindow = window.open('about:blank', '_blank')
+    
+    // Show a nice loading page while waiting for PR creation
+    if (prWindow) {
+      prWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Creating Pull Request...</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+            }
+            .container { text-align: center; }
+            .spinner {
+              width: 50px;
+              height: 50px;
+              border: 4px solid rgba(255,255,255,0.3);
+              border-top-color: white;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+              margin: 0 auto 24px;
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+            p { opacity: 0.8; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="spinner"></div>
+            <h1>Creating Pull Request</h1>
+            <p>Please wait, this may take a few seconds...</p>
+          </div>
+        </body>
+        </html>
+      `)
+      prWindow.document.close()
+    }
+    
     // Show loading state - disable buttons and show spinner
     this.showLoading()
     
@@ -111,20 +160,12 @@ export default class extends Controller {
     })
     .then(data => {
       if (data.success && data.pr_url) {
-        // Open PR in new tab immediately
-        const prWindow = window.open(data.pr_url, '_blank', 'noopener,noreferrer')
-        
-        // Check if popup was blocked
-        if (!prWindow || prWindow.closed || typeof prWindow.closed == 'undefined') {
-          // Popup was blocked - create a temporary link and click it
-          const link = document.createElement('a')
-          link.href = data.pr_url
-          link.target = '_blank'
-          link.rel = 'noopener noreferrer'
-          link.style.display = 'none'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
+        // Navigate the already-opened window to the PR URL
+        if (prWindow && !prWindow.closed) {
+          prWindow.location.href = data.pr_url
+        } else {
+          // Fallback: window was closed or blocked, try regular link
+          window.open(data.pr_url, '_blank')
         }
         
         // Wait a bit for server to save PR URL, then reload
@@ -132,13 +173,21 @@ export default class extends Controller {
           this.hideLoading()
           this.close()
           window.location.reload()
-        }, 1000) // 1 second should be enough for the server to save
+        }, 1000)
       } else {
+        // Close the blank window if PR creation failed
+        if (prWindow && !prWindow.closed) {
+          prWindow.close()
+        }
         throw new Error(data.error || 'Failed to create PR')
       }
     })
     .catch(error => {
       console.error('Error creating PR:', error)
+      // Close the blank window on error
+      if (prWindow && !prWindow.closed) {
+        prWindow.close()
+      }
       this.hideLoading()
       alert(`Failed to create PR: ${error.message}`)
       // Still try to poll, in case PR was created despite error

@@ -12,7 +12,7 @@ class GithubPrService
     @project_app_id = settings["github_app_id"]
     @project_app_pk = settings["github_app_pk"]
     @env_app_id = ENV["AR_GH_APP_ID"]
-    @env_app_pk = ENV["AR_GH_APP_PK"]
+    @env_app_pk = load_env_private_key
     @openai_key = ENV["OPENAI_API_KEY"]
 
     # Initialize service dependencies
@@ -134,6 +134,17 @@ class GithubPrService
 
   def configured?
     @token_manager.configured? && @github_repo.present?
+  end
+
+  # Load private key from environment (supports multiple formats)
+  def load_env_private_key
+    if ENV["AR_GH_APP_PK_FILE"].present? && File.exist?(ENV["AR_GH_APP_PK_FILE"])
+      File.read(ENV["AR_GH_APP_PK_FILE"])
+    elsif ENV["AR_GH_APP_PK_BASE64"].present?
+      Base64.decode64(ENV["AR_GH_APP_PK_BASE64"])
+    elsif ENV["AR_GH_APP_PK"].present?
+      ENV["AR_GH_APP_PK"].gsub('\n', "\n")
+    end
   end
 
   # Create a commit with actual code fix or fallback to suggestion file
