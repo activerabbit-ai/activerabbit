@@ -271,11 +271,11 @@ end %>
                role="dialog"
                aria-modal="true">
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-              <%# Background overlay %>
-              <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+              <%# Background overlay with blur %>
+              <div class="fixed inset-0 bg-white/60 backdrop-blur-md transition-opacity"></div>
 
               <%# Modal panel %>
-              <div class="relative inline-block align-bottom border border-gray-200 bg-white rounded-lg w-[420px] max-w-full px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl shadow-lg transform transition-all sm:my-8 sm:align-middle sm:p-6">
+              <div class="relative inline-block align-bottom border border-gray-200 bg-white rounded-2xl w-[420px] max-w-full px-4 pt-5 pb-4 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:p-6">
                 <div class="absolute top-0 right-0 pt-4 pr-4">
                   <button type="button"
                           data-action="click->pr-modal#close"
