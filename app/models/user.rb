@@ -37,7 +37,8 @@ class User < ApplicationRecord
   end
 
   def self.from_omniauth(auth)
-    auth_email = auth.info.email
+    # Get email from auth.info first, fallback to verified emails from GitHub API
+    auth_email = auth.info.email.presence || extract_email_from_github(auth)
 
     user = find_by(provider: auth.provider, uid: auth.uid)
 
@@ -57,6 +58,27 @@ class User < ApplicationRecord
 
       new_user.save
     end
+  end
+
+  # Extract primary verified email from GitHub OAuth response
+  # GitHub returns emails in auth.extra.all_emails when user:email scope is requested
+  def self.extract_email_from_github(auth)
+    return nil unless auth.provider == "github"
+
+    emails = auth.extra&.all_emails || auth.extra&.raw_info&.emails
+    return nil if emails.blank?
+
+    # Helper to access hash with string or symbol keys
+    get_value = ->(hash, key) { hash[key.to_s] || hash[key.to_sym] }
+
+    # Prefer primary + verified, then any verified, then first available
+    primary = emails.find { |e| get_value.call(e, :primary) && get_value.call(e, :verified) }
+    return get_value.call(primary, :email) if primary
+
+    verified = emails.find { |e| get_value.call(e, :verified) }
+    return get_value.call(verified, :email) if verified
+
+    get_value.call(emails.first, :email)
   end
 
   def owner?

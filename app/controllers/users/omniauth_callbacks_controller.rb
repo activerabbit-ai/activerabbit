@@ -19,7 +19,9 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
       error_message = @user.errors.full_messages.to_sentence
 
       if error_message.include?("Email has already been taken")
-         error_message = "A user with this email is already registered. Please sign in with your password and connect your #{kind} account in settings."
+        error_message = "A user with this email is already registered. Please sign in with your password and connect your #{kind} account in settings."
+      elsif error_message.include?("Email can't be blank") || error_message.include?("Email is invalid")
+        error_message = "We couldn't retrieve your email from #{kind}. Please add a verified email to your #{kind} account, or sign up with email and password instead."
       end
 
       redirect_to new_user_registration_url, alert: error_message
