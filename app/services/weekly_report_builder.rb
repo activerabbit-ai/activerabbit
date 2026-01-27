@@ -1,7 +1,11 @@
 class WeeklyReportBuilder
   def initialize(account)
     @account = account
-    @period = 7.days.ago..Time.current
+    # Previous calendar week: Monday 00:00:00 to Sunday 23:59:59
+    # When run on Monday, reports the previous Mon-Sun (7 days exactly)
+    @week_start = Date.current.beginning_of_week - 7.days
+    @week_end = @week_start + 6.days
+    @period = @week_start.beginning_of_day..@week_end.end_of_day
   end
 
   def build
@@ -49,27 +53,31 @@ class WeeklyReportBuilder
   end
 
   def errors_by_day
-    Event
-      .joins(:project)
+    # Get actual counts from database
+    raw_counts = Event
       .where(account: @account)
       .where(occurred_at: @period)
       .group("DATE(events.occurred_at)")
-      .order("DATE(events.occurred_at) ASC")
       .count
+
+    # Ensure all 7 days are present (Mon-Sun), with 0 for missing days
+    fill_week_days(raw_counts)
   end
 
   def performance_by_day
-    PerformanceEvent
+    # Get actual counts from database
+    raw_counts = PerformanceEvent
       .where(account: @account)
       .where(occurred_at: @period)
       .group("DATE(occurred_at)")
-      .order("DATE(occurred_at) ASC")
       .count
+
+    # Ensure all 7 days are present (Mon-Sun), with 0 for missing days
+    fill_week_days(raw_counts)
   end
 
   def total_errors_count
     Event
-      .joins(:project)
       .where(account: @account)
       .where(occurred_at: @period)
       .count
@@ -80,5 +88,24 @@ class WeeklyReportBuilder
       .where(account: @account)
       .where(occurred_at: @period)
       .count
+  end
+
+  private
+
+  # Fill in all 7 days of the week with counts (0 for missing days)
+  # Returns an ordered hash: { Mon => count, Tue => count, ..., Sun => count }
+  def fill_week_days(raw_counts)
+    # Normalize keys to Date objects
+    normalized = raw_counts.transform_keys do |key|
+      key.is_a?(Date) ? key : Date.parse(key.to_s)
+    end
+
+    # Build ordered hash for Mon-Sun
+    result = {}
+    (0..6).each do |offset|
+      date = @week_start + offset.days
+      result[date] = normalized[date] || 0
+    end
+    result
   end
 end

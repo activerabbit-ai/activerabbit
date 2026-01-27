@@ -137,7 +137,7 @@ RSpec.describe WeeklyReportJob, type: :job do
       expect(Rails.cache.exist?(cache_key)).to be true
     end
 
-    it "cache expires after 8 days" do
+    it "cache expires after 7 days" do
       described_class.new.perform(account.id)
 
       week_key = Date.current.beginning_of_week.to_s

@@ -33,6 +33,9 @@
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 
+# Ignore private keys
+/config/keys/
+
 # Ignore Kamal secrets
 /.kamal/secrets
 /.kamal/secrets.example

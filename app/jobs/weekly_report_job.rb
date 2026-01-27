@@ -39,7 +39,7 @@ class WeeklyReportJob
     end
 
     # Mark this account as having received the report for this week
-    # Expires in 8 days to ensure it's cleared before next week's run
-    Rails.cache.write(cache_key, true, expires_in: 8.days)
+    # Expires in 7 days to align with weekly schedule
+    Rails.cache.write(cache_key, true, expires_in: 7.days)
   end
 end
