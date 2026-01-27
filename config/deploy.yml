@@ -61,6 +61,10 @@ env:
     - ACTIVERABBIT_SELF_MONITOR
     - SLACK_CLIENT_ID
     - SLACK_CLIENT_SECRET
+    - AR_GH_APP_ID
+    - AR_GH_APP_SLUG
+    - GITHUB_APP_CLIENT_ID
+    - AR_GH_APP_PK_BASE64
 
   clear:
     RAILS_ENV: production
