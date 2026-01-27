@@ -171,18 +171,17 @@ class StripeEventHandler
       settings.delete("past_due")
       account.update(settings: settings)
     end
-
+def handle_payment_succeeded
     # Also upsert Pay::Subscription using the invoice's subscription id
     subscription_id = if @data.respond_to?(:subscription)
       @data.subscription
     else
-      @data["subscription"] || @data.dig("parent", "subscription_details", "subscription")
+      @data["subscription"] || @data["parent"] && @data["parent"]["subscription_details"] && @data["parent"]["subscription_details"]["subscription"]  # <-- FIXED LINE
     end
     return unless subscription_id
 
     begin
-      sub = Stripe::Subscription.retrieve(subscription_id)
-      # Reuse subscription sync logic to ensure Pay::Subscription exists
+      sub = Stripe::Subscription.retrieve(subscription_id)      # Reuse subscription sync logic to ensure Pay::Subscription exists
       original_data = @data
       @data = sub
       sync_subscription
