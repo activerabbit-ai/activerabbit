@@ -348,12 +348,13 @@ class CodeFixApplier
 
       # Final validation checks
       has_duplicates = has_duplicate_ends(result, method_start)
+      has_quality_issues = has_code_quality_issues(result)
       has_valid_structure = validate_file_structure(result)
       has_valid_syntax = validate_ruby_syntax(result)
 
-      Rails.logger.info "[GitHub API] Validation results: duplicates=#{has_duplicates}, structure=#{has_valid_structure}, syntax=#{has_valid_syntax}"
+      Rails.logger.info "[GitHub API] Validation results: duplicates=#{has_duplicates}, quality_issues=#{has_quality_issues}, structure=#{has_valid_structure}, syntax=#{has_valid_syntax}"
 
-      if has_valid_structure && !has_duplicates && has_valid_syntax
+      if has_valid_structure && !has_duplicates && !has_quality_issues && has_valid_syntax
         # Verify that the fix was actually applied - check if fixed_code content appears in result
         fixed_code_keywords = extract_key_changes(fixed_code)
         if fixed_code_keywords.any?
@@ -395,7 +396,7 @@ class CodeFixApplier
         Rails.logger.info "[GitHub API] Successfully applied fix to method (validation passed)"
         result
       else
-        Rails.logger.warn "[GitHub API] File structure validation failed (duplicates: #{has_duplicates}, structure: #{has_valid_structure}, syntax: #{has_valid_syntax}), using fallback"
+        Rails.logger.warn "[GitHub API] File structure validation failed (duplicates: #{has_duplicates}, quality_issues: #{has_quality_issues}, structure: #{has_valid_structure}, syntax: #{has_valid_syntax}), using fallback"
         apply_fix_fallback(current_lines, error_line_number, source_ctx, fixed_code)
       end
     else
@@ -430,7 +431,69 @@ class CodeFixApplier
 
     return nil if lines.empty?
 
-    lines.join
+    # Remove consecutive duplicate lines (non-trivial ones)
+    cleaned_lines = []
+    prev_stripped = nil
+    lines.each do |line|
+      stripped = line.strip
+      # Always keep trivial lines (empty, end, comments)
+      if stripped.empty? || stripped == "end" || stripped.start_with?("#") || stripped.length < 10
+        cleaned_lines << line
+        prev_stripped = stripped
+      elsif prev_stripped != stripped
+        cleaned_lines << line
+        prev_stripped = stripped
+      else
+        Rails.logger.info "[GitHub API] Removing duplicate line from fix: #{stripped[0..60]}..."
+      end
+    end
+
+    # Remove duplicate method definitions (keep only the first complete one)
+    final_lines = remove_duplicate_methods(cleaned_lines)
+
+    final_lines.join
+  end
+
+  def remove_duplicate_methods(lines)
+    return lines if lines.empty?
+
+    method_positions = {}
+    lines.each_with_index do |line, idx|
+      if match = line.match(/^\s*def\s+(self\.)?(\w+[?!=]?)/)
+        method_name = match[2]
+        method_positions[method_name] ||= []
+        method_positions[method_name] << idx
+      end
+    end
+
+    # Find methods with duplicates
+    methods_to_remove = []
+    method_positions.each do |method_name, positions|
+      if positions.size > 1
+        Rails.logger.warn "[GitHub API] Found #{positions.size} definitions of '#{method_name}', keeping only first"
+        # Keep first, mark others for removal
+        positions[1..-1].each do |start_idx|
+          # Find the end of this method
+          indent_level = lines[start_idx].match(/^(\s*)/)[1].length
+          end_idx = start_idx
+          (start_idx + 1).upto(lines.size - 1) do |i|
+            line = lines[i]
+            line_indent = line.match(/^(\s*)/)[1].length
+            if line.strip == "end" && line_indent <= indent_level
+              end_idx = i
+              break
+            end
+          end
+          methods_to_remove << (start_idx..end_idx)
+        end
+      end
+    end
+
+    return lines if methods_to_remove.empty?
+
+    # Build list of lines to keep
+    indices_to_remove = methods_to_remove.flat_map(&:to_a).uniq.sort
+    lines.each_with_index.reject { |_, idx| indices_to_remove.include?(idx) }.map(&:first)
   end
 
   def has_duplicate_ends(content, method_start_line)
@@ -461,6 +524,64 @@ class CodeFixApplier
             Rails.logger.warn "[GitHub API] Found duplicate 'end' statements on lines #{i + 1}-#{i + 2}"
             return true
           end
+        end
+      end
+    end
+
+    false
+  end
+
+  def has_code_quality_issues(content)
+    return true if content.blank?
+
+    lines = content.lines
+
+    # Check for duplicate method definitions
+    method_defs = {}
+    lines.each_with_index do |line, idx|
+      if match = line.match(/^\s*def\s+(self\.)?(\w+[?!=]?)/)
+        method_name = match[2]
+        if method_defs[method_name]
+          Rails.logger.warn "[GitHub API] Found duplicate method definition '#{method_name}' on lines #{method_defs[method_name] + 1} and #{idx + 1}"
+          return true
+        end
+        method_defs[method_name] = idx
+      end
+    end
+
+    # Check for consecutive duplicate lines (same non-trivial content)
+    prev_line = nil
+    lines.each_with_index do |line, idx|
+      stripped = line.strip
+      # Skip trivial lines (empty, just 'end', comments, single-word lines)
+      next if stripped.empty? || stripped == "end" || stripped.start_with?("#") || stripped.length < 10
+
+      if prev_line == stripped
+        Rails.logger.warn "[GitHub API] Found duplicate line on #{idx} and #{idx + 1}: #{stripped[0..60]}..."
+        return true
+      end
+      prev_line = stripped
+    end
+
+    # Check for missing 'end' after method definition (incomplete method)
+    in_method = false
+    method_indent = 0
+    lines.each_with_index do |line, idx|
+      if line.match?(/^\s*def\s/)
+        if in_method
+          # Found another def without closing previous one at same or lower indent
+          new_indent = line.match(/^(\s*)/)[1].length
+          if new_indent <= method_indent
+            Rails.logger.warn "[GitHub API] Found method definition without closing 'end' before line #{idx + 1}"
+            return true
+          end
+        end
+        in_method = true
+        method_indent = line.match(/^(\s*)/)[1].length
+      elsif line.strip == "end" && in_method
+        line_indent = line.match(/^(\s*)/)[1].length
+        if line_indent <= method_indent
+          in_method = false
         end
       end
     end
@@ -800,7 +921,7 @@ class CodeFixApplier
   end
 
   def extract_method_name_from_fix(fixed_code)
-    match = fixed_code.match(/^\s*def\s+(self\.)?(\w+)/)
+    match = fixed_code.match(/^\s*def\s+(self\.)?(\w+[?!=]?)/)
     match ? match[2] : nil
   end
 
