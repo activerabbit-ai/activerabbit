@@ -175,16 +175,18 @@ class GithubPrService
       end
     end
 
-    # Always add the context/suggestion file
-    fix_file_content = build_fix_file_content(issue, code_fix, pr_body, actual_fix_applied)
-    blob = api_client.post("/repos/#{owner}/#{repo}/git/blobs", {
-      content: fix_file_content,
-      encoding: "utf-8"
-    })
-    blob_sha = blob.is_a?(Hash) ? blob["sha"] : nil
-    return { error: "Failed to create blob" } unless blob_sha
+    # Only add suggestion file if no actual fix was applied
+    unless actual_fix_applied
+      fix_file_content = build_fix_file_content(issue, code_fix, pr_body, actual_fix_applied)
+      blob = api_client.post("/repos/#{owner}/#{repo}/git/blobs", {
+        content: fix_file_content,
+        encoding: "utf-8"
+      })
+      blob_sha = blob.is_a?(Hash) ? blob["sha"] : nil
+      return { error: "Failed to create blob" } unless blob_sha
 
-    tree_entries << { path: ".activerabbit/fixes/issue-#{issue.id}-fix.md", mode: "100644", type: "blob", sha: blob_sha }
+      tree_entries << { path: ".activerabbit/fixes/issue-#{issue.id}-fix.md", mode: "100644", type: "blob", sha: blob_sha }
+    end
 
     # Create tree with all entries
     tree = api_client.post("/repos/#{owner}/#{repo}/git/trees", {
