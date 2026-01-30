@@ -15,12 +15,19 @@ class ProjectSettingsController < ApplicationController
           pref.frequency = "every_2_hours"
         end
       end
+
+    # Find other projects in the same account that have GitHub configured
+    # This allows sharing GitHub installation between projects (e.g., prod/staging)
+    @github_connected_projects = current_account.projects
+      .where.not(id: @project.id)
+      .select { |p| p.settings&.dig("github_installation_id").present? }
   end
 
   def update
     ok = true
 
     ok &&= update_notification_settings if params[:project]&.dig(:notifications)
+    ok &&= copy_github_from_project if params[:project]&.dig(:copy_github_from_project_id).present?
     ok &&= update_github_settings if github_params_present?
     ok &&= update_fizzy_settings if fizzy_params_present?
     ok &&= update_notification_preferences if params[:preferences].present?
@@ -153,8 +160,28 @@ class ProjectSettingsController < ApplicationController
     @project.save
   end
 
+  def copy_github_from_project
+    source_project_id = params[:project][:copy_github_from_project_id]
+    return true if source_project_id.blank?
+
+    source_project = current_account.projects.find_by(id: source_project_id)
+    return false unless source_project&.settings&.dig("github_installation_id").present?
+
+    settings = @project.settings || {}
+    # Copy GitHub-related settings from source project
+    %w[github_installation_id github_repo].each do |key|
+      settings[key] = source_project.settings[key] if source_project.settings[key].present?
+    end
+    # Set default branch to main for new project (user can change it)
+    settings["github_base_branch"] ||= "main"
+    settings["github_source_branch"] ||= "main"
+
+    @project.settings = settings
+    @project.save
+  end
+
   def update_github_settings
-    gh_params = params.fetch(:project, {}).permit(:github_repo, :github_base_branch, :github_installation_id, :github_pat, :github_app_id, :github_app_pk, :github_app_pk_file)
+    gh_params = params.fetch(:project, {}).permit(:github_repo, :github_base_branch, :github_source_branch, :github_installation_id, :github_pat, :github_app_id, :github_app_pk, :github_app_pk_file)
     return true if gh_params.blank?
 
     settings = @project.settings || {}
@@ -172,6 +199,7 @@ class ProjectSettingsController < ApplicationController
 
     set_or_clear.call("github_repo", :github_repo)
     set_or_clear.call("github_base_branch", :github_base_branch)
+    set_or_clear.call("github_source_branch", :github_source_branch)
     set_or_clear.call("github_installation_id", :github_installation_id)
     set_or_clear.call("github_pat", :github_pat)
     set_or_clear.call("github_app_id", :github_app_id)
@@ -220,7 +248,7 @@ class ProjectSettingsController < ApplicationController
     project_params = params[:project]
     return false unless project_params
 
-    %i[github_repo github_base_branch github_installation_id github_pat github_app_id github_app_pk github_app_pk_file].any? do |key|
+    %i[github_repo github_base_branch github_source_branch github_installation_id github_pat github_app_id github_app_pk github_app_pk_file].any? do |key|
       project_params.key?(key)
     end
   end
