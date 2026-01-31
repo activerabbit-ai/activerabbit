@@ -26,6 +26,7 @@ class ProjectSettingsController < ApplicationController
   def update
     ok = true
 
+    ok &&= update_project_details if project_details_params_present?
     ok &&= update_notification_settings if params[:project]&.dig(:notifications)
     ok &&= copy_github_from_project if params[:project]&.dig(:copy_github_from_project_id).present?
     ok &&= update_github_settings if github_params_present?
@@ -260,6 +261,20 @@ class ProjectSettingsController < ApplicationController
     %i[fizzy_endpoint_url fizzy_api_key fizzy_sync_enabled].any? do |key|
       project_params.key?(key)
     end
+  end
+
+  def project_details_params_present?
+    project_params = params[:project]
+    return false unless project_params
+
+    %i[name environment slug url tech_stack description].any? do |key|
+      project_params.key?(key)
+    end
+  end
+
+  def update_project_details
+    permitted = params.require(:project).permit(:name, :environment, :slug, :url, :tech_stack, :description)
+    @project.update(permitted)
   end
 
   def update_fizzy_settings
