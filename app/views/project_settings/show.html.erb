@@ -366,7 +366,7 @@
         <div class="flex items-center">
           <svg viewBox="0 0 16 16" width="20" height="20" class="mr-2 text-gray-800" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
           <div>
-            <h3 class="text-lg font-medium text-gray-900">GitHub Integration</h3>
+            <h3 class="text-lg font-medium text-gray-900">GitHub Settings</h3>
             <p class="text-sm text-gray-500">Connect your repository for automatic PR creation</p>
           </div>
         </div>
@@ -385,7 +385,7 @@
         <!-- Connected State: Show repo info and branch settings -->
         <div class="space-y-4">
           <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Repository</label>
                 <div class="flex items-center">
@@ -440,7 +440,35 @@
         <!-- Not Connected State -->
         <div class="space-y-6">
           <% if @github_connected_projects.present? %>
-            <!-- Option 1: Use existing installation from another project -->
+            <!-- Option 1: Install new GitHub App -->
+            <div class="text-center py-4">
+              <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg viewBox="0 0 16 16" width="32" height="32" class="text-gray-400" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+              </div>
+              <h4 class="text-base font-medium text-gray-900 mb-2">Connect your GitHub repository</h4>
+              <p class="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                Install the ActiveRabbit GitHub App to enable automatic PR creation with AI-generated fixes for your errors.
+              </p>
+              <a href="<%= GithubInstallationService.app_install_url(project_id: @project.id) %>"
+                class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                <svg viewBox="0 0 16 16" width="18" height="18" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+                Install GitHub App
+              </a>
+              <p class="text-xs text-gray-400 mt-4">
+                Required permissions: <strong>Pull requests</strong> (read/write) and <strong>Contents</strong> (read)
+              </p>
+            </div>
+
+            <div class="relative">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-300"></div>
+              </div>
+              <div class="relative flex justify-center text-sm">
+                <span class="px-2 bg-white text-gray-500">or connect existing repository</span>
+              </div>
+            </div>
+
+            <!-- Option 2: Use existing installation from another project -->
             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <h4 class="text-sm font-medium text-gray-900 mb-2">Use existing GitHub connection</h4>
               <p class="text-xs text-gray-700 mb-3">
@@ -468,34 +496,7 @@
                 </div>
               <% end %>
             </div>
-            <div class="relative">
-              <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-gray-300"></div>
-              </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="px-2 bg-white text-gray-500">or connect new repository</span>
-              </div>
-            </div>
           <% end %>
-
-          <!-- Option 2: Install new GitHub App -->
-          <div class="text-center py-4">
-            <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <svg viewBox="0 0 16 16" width="32" height="32" class="text-gray-400" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-            </div>
-            <h4 class="text-base font-medium text-gray-900 mb-2">Connect your GitHub repository</h4>
-            <p class="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-              Install the ActiveRabbit GitHub App to enable automatic PR creation with AI-generated fixes for your errors.
-            </p>
-            <a href="<%= GithubInstallationService.app_install_url(project_id: @project.id) %>"
-               class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-              <svg viewBox="0 0 16 16" width="18" height="18" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-              Install GitHub App
-            </a>
-            <p class="text-xs text-gray-400 mt-4">
-              Required permissions: <strong>Pull requests</strong> (read/write) and <strong>Contents</strong> (read)
-            </p>
-          </div>
         </div>
       <% end %>
     </div>
