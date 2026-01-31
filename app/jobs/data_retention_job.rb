@@ -43,16 +43,18 @@ class DataRetentionJob < ApplicationJob
   # with ctid (tuple identifier) which is faster than id-based subqueries
   def delete_in_batches(table_name, cutoff_date)
     total_deleted = 0
-    sanitized_cutoff = ActiveRecord::Base.connection.quote(cutoff_date.utc)
+    conn = ActiveRecord::Base.connection
+    sanitized_table = conn.quote_table_name(table_name)
+    sanitized_cutoff = conn.quote(cutoff_date.utc)
 
     loop do
       # Use ctid-based deletion which is very efficient in PostgreSQL
       # This avoids the overhead of Rails' limit().delete_all which generates
       # a slower id IN (SELECT id ...) query
       sql = <<-SQL.squish
-        DELETE FROM #{table_name}
+        DELETE FROM #{sanitized_table}
         WHERE ctid IN (
-          SELECT ctid FROM #{table_name}
+          SELECT ctid FROM #{sanitized_table}
           WHERE occurred_at < #{sanitized_cutoff}
           LIMIT #{BATCH_SIZE}
         )
