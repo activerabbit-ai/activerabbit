@@ -145,6 +145,23 @@
           <% end %>
         </nav>
 
+        <!-- Trial Warning Banner -->
+        <% if current_account&.trial_ends_at && current_account.trial_ends_at > Time.current %>
+          <% trial_days_left = (current_account.trial_ends_at.to_date - Date.current).to_i %>
+          <% has_payment_method = current_account.respond_to?(:payment_method_added?) ? current_account.payment_method_added? : false %>
+          <div class="mb-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+            <p class="text-xs font-semibold text-yellow-800">
+              You're on a Team trial – <%= trial_days_left %> <%= trial_days_left == 1 ? 'day' : 'days' %> left.
+            </p>
+            <% unless has_payment_method %>
+              <p class="text-[11px] text-yellow-700 mt-1">
+                💳 No payment method – add one to continue after trial.
+              </p>
+              <%= button_to "Add Payment", plan_path, method: :get, class: "mt-2 w-full px-2 py-1.5 text-xs font-medium text-yellow-900 bg-yellow-300 border border-yellow-400 rounded shadow-sm hover:bg-yellow-400 transition-colors cursor-pointer" %>
+            <% end %>
+          </div>
+        <% end %>
+
         <!-- Persistent Subscription Promo Box at bottom of sidebar -->
         <div class="mt-auto p-4 rounded-lg bg-indigo-50 border border-indigo-100">
           <h4 class="text-sm font-semibold text-indigo-900">Unlock more with a Subscription</h4>
@@ -166,8 +183,8 @@
       <div class="flex-1 flex flex-col ml-64 overflow-y-auto">
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm border-b border-gray-200">
-          <div class="flex items-center justify-between px-6 py-4">
-            <div class="flex items-center space-x-6">
+          <div class="flex items-center px-6 py-3 gap-4">
+            <div class="flex items-center shrink-0">
               <%
 =begin%>
  <h1 class="text-2xl font-semibold text-gray-900">
@@ -230,16 +247,98 @@
               <% end %>
             </div>
 
-            <!-- User Menu -->
-            <div class="flex items-center space-x-4">
-              <!-- Notifications -->
-              <button class="p-2 text-gray-400 hover:text-gray-500 relative">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
-              </button>
+            <% if controller_name == 'errors' %>
+              <!-- Time Filter Dropdown -->
+              <div class="relative shrink-0" data-controller="dropdown">
+                <%
+                  current_period = params[:period]
+                  filter_base_path = defined?(@current_project) && @current_project ? "/#{@current_project.slug}/errors" : errors_path
+                  period_labels = { nil => "All time", "1h" => "Last hour", "1d" => "Last 24 hours", "7d" => "Last 7 days", "30d" => "Last 30 days" }
+                  current_label = period_labels[current_period] || "All time"
+                %>
+                <button data-action="click->dropdown#toggle" class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span><%= current_label %></span>
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div data-dropdown-target="menu" class="hidden absolute left-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                  <div class="py-1">
+                    <%= link_to filter_base_path, class: "block px-4 py-2 text-sm #{current_period.blank? ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-100'}" do %>
+                      All time
+                    <% end %>
+                    <%= link_to "#{filter_base_path}?period=1h", class: "block px-4 py-2 text-sm #{current_period == '1h' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-100'}" do %>
+                      Last hour
+                    <% end %>
+                    <%= link_to "#{filter_base_path}?period=1d", class: "block px-4 py-2 text-sm #{current_period == '1d' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-100'}" do %>
+                      Last 24 hours
+                    <% end %>
+                    <%= link_to "#{filter_base_path}?period=7d", class: "block px-4 py-2 text-sm #{current_period == '7d' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-100'}" do %>
+                      Last 7 days
+                    <% end %>
+                    <%= link_to "#{filter_base_path}?period=30d", class: "block px-4 py-2 text-sm #{current_period == '30d' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-100'}" do %>
+                      Last 30 days
+                    <% end %>
+                  </div>
+                </div>
+              </div>
 
+              <!-- List/Graph View Toggle -->
+              <div class="flex items-center gap-1 shrink-0">
+                <%
+                  list_url = errors_index_path(params.permit(:period, :filter, :q).to_h.except(:tab, :range))
+                  graph_url = errors_index_path(params.permit(:period, :filter, :q).to_h.merge(tab: 'graph', range: (params[:range] || '7D')))
+                  list_active = params[:tab] != 'graph'
+                  graph_active = params[:tab] == 'graph'
+                %>
+                <%= link_to list_url, class: "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all #{list_active ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-gray-200'}", title: "List view" do %>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  <span>List</span>
+                <% end %>
+                <%= link_to graph_url, class: "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all #{graph_active ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-gray-200'}", title: "Graph view" do %>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Graph</span>
+                <% end %>
+              </div>
+
+              <!-- Global Search (Sentry-style) -->
+              <div class="flex-1 min-w-0" data-controller="global-search">
+                <div class="relative group max-w-xl">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <%= form_tag errors_index_path, method: :get, class: "w-full", data: { turbo_frame: "_top" } do %>
+                    <input 
+                      type="search" 
+                      name="q[exception_class_or_sample_message_or_status_or_project_name_cont]"
+                      placeholder="Search issues..."
+                      class="block w-full pl-9 pr-16 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 hover:bg-white hover:border-gray-300 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-150 placeholder-gray-400"
+                      data-global-search-target="input"
+                      data-action="keydown->global-search#handleKeydown"
+                      autocomplete="off"
+                    >
+                  <% end %>
+                  <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <kbd class="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded">⌘K</kbd>
+                  </div>
+                </div>
+              </div>
+            <% else %>
+              <!-- Spacer for non-errors pages -->
+              <div class="flex-1"></div>
+            <% end %>
+
+            <!-- User Menu -->
+            <div class="flex items-center gap-3 shrink-0">
               <!-- Subscription CTA -->
               <%= link_to "Subscription", plan_path,
                   class: "px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700" %>
@@ -336,8 +435,6 @@
             </div>
           </div>
         <% end %>
-
-        <%= render 'shared/billing_banner' %>
 
         <!-- Page Content -->
         <main class="flex-1 p-6">

@@ -2,113 +2,61 @@
   ActiveRabbit Errors
 <% end %>
 
-<!-- Summary Stats -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-  <!-- Total Errors -->
-  <%= link_to errors_index_path, class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
-    <div class="flex items-center">
-      <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-          <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-          </svg>
-        </div>
-      </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Total Errors</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= @total_errors %></p>
-      </div>
-    </div>
-  <% end %>
-
-  <!-- Work in Progress (WIP) -->
-  <%= link_to errors_index_path(filter: "open"), class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
-    <div class="flex items-center">
-      <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-          <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-      </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Work in Progress (WIP)</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= @open_errors %></p>
-      </div>
-    </div>
-  <% end %>
-
-  <!-- Closed Issues -->
-  <%= link_to errors_index_path(filter: "closed"), class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
-    <div class="flex items-center">
-      <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-          <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-        </div>
-      </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Closed</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= @resolved_errors %></p>
-      </div>
-    </div>
-  <% end %>
-
-  <!-- Recent (24h) -->
-  <%= link_to errors_index_path(filter: "recent"), class: "bg-white rounded-lg shadow p-6 block hover:bg-gray-50 transition-colors" do %>
-    <div class="flex items-center">
-      <div class="flex-shrink-0">
-        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-          <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-      </div>
-      <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Recent (24h)</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= @recent_errors %></p>
-      </div>
-    </div>
-  <% end %>
-</div>
-
 <!-- Errors List / Graph Toggle -->
 <div class="bg-white rounded-lg shadow">
-  <div class="px-6 py-4 border-b border-gray-200">
-    <div class="flex items-center justify-between">
-      <h3 class="text-lg font-medium text-gray-900 whitespace-nowrap">🐰 Captured Errors</h3>
-
-      <div class="flex-1 flex justify-center">
-        <%= search_form_for @q, url: errors_index_path, method: :get, html: { class: "w-full flex justify-end mr-2" } do |f| %>
-          <div class="relative w-64">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-                 xmlns="http://www.w3.org/2000/svg" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <%= f.search_field :exception_class_or_sample_message_or_status_or_project_name_cont,
-              placeholder: "Filter by attribute values",
-              class: "block w-full pl-9 pr-3 py-1.5 text-xs border border-gray-300 rounded-full bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 placeholder-gray-400" %>
-          </div>
-        <% end %>
-      </div>
-
-      <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
-        <% list_url = url_for(params.permit!.to_h.except(:tab, :range)) %>
-        <% graph_url = url_for(params.permit!.to_h.merge(tab: 'graph', range: (params[:range] || '7D'))) %>
-        <% list_active = params[:tab] != 'graph' %>
-        <% graph_active = params[:tab] == 'graph' %>
-        <%= link_to 'List', list_url, class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{list_active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
-        <%= link_to 'Graph', graph_url, class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{graph_active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
-      </div>
-    </div>
-  </div>
-
     <% if params[:tab] == 'graph' %>
       <div class="border-t border-gray-200 px-6 py-6">
+        <!-- Compact Stats Row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <%= link_to errors_index_path, class: "flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors" do %>
+            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-xs text-gray-500">Total Errors</p>
+              <p class="text-lg font-semibold text-gray-900"><%= @total_errors %></p>
+            </div>
+          <% end %>
+
+          <%= link_to errors_index_path(filter: "open"), class: "flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors" do %>
+            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-xs text-gray-500">WIP</p>
+              <p class="text-lg font-semibold text-gray-900"><%= @open_errors %></p>
+            </div>
+          <% end %>
+
+          <%= link_to errors_index_path(filter: "closed"), class: "flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors" do %>
+            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-xs text-gray-500">Closed</p>
+              <p class="text-lg font-semibold text-gray-900"><%= @resolved_errors %></p>
+            </div>
+          <% end %>
+
+          <%= link_to errors_index_path(filter: "recent"), class: "flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors" do %>
+            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-xs text-gray-500">Recent (24h)</p>
+              <p class="text-lg font-semibold text-gray-900"><%= @recent_errors %></p>
+            </div>
+          <% end %>
+        </div>
+
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-medium text-gray-900">Error count over time</h3>
           <div class="inline-flex bg-gray-100 p-1 rounded-full shadow-inner">
@@ -133,18 +81,18 @@
       </div>
     <% elsif @issues.any? %>
     <!-- Proper HTML Table -->
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto border-t border-gray-200">
       <table class="min-w-full divide-y divide-gray-200" style="position: relative;">
-        <thead class="bg-gray-50">
+        <thead class="bg-white border-b border-gray-200">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= sort_link(@q, :exception_class, "Error & Action", class: "inline-flex items-center") %>
+              <%= sort_link(@q, :exception_class, "🐰 Error & Action", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= sort_link(@q, :status, "Status", class: "inline-flex items-center") %>
+              <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= sort_link(@q, :count, "Count", class: "inline-flex items-center") %>
+              <%= sort_link(@q, :count, "Total", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Impact %
@@ -156,7 +104,7 @@
               <%= sort_link(@q, :ai_summary, "AI", class: "inline-flex items-center") %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
+              <%= sort_link(@q, :status, "Status", class: "inline-flex items-center") %>
             </th>
           </tr>
         </thead>
@@ -194,15 +142,15 @@
                 </div>
               </td>
 
-              <!-- Status -->
-              <td class="px-6 py-4" onclick="event.stopPropagation();">
-                <%= render "errors/status_dropdown_list", issue: issue, project: @project %>
+              <!-- Last Seen -->
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900"><%= time_ago_in_words(issue.last_seen_at).gsub('about ', '') %> ago</div>
+                <div class="text-xs text-gray-500"><%= issue.last_seen_at.strftime("%b %d, %Y %H:%M") %></div>
               </td>
 
               <!-- Total Count -->
               <td class="px-6 py-4">
                 <div class="text-sm font-semibold text-gray-900"><%= number_with_delimiter(issue.count || 0) %></div>
-                <div class="text-xs text-gray-500">total</div>
               </td>
 
               <!-- Impact % (24h) -->
@@ -217,6 +165,8 @@
                   <div class="text-xs text-gray-400">0 in 24h</div>
                 <% end %>
               </td>
+
+              <!-- PR -->
               <td class="px-6 py-4" onclick="event.stopPropagation();">
                 <% if (pr_url = issue.github_pr_url).present? %>
                   <%= link_to pr_url, target: "_blank", rel: "noopener", class: "inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 focus:outline-none" do %>
@@ -229,6 +179,8 @@
                   <span class="text-xs text-gray-400">—</span>
                 <% end %>
               </td>
+
+              <!-- AI -->
               <td class="px-6 py-4" onclick="event.stopPropagation();">
                 <%= link_to(
                   if @current_project
@@ -251,9 +203,10 @@
                   AI summary
                 <% end %>
               </td>
-              <td class="px-6 py-4">
-                <div class="text-sm text-gray-900"><%= time_ago_in_words(issue.last_seen_at) %> ago</div>
-                <div class="text-xs text-gray-500"><%= issue.last_seen_at.strftime("%b %d, %Y %H:%M") %></div>
+
+              <!-- Status -->
+              <td class="px-6 py-4" onclick="event.stopPropagation();">
+                <%= render "errors/status_dropdown_list", issue: issue, project: @project %>
               </td>
             </tr>
           <% end %>
