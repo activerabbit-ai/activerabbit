@@ -366,7 +366,7 @@
         <div class="flex items-center">
           <svg viewBox="0 0 16 16" width="20" height="20" class="mr-2 text-gray-800" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
           <div>
-            <h3 class="text-lg font-medium text-gray-900">GitHub Integration</h3>
+            <h3 class="text-lg font-medium text-gray-900">GitHub Settings</h3>
             <p class="text-sm text-gray-500">Connect your repository for automatic PR creation</p>
           </div>
         </div>
@@ -382,22 +382,15 @@
     </div>
     <div class="p-6">
       <% if @project.settings['github_installation_id'].present? %>
-        <!-- Connected State: Show repo info -->
+        <!-- Connected State: Show repo info and branch settings -->
         <div class="space-y-4">
           <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Repository</label>
                 <div class="flex items-center">
                   <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2 text-gray-600" aria-hidden="true"><path fill="currentColor" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path></svg>
                   <span class="text-sm font-medium text-gray-900"><%= @project.settings['github_repo'] || 'Not set' %></span>
-                </div>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Base Branch</label>
-                <div class="flex items-center">
-                  <svg viewBox="0 0 16 16" width="16" height="16" class="mr-2 text-gray-600" aria-hidden="true"><path fill="currentColor" d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5zM3.5 3.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0z"></path></svg>
-                  <span class="text-sm font-medium text-gray-900"><%= @project.settings['github_base_branch'] || 'main' %></span>
                 </div>
               </div>
               <div>
@@ -407,35 +400,103 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-2">
-            <p class="text-xs text-gray-500">
-              PRs will be created as drafts in your repository when you click "Create PR" on errors.
-            </p>
-            <a href="<%= GithubInstallationService.app_install_url(project_id: @project.id) %>"
-               class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              <svg viewBox="0 0 16 16" width="14" height="14" class="mr-1.5" aria-hidden="true"><path fill="currentColor" d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25a1.75 1.75 0 01.445-.758l8.61-8.61zm1.414 1.06a.25.25 0 00-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 000-.354l-1.086-1.086zM11.189 6.25L9.75 4.81l-6.286 6.287a.25.25 0 00-.064.108l-.558 1.953 1.953-.558a.249.249 0 00.108-.064l6.286-6.286z"></path></svg>
-              Reconfigure
-            </a>
-          </div>
+          <!-- Branch Settings Form -->
+          <%= form_with(model: @project, url: project_settings_path(@project), method: :patch, local: true, class: "mt-4") do |form| %>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Source Branch (fork from)</label>
+                <%= form.text_field :github_source_branch, 
+                    value: @project.settings['github_source_branch'], 
+                    placeholder: "main",
+                    class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
+                <p class="text-xs text-gray-500 mt-1">Branch to create new PR branches from (e.g., staging, develop)</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Target Branch (merge to)</label>
+                <%= form.text_field :github_base_branch, 
+                    value: @project.settings['github_base_branch'], 
+                    placeholder: "main",
+                    class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
+                <p class="text-xs text-gray-500 mt-1">Branch where PRs will be merged (default: main)</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+              <div class="flex items-center space-x-3">
+                <%= form.submit "Save Branch Settings",
+                      class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+                <a href="<%= GithubInstallationService.app_install_url(project_id: @project.id) %>"
+                   class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  <svg viewBox="0 0 16 16" width="14" height="14" class="mr-1.5" aria-hidden="true"><path fill="currentColor" d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25a1.75 1.75 0 01.445-.758l8.61-8.61zm1.414 1.06a.25.25 0 00-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 000-.354l-1.086-1.086zM11.189 6.25L9.75 4.81l-6.286 6.287a.25.25 0 00-.064.108l-.558 1.953 1.953-.558a.249.249 0 00.108-.064l6.286-6.286z"></path></svg>
+                  Reconfigure App
+                </a>
+              </div>
+              <p class="text-xs text-gray-500">
+                PRs will be created as drafts when you click "Create PR" on errors.
+              </p>
+            </div>
+          <% end %>
         </div>
       <% else %>
-        <!-- Not Connected State: Show install button -->
-        <div class="text-center py-6">
-          <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg viewBox="0 0 16 16" width="32" height="32" class="text-gray-400" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-          </div>
-          <h4 class="text-base font-medium text-gray-900 mb-2">Connect your GitHub repository</h4>
-          <p class="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-            Install the ActiveRabbit GitHub App to enable automatic PR creation with AI-generated fixes for your errors.
-          </p>
-          <a href="<%= GithubInstallationService.app_install_url(project_id: @project.id) %>"
-             class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-            <svg viewBox="0 0 16 16" width="18" height="18" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-            Install GitHub App
-          </a>
-          <p class="text-xs text-gray-400 mt-4">
-            Required permissions: <strong>Pull requests</strong> (read/write) and <strong>Contents</strong> (read)
-          </p>
+        <!-- Not Connected State -->
+        <div class="space-y-6">
+          <% if @github_connected_projects.present? %>
+            <!-- Option 1: Install new GitHub App -->
+            <div class="text-center py-4">
+              <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg viewBox="0 0 16 16" width="32" height="32" class="text-gray-400" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+              </div>
+              <h4 class="text-base font-medium text-gray-900 mb-2">Connect your GitHub repository</h4>
+              <p class="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                Install the ActiveRabbit GitHub App to enable automatic PR creation with AI-generated fixes for your errors.
+              </p>
+              <a href="<%= GithubInstallationService.app_install_url(project_id: @project.id) %>"
+                class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                <svg viewBox="0 0 16 16" width="18" height="18" class="mr-2" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+                Install GitHub App
+              </a>
+              <p class="text-xs text-gray-400 mt-4">
+                Required permissions: <strong>Pull requests</strong> (read/write) and <strong>Contents</strong> (read)
+              </p>
+            </div>
+
+            <div class="relative">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-300"></div>
+              </div>
+              <div class="relative flex justify-center text-sm">
+                <span class="px-2 bg-white text-gray-500">or connect existing repository</span>
+              </div>
+            </div>
+
+            <!-- Option 2: Use existing installation from another project -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <h4 class="text-sm font-medium text-gray-900 mb-2">Use existing GitHub connection</h4>
+              <p class="text-xs text-gray-700 mb-3">
+                You have GitHub connected to other projects. You can use the same repository for this project.
+              </p>
+              <%= form_with(model: @project, url: project_settings_path(@project), method: :patch, local: true) do |form| %>
+                <div class="flex items-end gap-3">
+                  <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-800 mb-1">Copy settings from:</label>
+                    <%= form.select :copy_github_from_project_id,
+                        @github_connected_projects.map { |p| ["#{p.name} (#{p.settings['github_repo']})", p.id] },
+                        { include_blank: "Select a project..." },
+                        class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm bg-white" %>
+                  </div>
+                  <%= form.button :submit,
+                    class: "inline-flex items-center px-5 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500" do %>
+
+                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" class="shrink-0 mr-1">
+                      <path fill="currentColor"
+                        d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 012 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+                    </svg>
+
+                    Use This Connection
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
         </div>
       <% end %>
     </div>

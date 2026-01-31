@@ -22,18 +22,18 @@ class WeeklyReportBuilder
 
   def top_errors
     Issue
-      .includes(:project)
       .joins(:events)
       .where(account: @account)
       .where(events: { occurred_at: @period })
       .group("issues.id")
       .select(
-        "issues.*,
-         COUNT(events.id) AS occurrences,
-         MAX(events.occurred_at) AS last_seen"
+        "issues.*",
+        "COUNT(events.id) AS occurrences",
+        "MAX(events.occurred_at) AS last_seen"
       )
       .order("occurrences DESC")
       .limit(5)
+      .to_a
   end
 
   def slow_endpoints
@@ -42,14 +42,15 @@ class WeeklyReportBuilder
       .where(occurred_at: @period)
       .group(:target, :project_id)
       .select(
-        "target,
-        project_id,
-        COUNT(*) AS requests,
-        AVG(duration_ms) AS avg_ms,
-        MAX(duration_ms) AS max_ms"
+        "target",
+        "project_id",
+        "COUNT(*) AS requests",
+        "AVG(duration_ms) AS avg_ms",
+        "MAX(duration_ms) AS max_ms"
       )
       .order("avg_ms DESC")
       .limit(5)
+      .to_a
   end
 
   def errors_by_day

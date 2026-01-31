@@ -3,7 +3,8 @@ class GithubPrService
     @project = project
     settings = @project.settings || {}
     @github_repo = settings["github_repo"].to_s.gsub(%r{^/|/$}, "") # e.g., "owner/repo" - strip slashes
-    @base_branch_override = settings["github_base_branch"]
+    @base_branch_override = settings["github_base_branch"]  # PR target branch (merge into)
+    @source_branch_override = settings["github_source_branch"]  # Branch to fork from
     # Token precedence: per-project PAT > installation token > env PAT
     @project_pat = settings["github_pat"]
     @installation_id = settings["github_installation_id"]
@@ -63,27 +64,35 @@ class GithubPrService
     return { success: false, error: "Failed to acquire GitHub token" } unless token.present?
 
     api_client = GithubApiClient.new(token)
-    base_branch = @base_branch_override.presence || api_client.detect_default_branch(owner, repo) || "main"
-    Rails.logger.info "[GitHub API] Using base_branch=#{base_branch} for #{owner}/#{repo}"
+    default_branch = api_client.detect_default_branch(owner, repo) || "main"
 
-    # Git refs endpoint uses 'refs' (plural)
-    ref_response = api_client.get("/repos/#{owner}/#{repo}/git/refs/heads/#{base_branch}")
+    # Source branch: where to fork new branch FROM (for getting latest code)
+    # Use source_branch setting, fall back to base_branch, then default
+    source_branch = @source_branch_override.presence || @base_branch_override.presence || default_branch
+
+    # Base branch: where PR will be merged INTO
+    base_branch = @base_branch_override.presence || default_branch
+
+    Rails.logger.info "[GitHub API] Using source_branch=#{source_branch}, base_branch=#{base_branch} for #{owner}/#{repo}"
+
+    # Get SHA from source branch (this is where we fork the new branch from)
+    ref_response = api_client.get("/repos/#{owner}/#{repo}/git/refs/heads/#{source_branch}")
     Rails.logger.info "[GitHub API] Ref response: #{ref_response.inspect}"
     Rails.logger.info "GitHub token present? #{@project_pat.present?}"
     head_sha = ref_response&.dig("object", "sha")
     unless head_sha
       # Try alternate branch names
-      alt_branch = base_branch == "main" ? "master" : "main"
+      alt_branch = source_branch == "main" ? "master" : "main"
       Rails.logger.info "[GitHub API] Trying alternate branch: #{alt_branch}"
       ref_response = api_client.get("/repos/#{owner}/#{repo}/git/refs/heads/#{alt_branch}")
       head_sha = ref_response&.dig("object", "sha")
-      base_branch = alt_branch if head_sha
+      source_branch = alt_branch if head_sha
     end
 
     # Better error message with tried branches
     unless head_sha
-      tried_branches = [@base_branch_override, "main", "master"].compact.uniq.join(", ")
-      return { success: false, error: "Base branch not found (tried: #{tried_branches}). Check repository access and set the correct branch in project settings." }
+      tried_branches = [@source_branch_override, @base_branch_override, "main", "master"].compact.uniq.join(", ")
+      return { success: false, error: "Source branch not found (tried: #{tried_branches}). Check repository access and set the correct branch in project settings." }
     end
 
     # Generate branch name: use custom, or generate via AI, or fallback
@@ -102,7 +111,8 @@ class GithubPrService
     code_fix = pr_content[:code_fix]
 
     # Create commit with suggested fix if available
-    code_fix_applier = CodeFixApplier.new(api_client: api_client, openai_key: @openai_key)
+    # Pass source_branch so CodeFixApplier fetches file from correct branch
+    code_fix_applier = CodeFixApplier.new(api_client: api_client, openai_key: @openai_key, source_branch: source_branch)
     commit_result = create_fix_commit(api_client, code_fix_applier, owner, repo, branch, head_sha, issue, code_fix, pr_body)
     if commit_result.is_a?(Hash) && commit_result[:error]
       return { success: false, error: commit_result[:error] }
