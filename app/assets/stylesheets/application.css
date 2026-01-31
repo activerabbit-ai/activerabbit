@@ -31,3 +31,42 @@
     cursor: not-allowed;
   }
 }
+
+/* Sidebar tooltip styles */
+.sidebar-tooltip {
+  position: absolute;
+  left: 100%;
+  margin-left: 12px;
+  padding: 8px 12px;
+  background-color: #1f2937;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  white-space: nowrap;
+  z-index: 50;
+  pointer-events: none;
+  /* Hidden by default */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+}
+
+/* Arrow for tooltip */
+.sidebar-tooltip::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent #1f2937 transparent transparent;
+}
+
+/* Show tooltip ONLY on hover AND ONLY when sidebar is collapsed */
+.sidebar-collapsed .sidebar-nav-item:hover .sidebar-tooltip {
+  visibility: visible;
+  opacity: 1;
+}

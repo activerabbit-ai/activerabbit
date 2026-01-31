@@ -9,3 +9,6 @@ application.register("onboarding-tech-stack", OnboardingTechStackController)
 
 import NotificationsController from "controllers/notifications_controller"
 application.register("notifications", NotificationsController)
+
+import SidebarController from "controllers/sidebar_controller"
+application.register("sidebar", SidebarController)

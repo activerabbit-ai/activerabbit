@@ -1,8 +1,9 @@
 # Applies code fixes to source files
 class CodeFixApplier
-  def initialize(api_client:, openai_key:)
+  def initialize(api_client:, openai_key:, source_branch: nil)
     @api_client = api_client
     @openai_key = openai_key
+    @source_branch = source_branch
   end
 
   def try_apply_actual_fix(owner, repo, sample_event, issue, existing_fix_code = nil)
@@ -21,8 +22,11 @@ class CodeFixApplier
     normalized_path = normalize_file_path(file_path)
     return { success: false, reason: "Could not normalize path: #{file_path}" } unless normalized_path
 
-    # Fetch current file content from GitHub
-    file_response = @api_client.get("/repos/#{owner}/#{repo}/contents/#{normalized_path}")
+    # Fetch current file content from GitHub (from source branch if specified)
+    file_url = "/repos/#{owner}/#{repo}/contents/#{normalized_path}"
+    file_url += "?ref=#{@source_branch}" if @source_branch.present?
+    Rails.logger.info "[GitHub API] Fetching file from: #{file_url}"
+    file_response = @api_client.get(file_url)
     return { success: false, reason: "File not found in repo: #{normalized_path}" } unless file_response.is_a?(Hash) && file_response["content"]
 
     current_content = Base64.decode64(file_response["content"])

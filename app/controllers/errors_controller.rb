@@ -20,6 +20,18 @@ class ErrorsController < ApplicationController
       base_scope = base_scope.where("last_seen_at > ?", 24.hours.ago)
     end
 
+    # Time period filter from header buttons
+    case params[:period]
+    when "1h"
+      base_scope = base_scope.where("last_seen_at > ?", 1.hour.ago)
+    when "1d"
+      base_scope = base_scope.where("last_seen_at > ?", 1.day.ago)
+    when "7d"
+      base_scope = base_scope.where("last_seen_at > ?", 7.days.ago)
+    when "30d"
+      base_scope = base_scope.where("last_seen_at > ?", 30.days.ago)
+    end
+
     @q = base_scope.ransack(params[:q])
     scoped_issues = @q.result.includes(:project).recent
 
