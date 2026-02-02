@@ -37,6 +37,8 @@ class ApplicationController < ActionController::Base
   before_action :handle_subscription_welcome
   # Check quota and show flash message
   before_action :check_quota_exceeded
+  # Super admin viewing mode: read-only access
+  before_action :enforce_read_only_for_super_admin_viewing
 
   helper_method :current_project, :current_account, :selected_project_for_menu, :viewing_as_super_admin?
 
@@ -171,7 +173,18 @@ class ApplicationController < ActionController::Base
   end
 
   def user_not_authorized
-    redirect_to root_path, alert: "You don’t have permission to perform this action"
+    redirect_to root_path, alert: "You don't have permission to perform this action"
+  end
+
+  # Super admin viewing mode: block all write operations (read-only access)
+  def enforce_read_only_for_super_admin_viewing
+    return unless viewing_as_super_admin?
+    return if request.get? || request.head?
+
+    # Allow super admin to exit viewing mode
+    return if controller_path == "super_admin/accounts" && action_name == "exit"
+
+    redirect_back fallback_location: dashboard_path, alert: "View-only mode: You cannot make changes while viewing another account."
   end
 
   layout :layout_by_resource

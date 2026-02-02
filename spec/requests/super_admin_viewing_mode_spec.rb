@@ -18,6 +18,56 @@ RSpec.describe "Super Admin Viewing Mode", type: :request do
     end
   end
 
+  describe "read-only mode enforcement" do
+    before do
+      sign_in super_admin
+      post switch_super_admin_account_path(other_account)
+    end
+
+    it "allows GET requests" do
+      get dashboard_path
+      expect(response).to have_http_status(:success)
+    end
+
+    it "blocks POST requests with alert message" do
+      post projects_path, params: { project: { name: "New Project", environment: "production" } }
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to include("View-only mode")
+    end
+
+    it "blocks PATCH requests" do
+      ActsAsTenant.with_tenant(other_account) do
+        patch project_path(@other_project), params: { project: { name: "Modified Name" } }
+      end
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to include("View-only mode")
+    end
+
+    it "blocks DELETE requests" do
+      ActsAsTenant.with_tenant(other_account) do
+        delete project_path(@other_project)
+      end
+      expect(response).to redirect_to(dashboard_path)
+      expect(flash[:alert]).to include("View-only mode")
+    end
+
+    it "allows exit viewing mode (DELETE to exit path)" do
+      delete super_admin_exit_accounts_path
+      expect(response).to redirect_to(super_admin_accounts_path)
+      expect(flash[:alert]).to be_nil
+    end
+  end
+
+  describe "normal mode (not viewing another account)" do
+    before { sign_in super_admin }
+
+    it "allows POST requests to own account" do
+      post projects_path, params: { project: { name: "New Project", environment: "production" } }
+      # Should not be blocked by read-only mode (may have other validations)
+      expect(flash[:alert]).not_to include("View-only mode") if flash[:alert].present?
+    end
+  end
+
   describe "current_account behavior" do
     before { sign_in super_admin }
 
@@ -52,8 +102,7 @@ RSpec.describe "Super Admin Viewing Mode", type: :request do
     context "when not viewing another account" do
       it "does not show the viewing banner" do
         get dashboard_path
-        expect(response.body).not_to include("Viewing as:")
-        expect(response.body).not_to include("Super Admin Mode")
+        expect(response.body).not_to include("VIEW-ONLY MODE")
       end
     end
 
@@ -64,9 +113,9 @@ RSpec.describe "Super Admin Viewing Mode", type: :request do
 
       it "shows the viewing banner with account name" do
         get dashboard_path
-        expect(response.body).to include("Viewing as:")
+        expect(response.body).to include("Viewing:")
         expect(response.body).to include(other_account.name)
-        expect(response.body).to include("Super Admin Mode")
+        expect(response.body).to include("VIEW-ONLY MODE")
       end
 
       it "shows the exit view button" do
