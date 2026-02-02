@@ -1098,7 +1098,7 @@ class CodeFixApplier
     http.read_timeout = 60
 
     body = {
-      model: "claude-opus-4-5-20250514",
+      model: "claude-opus-4-20250514",
       max_tokens: 2000,
       system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
       messages: [

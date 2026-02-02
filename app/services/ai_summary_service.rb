@@ -11,7 +11,22 @@ class AiSummaryService
     What specifically caused this error (1-2 sentences)
 
     ## Fix
-    Concrete code changes to fix it. Show before/after code if helpful.
+    Show the COMPLETE FIXED METHOD that will replace the broken one.
+    
+    ```ruby
+    def method_name
+      # The complete fixed implementation
+      # Include ALL lines of the method
+      # This will be applied directly to the codebase
+    end
+    ```
+    
+    CRITICAL REQUIREMENTS:
+    - Include the ENTIRE method from `def` to `end`
+    - Do NOT show "before/after" comparisons - only show the FINAL FIXED VERSION
+    - Do NOT use comments like "# fixed line" - just write the working code
+    - The code must be syntactically correct and complete
+    - Preserve the original method structure and indentation
 
     ## Prevention
     How to prevent similar errors (brief tips)
@@ -53,7 +68,7 @@ class AiSummaryService
     http.read_timeout = 60
 
     body = {
-      model: "claude-opus-4-5-20250514",
+      model: "claude-opus-4-20250514",
       max_tokens: 2500,
       system: SYSTEM_PROMPT,
       messages: [

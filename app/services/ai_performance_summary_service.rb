@@ -38,7 +38,7 @@ class AiPerformanceSummaryService
     http.read_timeout = 60
 
     body = {
-      model: "claude-opus-4-5-20250514",
+      model: "claude-opus-4-20250514",
       max_tokens: 2000,
       system: SYSTEM_PROMPT,
       messages: [

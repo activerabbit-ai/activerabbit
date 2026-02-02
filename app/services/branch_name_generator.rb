@@ -141,7 +141,7 @@ class BranchNameGenerator
     http.read_timeout = 30
 
     body = {
-      model: "claude-opus-4-5-20250514",
+      model: "claude-opus-4-20250514",
       max_tokens: 100,
       system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
       messages: [

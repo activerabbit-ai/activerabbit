@@ -163,20 +163,28 @@ class PrContentGenerator
           end
 
           extracted = extract_method_from_code(raw_code)
-          result[:fix_code] = extracted || raw_code
+          candidate_code = extracted || raw_code
 
-          if extracted && extracted != raw_code
-            Rails.logger.info "[GitHub API] Extracted method from code block (removed class/module)"
-            Rails.logger.info "[GitHub API] Extracted fix_code (first 300 chars): #{extracted[0..300]}"
+          # Validate that the fix is a complete method, not just comments or snippets
+          is_valid_fix = validate_fix_code(candidate_code)
+          
+          if is_valid_fix
+            result[:fix_code] = candidate_code
+            if extracted && extracted != raw_code
+              Rails.logger.info "[GitHub API] Extracted method from code block (removed class/module)"
+            end
+            Rails.logger.info "[GitHub API] Valid fix_code (first 300 chars): #{result[:fix_code][0..300]}"
           else
-            Rails.logger.info "[GitHub API] Using raw code as fix_code (no extraction needed)"
-            Rails.logger.info "[GitHub API] Final fix_code (first 300 chars): #{result[:fix_code][0..300]}"
+            Rails.logger.warn "[GitHub API] Invalid fix_code rejected - not a complete method"
+            Rails.logger.warn "[GitHub API] Rejected code: #{candidate_code[0..200]}"
+            # Don't set fix_code - will fall back to suggestion file only
+            result[:fix_code] = nil
           end
 
           # Final validation - warn if fix_code still looks like the original error
-          if result[:fix_code].include?("Product.find(123)") && !result[:fix_code].include?("params[:id]")
+          if result[:fix_code]&.include?("Product.find(123)") && !result[:fix_code]&.include?("params[:id]")
             Rails.logger.error "[GitHub API] ERROR: Final fix_code still contains the original error code!"
-            Rails.logger.error "[GitHub API] This indicates the AI summary may not contain a proper fix, or parsing failed"
+            result[:fix_code] = nil
           end
         else
           Rails.logger.warn "[GitHub API] No code blocks found in Fix section"
@@ -451,7 +459,7 @@ class PrContentGenerator
     http.read_timeout = 60
 
     body = {
-      model: "claude-opus-4-5-20250514",
+      model: "claude-opus-4-20250514",
       max_tokens: 2000,
       system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
       messages: [
@@ -472,6 +480,68 @@ class PrContentGenerator
     content_blocks = json["content"] || []
     text_block = content_blocks.find { |b| b["type"] == "text" }
     text_block&.dig("text") || ""
+  end
+
+  def validate_fix_code(code)
+    return false if code.blank?
+    
+    # Reject if it looks like plain text explanation
+    if code.match?(/\b(Looking at|the issue is|it seems like|typically don't)\b/i)
+      Rails.logger.warn "[GitHub API] Rejecting fix_code - looks like explanation text"
+      return false
+    end
+    
+    # Reject if it's just comments (like "# Before:" / "# After:")
+    if code.include?("# Before:") || code.include?("# After:")
+      Rails.logger.warn "[GitHub API] Rejecting fix_code - contains Before/After comments"
+      return false
+    end
+    
+    non_comment_lines = code.lines.reject { |l| l.strip.empty? || l.strip.start_with?('#') }
+    return false if non_comment_lines.empty?
+    
+    # Check if it's ERB/HTML code (single line is OK for ERB)
+    is_erb_or_html = code.include?("<%") || code.include?("%>") || code.match?(/<\w+[^>]*>/)
+    if is_erb_or_html
+      Rails.logger.info "[GitHub API] Valid ERB/HTML fix_code detected"
+      return true
+    end
+    
+    # For Ruby code, need at least some structure
+    # Single line assignments are OK
+    if non_comment_lines.size == 1
+      line = non_comment_lines.first.strip
+      # Accept single-line Ruby code that looks like assignment or method call
+      if line.match?(/[@\w]+\s*=/) || line.match?(/\w+\.\w+/)
+        Rails.logger.info "[GitHub API] Valid single-line Ruby fix_code"
+        return true
+      end
+    end
+    
+    # For multi-line Ruby, prefer having def/end but don't require it
+    has_def = code =~ /^\s*def\s+\w/
+    has_end = code =~ /^\s*end\s*$/m
+    
+    if has_def && has_end
+      # Count def/end balance
+      def_count = code.scan(/\bdef\s/).size
+      end_count = code.scan(/\bend\b/).size
+      
+      if def_count > end_count
+        Rails.logger.warn "[GitHub API] Rejecting fix_code - unbalanced def/end"
+        return false
+      end
+    end
+    
+    # Accept if it has code-like content
+    has_code_content = code.match?(/[\(\)\[\]\{\}=@\.]/)
+    if has_code_content
+      Rails.logger.info "[GitHub API] Valid fix_code with code content"
+      return true
+    end
+    
+    Rails.logger.warn "[GitHub API] Rejecting fix_code - doesn't look like valid code"
+    false
   end
 
   def validate_method_structure(code)

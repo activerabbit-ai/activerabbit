@@ -351,11 +351,23 @@ class ErrorsController < ApplicationController
       flash.now[:warning] = warning_msg if warning_msg
     end
 
+    # Generate AI summary before creating PR if not already present
+    # This ensures we have a proper code fix to apply
+    if @issue.ai_summary.blank? && ENV["ANTHROPIC_API_KEY"].present?
+      sample_event = @issue.events.order(occurred_at: :desc).first
+      ai_service = AiSummaryService.new(issue: @issue, sample_event: sample_event)
+      ai_result = ai_service.call
+      if ai_result[:summary].present?
+        @issue.update(ai_summary: ai_result[:summary], ai_summary_generated_at: Time.current)
+        Rails.logger.info "[GitHub PR] Generated AI summary before PR creation for issue ##{@issue.id}"
+      end
+    end
+
     # Get custom branch name from params (may be empty for AI generation)
     custom_branch_name = params[:branch_name].presence
 
     pr_service = GithubPrService.new(project_scope || @issue.project)
-    result = pr_service.create_pr_for_issue(@issue, custom_branch_name: custom_branch_name)
+    result = pr_service.create_pr_for_issue(@issue.reload, custom_branch_name: custom_branch_name)
 
     redirect_path = if @current_project
                       "/#{@current_project.slug}/errors/#{@issue.id}"
