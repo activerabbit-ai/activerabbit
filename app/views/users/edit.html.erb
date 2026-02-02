@@ -116,7 +116,26 @@
           <%= f.label :role, class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.select :role, User::ROLES.map { |r| [r.titleize, r] }, { required: true }, class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
         </div>
-      <% elsif @user != current_user %>
+      <% end %>
+
+      <%# Super Admin checkbox - only visible to super admins editing other users %>
+      <% if current_user&.super_admin? && @user != current_user %>
+        <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-start">
+            <%= f.check_box :super_admin, class: "h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded mt-0.5" %>
+            <div class="ml-3">
+              <label for="user_super_admin" class="block text-sm font-medium text-red-800">
+                Grant Super Admin Access
+              </label>
+              <p class="text-xs text-red-600 mt-1">
+                Super admins can view and switch to any account in the system. Use with caution.
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <% if !current_user.owner? && @user != current_user %>
         <div>
           <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
           <div class="relative">

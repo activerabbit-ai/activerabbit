@@ -1,0 +1,155 @@
+<% content_for :page_title, "#{@account.name} - Super Admin" %>
+
+<div class="space-y-6">
+  <!-- Breadcrumb & Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <nav class="flex items-center text-sm text-gray-500 mb-2">
+        <%= link_to "All Accounts", super_admin_accounts_path, class: "hover:text-gray-700" %>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        <span class="text-gray-900"><%= @account.name %></span>
+      </nav>
+      <h1 class="text-2xl font-bold text-gray-900"><%= @account.name %></h1>
+    </div>
+    <%= button_to switch_super_admin_account_path(@account), 
+        method: :post,
+        class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" do %>
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+      </svg>
+      View as this Account
+    <% end %>
+  </div>
+
+  <!-- Account Info Card -->
+  <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <h2 class="text-lg font-semibold text-gray-900">Account Details</h2>
+    </div>
+    <div class="px-6 py-4">
+      <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Account ID</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @account.id %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Plan</dt>
+          <dd class="mt-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= @account.current_plan == 'team' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800' %>">
+              <%= @account.current_plan&.titleize || 'Free' %>
+            </span>
+            <% if @account.on_trial? %>
+              <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                Trial (<%= (@account.trial_ends_at.to_date - Date.current).to_i %> days left)
+              </span>
+            <% end %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Billing Interval</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @account.billing_interval&.titleize || 'N/A' %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @account.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Event Quota</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= number_with_delimiter(@account.event_quota || 0) %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Events Used</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= number_with_delimiter(@account.events_used_in_period || 0) %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Users Section -->
+  <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <h2 class="text-lg font-semibold text-gray-900">Users (<%= @users.count %>)</h2>
+    </div>
+    <% if @users.any? %>
+      <ul class="divide-y divide-gray-200">
+        <% @users.each do |user| %>
+          <li class="px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <span class="text-gray-600 font-medium text-sm">
+                  <%= user.email.first.upcase %>
+                </span>
+              </div>
+              <div class="ml-4">
+                <div class="text-sm font-medium text-gray-900"><%= user.email %></div>
+                <div class="text-xs text-gray-500">Joined <%= user.created_at.strftime("%b %d, %Y") %></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= user.role == 'owner' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' %>">
+                <%= user.role&.titleize %>
+              </span>
+              <% if user.super_admin? %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  Super Admin
+                </span>
+              <% end %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="px-6 py-8 text-center text-gray-500">
+        No users in this account
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Projects Section -->
+  <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <h2 class="text-lg font-semibold text-gray-900">Projects (<%= @projects.count %>)</h2>
+    </div>
+    <% if @projects.any? %>
+      <ul class="divide-y divide-gray-200">
+        <% @projects.each do |project| %>
+          <li class="px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-10 h-10 <%= project.active? ? 'bg-green-100' : 'bg-gray-100' %> rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 <%= project.active? ? 'text-green-600' : 'text-gray-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <div class="text-sm font-medium text-gray-900"><%= project.name %></div>
+                <div class="text-xs text-gray-500">
+                  <%= project.slug %> &middot; <%= project.environment %>
+                  <% if project.last_event_at %>
+                    &middot; Last event: <%= time_ago_in_words(project.last_event_at) %> ago
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <% if project.active? %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  Active
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                  Inactive
+                </span>
+              <% end %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="px-6 py-8 text-center text-gray-500">
+        No projects in this account
+      </div>
+    <% end %>
+  </div>
+</div>

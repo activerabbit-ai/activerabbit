@@ -195,6 +195,19 @@
             <span data-sidebar-target="navText">Usage</span>
             <span class="sidebar-tooltip">Usage</span>
           <% end %>
+
+          <%# Super Admin: All Accounts link %>
+          <% if current_user&.super_admin? %>
+            <div class="border-t border-gray-700 my-4"></div>
+            <%= link_to super_admin_accounts_path,
+                class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if request.path.start_with?('/accounts')}" do %>
+              <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+              </svg>
+              <span data-sidebar-target="navText">All Accounts</span>
+              <span class="sidebar-tooltip">All Accounts</span>
+            <% end %>
+          <% end %>
         </nav>
 
         <!-- Trial Warning Banner -->
@@ -247,6 +260,30 @@
 
       <!-- Main Content -->
       <div class="flex-1 flex flex-col ml-64 overflow-y-auto transition-all duration-300 ease-in-out" data-sidebar-target="content">
+        <%# Super Admin Viewing Banner %>
+        <% if viewing_as_super_admin? %>
+          <div class="bg-yellow-500 text-yellow-900 px-4 py-2 flex items-center justify-between">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+              <span class="font-medium">
+                Viewing: <strong><%= current_account.name %></strong>
+              </span>
+              <span class="ml-2 px-2 py-0.5 bg-yellow-600 text-yellow-100 text-xs font-semibold rounded">VIEW-ONLY MODE</span>
+            </div>
+            <%= button_to super_admin_exit_accounts_path, 
+                method: :delete,
+                class: "inline-flex items-center px-3 py-1 border border-yellow-700 text-sm font-medium rounded-md text-yellow-900 bg-yellow-400 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors" do %>
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+              Exit View
+            <% end %>
+          </div>
+        <% end %>
+
         <!-- Top Navigation -->
         <header class="bg-white shadow-sm border-b border-gray-200">
           <div class="flex items-center px-6 py-3 gap-4">
@@ -454,6 +491,16 @@
                                 M15 17a4 18 0 015 0" />
                           </svg>
                           Members
+                        </div>
+                      <% end %>
+                    <% end %>
+                    <% if current_user&.super_admin? %>
+                      <%= link_to super_admin_accounts_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" do %>
+                        <div class="flex items-center">
+                          <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                          </svg>
+                          All Accounts
                         </div>
                       <% end %>
                     <% end %>

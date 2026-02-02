@@ -96,6 +96,7 @@ Rails.application.routes.draw do
       post :test_notification
       post :test_fizzy_sync
       post :sync_all_errors
+      delete :disconnect_github
     end
 
     resources :issues do
@@ -146,6 +147,16 @@ Rails.application.routes.draw do
 
   # Subscription management
   resources :subscriptions, only: [:new, :create, :show, :destroy]
+
+  # Super Admin routes (for viewing all accounts)
+  namespace :super_admin, path: "" do
+    resources :accounts, only: [:index, :show] do
+      member do
+        post :switch
+      end
+    end
+    delete "accounts/exit", to: "accounts#exit", as: "exit_accounts"
+  end
 
   # API routes for data ingestion
   namespace :api do

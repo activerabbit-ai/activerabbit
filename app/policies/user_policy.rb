@@ -36,7 +36,7 @@ class UserPolicy < ApplicationPolicy
   end
 
   def permitted_attributes
-    if user.owner?
+    base_attrs = if user.owner?
       if record == user
         [:email, :password, :password_confirmation, :current_password, :avatar]
       else
@@ -46,6 +46,13 @@ class UserPolicy < ApplicationPolicy
       [:email, :password, :password_confirmation, :current_password, :avatar]
     else
       []
+    end
+
+    # Super admins can also set super_admin on other users
+    if user.super_admin? && record != user
+      base_attrs + [:super_admin]
+    else
+      base_attrs
     end
   end
 end

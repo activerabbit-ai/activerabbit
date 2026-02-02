@@ -95,6 +95,10 @@ class User < ApplicationRecord
     role == "member"
   end
 
+  def super_admin?
+    super_admin == true
+  end
+
   def password_required?
     if invited_by.present?
       false
