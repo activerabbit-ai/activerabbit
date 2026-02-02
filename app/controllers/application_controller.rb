@@ -81,14 +81,19 @@ class ApplicationController < ActionController::Base
 
     # Super admin viewing mode: use viewed account from session
     if current_user&.super_admin? && session[:viewed_account_id].present?
-      @current_account = Account.find_by(id: session[:viewed_account_id])
+      # Use without_tenant to ensure we can find any account
+      @current_account = ActsAsTenant.without_tenant { Account.find_by(id: session[:viewed_account_id]) }
     end
 
     @current_account ||= current_user&.account
   end
 
   def viewing_as_super_admin?
-    current_user&.super_admin? && session[:viewed_account_id].present? && current_account != current_user&.account
+    return false unless current_user&.super_admin?
+    return false unless session[:viewed_account_id].present?
+    
+    # Check if viewing a different account than user's own
+    session[:viewed_account_id].to_i != current_user.account_id
   end
 
   def selected_project_for_menu
@@ -133,6 +138,8 @@ class ApplicationController < ActionController::Base
     return unless user_signed_in?
     return if devise_controller?
     return if ONBOARDING_EXEMPT_CONTROLLERS.include?(controller_name)
+    # Skip onboarding check when super admin is viewing another account
+    return if viewing_as_super_admin?
 
     begin
       if current_user.needs_onboarding?
@@ -164,6 +171,8 @@ class ApplicationController < ActionController::Base
     return if controller_name == "onboarding"
     return if controller_name == "pricing" # Don't show on pricing page itself
     return unless current_account
+    # Skip quota check when super admin is viewing another account
+    return if viewing_as_super_admin?
 
     # Show on every page until plan is upgraded
     message = current_account.quota_exceeded_flash_message

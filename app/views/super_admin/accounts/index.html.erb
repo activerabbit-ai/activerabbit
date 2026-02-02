@@ -9,14 +9,53 @@
         Super Admin view - Browse and switch to any account
       </p>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-500">
-      <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-      </svg>
-      <span><%= @pagy.count %> total accounts</span>
+    <div class="flex items-center gap-4">
+      <!-- Search -->
+      <%= form_tag super_admin_accounts_path, method: :get, class: "flex items-center" do %>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <%= text_field_tag :q, params[:q], 
+              placeholder: "Search: name, email, p:ID, u:ID", 
+              class: "block w-72 pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500",
+              autofocus: params[:q].present?,
+              title: "Search by: account name, user email, project ID (p:30), user ID (u:55), or account ID (30)" %>
+        </div>
+        <% if params[:q].present? %>
+          <%= link_to super_admin_accounts_path, class: "ml-2 text-gray-400 hover:text-gray-600" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          <% end %>
+        <% end %>
+      <% end %>
+      <div class="flex items-center gap-2 text-sm text-gray-500">
+        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+        <span><%= @pagy.count %> <%= params[:q].present? ? "matching" : "total" %> accounts</span>
+      </div>
     </div>
   </div>
 
+  <% if params[:q].present? && @accounts.empty? %>
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-8 text-center">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">No accounts found</h3>
+      <p class="mt-1 text-sm text-gray-500">No accounts match "<%= params[:q] %>"</p>
+      <div class="mt-4 text-xs text-gray-400">
+        Search tips: <code class="bg-gray-100 px-1 rounded">p:30</code> for project ID, 
+        <code class="bg-gray-100 px-1 rounded">u:55</code> for user ID, 
+        or just type a name/email
+      </div>
+      <%= link_to "Clear search", super_admin_accounts_path, class: "mt-4 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+    </div>
+  <% else %>
   <!-- Accounts Table -->
   <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
     <table class="min-w-full divide-y divide-gray-200">
@@ -77,7 +116,7 @@
                 <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                 </svg>
-                <%= account.users.size %>
+                <%= @users_count[account.id] || 0 %>
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -85,7 +124,7 @@
                 <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
                 </svg>
-                <%= account.projects.size %>
+                <%= @projects_count[account.id] || 0 %>
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -123,16 +162,17 @@
       </div>
       <nav class="flex items-center gap-1">
         <% if @pagy.prev %>
-          <%= link_to super_admin_accounts_path(page: @pagy.prev), class: "px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50" do %>
+          <%= link_to super_admin_accounts_path(page: @pagy.prev, q: params[:q]), class: "px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50" do %>
             Previous
           <% end %>
         <% end %>
         <% if @pagy.next %>
-          <%= link_to super_admin_accounts_path(page: @pagy.next), class: "px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50" do %>
+          <%= link_to super_admin_accounts_path(page: @pagy.next, q: params[:q]), class: "px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50" do %>
             Next
           <% end %>
         <% end %>
       </nav>
     </div>
+  <% end %>
   <% end %>
 </div>
