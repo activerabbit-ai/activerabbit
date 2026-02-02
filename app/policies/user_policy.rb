@@ -23,15 +23,27 @@ class UserPolicy < ApplicationPolicy
     user.owner?
   end
 
+  def avatar?
+    user.owner? || record == user
+  end
+
+  def disconnect_provider?
+    record == user
+  end
+
+  def connect_provider?
+    record == user
+  end
+
   def permitted_attributes
     base_attrs = if user.owner?
       if record == user
-        [:email, :password, :password_confirmation, :current_password]
+        [:email, :password, :password_confirmation, :current_password, :avatar]
       else
         [:email, :role]
       end
     elsif record == user
-      [:email, :password, :password_confirmation, :current_password]
+      [:email, :password, :password_confirmation, :current_password, :avatar]
     else
       []
     end
