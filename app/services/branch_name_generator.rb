@@ -1,7 +1,7 @@
 # Generates branch names for GitHub PRs
 class BranchNameGenerator
-  def initialize(openai_key:)
-    @openai_key = openai_key
+  def initialize(anthropic_key:)
+    @anthropic_key = anthropic_key
   end
 
   def generate(issue, custom_branch_name = nil)
@@ -13,7 +13,7 @@ class BranchNameGenerator
     end
 
     # Try to generate a meaningful branch name using AI
-    if @openai_key.present?
+    if @anthropic_key.present?
       ai_branch = generate_ai_branch_name(issue)
       if ai_branch.present?
         Rails.logger.info "[GitHub API] Using AI-generated branch name: #{ai_branch}"
@@ -75,7 +75,7 @@ class BranchNameGenerator
     PROMPT
 
     begin
-      response = openai_chat_completion(prompt)
+      response = claude_chat_completion(prompt)
       return nil if response.blank?
 
       # Clean up the response
@@ -131,34 +131,36 @@ class BranchNameGenerator
     "#{branch}-#{Time.now.strftime('%m%d%H%M')}"
   end
 
-  def openai_chat_completion(prompt)
+  def claude_chat_completion(prompt)
     require "net/http"
     require "json"
 
-    uri = URI.parse("https://api.openai.com/v1/chat/completions")
+    uri = URI.parse("https://api.anthropic.com/v1/messages")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     http.read_timeout = 30
 
     body = {
-      model: "gpt-4o-mini",
+      model: "claude-opus-4-5-20250514",
+      max_tokens: 100,
+      system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
       messages: [
-        { role: "system", content: "You are a senior Rails developer helping fix bugs. Be concise and practical." },
         { role: "user", content: prompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 2000
+      ]
     }
 
     req = Net::HTTP::Post.new(uri.request_uri)
-    req["Authorization"] = "Bearer #{@openai_key}"
+    req["x-api-key"] = @anthropic_key
+    req["anthropic-version"] = "2023-06-01"
     req["Content-Type"] = "application/json"
     req.body = JSON.dump(body)
 
     res = http.request(req)
-    raise "OpenAI error: #{res.code}" unless res.code.to_i.between?(200, 299)
+    raise "Claude API error: #{res.code}" unless res.code.to_i.between?(200, 299)
 
     json = JSON.parse(res.body)
-    json.dig("choices", 0, "message", "content")
+    content_blocks = json["content"] || []
+    text_block = content_blocks.find { |b| b["type"] == "text" }
+    text_block&.dig("text") || ""
   end
 end

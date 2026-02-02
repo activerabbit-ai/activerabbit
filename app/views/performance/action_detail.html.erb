@@ -80,7 +80,7 @@
         </div>
       </div>
     <% elsif defined?(@ai_result) && @ai_result && @ai_result[:error] == 'missing_api_key' %>
-      <div class="text-sm text-gray-600">Set <code>OPENAI_API_KEY</code> to enable AI summaries.</div>
+      <div class="text-sm text-gray-600">Set <code>ANTHROPIC_API_KEY</code> to enable AI summaries.</div>
     <% elsif defined?(@ai_result) && @ai_result && @ai_result[:error] %>
       <div class="text-sm text-red-600">AI summary failed: <%= @ai_result[:message] %></div>
     <% else %>

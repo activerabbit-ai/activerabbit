@@ -22,7 +22,7 @@ env:
     - STAGING_DATABASE_URL
     - REDIS_URL
     - SECRET_KEY_BASE
-    - OPENAI_API_KEY
+    - ANTHROPIC_API_KEY
 
   clear:
     RAILS_ENV: staging

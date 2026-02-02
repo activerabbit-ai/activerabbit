@@ -14,8 +14,8 @@ end
 
 RSpec.describe CodeFixApplier do
   let(:api_client) { double('GithubApiClient') }
-  let(:openai_key) { 'test-key' }
-  let(:applier) { described_class.new(api_client: api_client, openai_key: openai_key) }
+  let(:anthropic_key) { 'test-key' }
+  let(:applier) { described_class.new(api_client: api_client, anthropic_key: anthropic_key) }
 
   describe '#normalize_fixed_code (private)' do
     # Access private method for testing

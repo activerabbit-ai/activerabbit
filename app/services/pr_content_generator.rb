@@ -1,7 +1,7 @@
 # Generates PR content (title, body, code fix) using AI or existing summaries
 class PrContentGenerator
-  def initialize(openai_key:)
-    @openai_key = openai_key
+  def initialize(anthropic_key:)
+    @anthropic_key = anthropic_key
   end
 
   def generate(issue)
@@ -15,7 +15,7 @@ class PrContentGenerator
       code_fix = parsed[:fix_code]
 
       { title: title, body: body, code_fix: code_fix }
-    elsif @openai_key.present?
+    elsif @anthropic_key.present?
       # Generate fresh AI analysis for the PR
       ai_result = generate_ai_pr_analysis(issue, sample_event)
       title = ai_result[:title] || "Fix #{issue.exception_class} in #{issue.controller_action}"
@@ -357,12 +357,12 @@ class PrContentGenerator
   end
 
   def generate_ai_pr_analysis(issue, sample_event)
-    return {} unless @openai_key.present?
+    return {} unless @anthropic_key.present?
 
     prompt = build_pr_prompt(issue, sample_event)
 
     begin
-      response = openai_chat_completion(prompt)
+      response = claude_chat_completion(prompt)
       parse_ai_pr_response(response, issue, sample_event)
     rescue => e
       Rails.logger.error "[GitHub PR] AI analysis failed: #{e.message}"
@@ -441,35 +441,37 @@ class PrContentGenerator
     result
   end
 
-  def openai_chat_completion(prompt)
+  def claude_chat_completion(prompt)
     require "net/http"
     require "json"
 
-    uri = URI.parse("https://api.openai.com/v1/chat/completions")
+    uri = URI.parse("https://api.anthropic.com/v1/messages")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    http.read_timeout = 30
+    http.read_timeout = 60
 
     body = {
-      model: "gpt-4o-mini",
+      model: "claude-opus-4-5-20250514",
+      max_tokens: 2000,
+      system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
       messages: [
-        { role: "system", content: "You are a senior Rails developer helping fix bugs. Be concise and practical." },
         { role: "user", content: prompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 2000
+      ]
     }
 
     req = Net::HTTP::Post.new(uri.request_uri)
-    req["Authorization"] = "Bearer #{@openai_key}"
+    req["x-api-key"] = @anthropic_key
+    req["anthropic-version"] = "2023-06-01"
     req["Content-Type"] = "application/json"
     req.body = JSON.dump(body)
 
     res = http.request(req)
-    raise "OpenAI error: #{res.code}" unless res.code.to_i.between?(200, 299)
+    raise "Claude API error: #{res.code}" unless res.code.to_i.between?(200, 299)
 
     json = JSON.parse(res.body)
-    json.dig("choices", 0, "message", "content")
+    content_blocks = json["content"] || []
+    text_block = content_blocks.find { |b| b["type"] == "text" }
+    text_block&.dig("text") || ""
   end
 
   def validate_method_structure(code)
