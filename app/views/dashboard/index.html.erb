@@ -118,7 +118,7 @@
               </div>
               <div class="text-sm text-gray-500">
                 <div><%= project.environment %></div>
-                <div>by <%= project.user.email %></div>
+                <div>by <%= project.user&.email || 'Unknown User' %></div>
               </div>
             </div>
           </div>
