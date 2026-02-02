@@ -47,6 +47,23 @@
         <%= f.select :role, User::ROLES.map { |r| [r.titleize, r] }, { selected: "member" }, { required: true, class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" } %>
       </div>
 
+      <%# Super Admin checkbox - only visible to super admins %>
+      <% if current_user&.super_admin? %>
+        <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-start">
+            <%= f.check_box :super_admin, class: "h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded mt-0.5" %>
+            <div class="ml-3">
+              <label for="user_super_admin" class="block text-sm font-medium text-red-800">
+                Grant Super Admin Access
+              </label>
+              <p class="text-xs text-red-600 mt-1">
+                Super admins can view and switch to any account in the system. Use with caution.
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
       <!-- Submit -->
       <div class="pt-4">
         <%= f.submit "Invite", class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors" %>

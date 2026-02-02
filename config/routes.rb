@@ -142,6 +142,16 @@ Rails.application.routes.draw do
   # Subscription management
   resources :subscriptions, only: [:new, :create, :show, :destroy]
 
+  # Super Admin routes (for viewing all accounts)
+  namespace :super_admin, path: "" do
+    resources :accounts, only: [:index, :show] do
+      member do
+        post :switch
+      end
+    end
+    delete "accounts/exit", to: "accounts#exit", as: "exit_accounts"
+  end
+
   # API routes for data ingestion
   namespace :api do
     namespace :v1 do

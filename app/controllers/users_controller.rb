@@ -32,6 +32,11 @@ class UsersController < ApplicationController
       @user.role = params.dig(:user, :role)
     end
 
+    # Only allow super_admin assignment if current user is super_admin
+    if current_user.super_admin? && params.dig(:user, :super_admin).present?
+      @user.super_admin = params.dig(:user, :super_admin) == "1"
+    end
+
     authorize @user
 
     unless @user.save
@@ -55,6 +60,11 @@ class UsersController < ApplicationController
     authorize @user
 
     update_params = permitted_attributes(@user)
+
+    # Only allow super_admin assignment if current user is super_admin and not editing themselves
+    if current_user.super_admin? && @user != current_user && params.dig(:user, :super_admin).present?
+      @user.super_admin = params.dig(:user, :super_admin) == "1"
+    end
 
     if @user == current_user
       if update_params[:password].present?

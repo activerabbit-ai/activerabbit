@@ -38,7 +38,7 @@ class ApplicationController < ActionController::Base
   # Check quota and show flash message
   before_action :check_quota_exceeded
 
-  helper_method :current_project, :current_account, :selected_project_for_menu
+  helper_method :current_project, :current_account, :selected_project_for_menu, :viewing_as_super_admin?
 
   protected
 
@@ -75,7 +75,18 @@ class ApplicationController < ActionController::Base
   end
 
   def current_account
+    return @current_account if defined?(@current_account) && @current_account
+
+    # Super admin viewing mode: use viewed account from session
+    if current_user&.super_admin? && session[:viewed_account_id].present?
+      @current_account = Account.find_by(id: session[:viewed_account_id])
+    end
+
     @current_account ||= current_user&.account
+  end
+
+  def viewing_as_super_admin?
+    current_user&.super_admin? && session[:viewed_account_id].present? && current_account != current_user&.account
   end
 
   def selected_project_for_menu
@@ -85,8 +96,8 @@ class ApplicationController < ActionController::Base
   private
 
   def set_current_tenant
-    if user_signed_in? && current_user.account
-      ActsAsTenant.current_tenant = current_user.account
+    if user_signed_in? && current_account
+      ActsAsTenant.current_tenant = current_account
     end
   end
 

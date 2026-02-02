@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_21_212100) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_02_193823) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -517,11 +517,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_21_212100) do
     t.string "uid"
     t.string "role"
     t.bigint "invited_by_id"
+    t.boolean "super_admin", default: false, null: false
     t.index ["account_id"], name: "index_users_on_account_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["invited_by_id"], name: "index_users_on_invited_by_id"
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["super_admin"], name: "index_users_on_super_admin"
   end
 
   create_table "webhook_events", force: :cascade do |t|
