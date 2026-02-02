@@ -90,6 +90,7 @@ Rails.application.routes.draw do
       post :test_notification
       post :test_fizzy_sync
       post :sync_all_errors
+      delete :disconnect_github
     end
 
     resources :issues do
