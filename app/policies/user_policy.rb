@@ -27,6 +27,14 @@ class UserPolicy < ApplicationPolicy
     user.owner? || record == user
   end
 
+  def disconnect_provider?
+    record == user
+  end
+
+  def connect_provider?
+    record == user
+  end
+
   def permitted_attributes
     if user.owner?
       if record == user

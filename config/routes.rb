@@ -38,6 +38,8 @@ Rails.application.routes.draw do
   resources :users do
     member do
       delete :destroy_avatar
+      delete :disconnect_provider
+      post :connect_provider
     end
   end
 
