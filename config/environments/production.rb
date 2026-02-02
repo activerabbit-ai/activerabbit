@@ -89,5 +89,5 @@ Rails.application.configure do
   config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 
   # Set the default URL options for the application
-  routes.default_url_options[:host] = ENV.fetch("APP_HOST")
+  routes.default_url_options[:host] = app_host
 end
