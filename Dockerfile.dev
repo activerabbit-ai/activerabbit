@@ -9,6 +9,7 @@ RUN apt-get update -qq && \
     git \
     libpq-dev \
     libyaml-dev \
+    libvips \
     pkg-config \
     postgresql-client \
     nodejs \

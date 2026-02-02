@@ -113,10 +113,18 @@ class UsersController < ApplicationController
     end
   end
 
+  def destroy_avatar
+    @user = User.find(params[:id])
+    authorize @user, :avatar?
+
+    @user.avatar.purge_later if @user.avatar.attached?
+    redirect_to edit_user_path(@user), notice: "Avatar deleted successfully."
+  end
+
   private
 
   def user_params
-    params.require(:user).permit(:email, :password, :password_confirmation, :current_password)
+    params.require(:user).permit(:email, :password, :password_confirmation, :current_password, :avatar)
   end
 
   def current_account

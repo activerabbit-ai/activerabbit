@@ -94,6 +94,21 @@
                   class: "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
           </div>
         </div>
+        <div>
+          <%= f.label :avatar, class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <% if @user.avatar.attached? %>
+            <div class="flex items-center gap-4 mb-3">
+              <%= image_tag @user.avatar_variant(size: 128), class: "w-24 h-24 rounded-full object-cover border-2 border-gray-200" %>
+              <%= link_to "Remove Avatar", destroy_avatar_user_path(@user), 
+                  data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to remove your avatar?" },
+                  class: "px-3 py-1.5 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors" %>
+            </div>
+          <% end %>
+          <%= f.file_field :avatar, 
+              accept: "image/jpeg,image/png,image/webp",
+              class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" %>
+          <p class="mt-1 text-xs text-gray-500">JPG, PNG or WebP. Max 5MB.</p>
+        </div>
       <% end %>
 
       <% if current_user.owner? %>
