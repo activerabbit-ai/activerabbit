@@ -715,7 +715,7 @@ class PerformanceController < ApplicationController
     project_scope = @current_project || @project
     target = params[:target]
 
-    pr_service = GithubPrService.new(project_scope)
+    pr_service = Github::PrService.new(project_scope)
     # Build a pseudo-issue for performance with minimal attributes used by service body
     issue_like = OpenStruct.new(
       id: "perf-#{target.gsub(/[^a-zA-Z0-9_-]/, '-')}",
@@ -758,7 +758,7 @@ class PerformanceController < ApplicationController
     # This is a stub for GitHub integration
     # In a real implementation, this would create a PR with optimization suggestions
 
-    pr_service = GithubPrService.new(project_scope)
+    pr_service = Github::PrService.new(project_scope)
     result = pr_service.create_n_plus_one_fix_pr(@sql_fingerprint)
 
     if result[:success]
