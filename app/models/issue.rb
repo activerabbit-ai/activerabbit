@@ -165,9 +165,10 @@ class Issue < ApplicationRecord
 
   private
 
-  # Exception classes that should be grouped more aggressively
-  # These are "noise" errors where the specific code location doesn't matter much
-  COARSE_FINGERPRINT_EXCEPTIONS = %w[
+  # Exception classes that should be grouped by originating code location
+  # These are common errors where the controller action is just the entry point,
+  # but the real bug lives in shared code (base controllers, concerns, etc.)
+  ORIGIN_BASED_FINGERPRINT_EXCEPTIONS = %w[
     ActiveRecord::RecordNotFound
     ActionController::RoutingError
     ActionController::UnknownFormat
@@ -179,14 +180,15 @@ class Issue < ApplicationRecord
     # Normalize top frame (remove line numbers, normalize paths)
     normalized_frame = top_frame.gsub(/:\d+/, ":N").gsub(/\/\d+\//, "/N/")
 
-    # For common "noise" exceptions, use coarse fingerprinting:
-    # Group by exception_class + controller#action (ignore specific code location/line)
-    # This ensures ONE issue per action, ONE notification per action per rate limit period
-    # Example: 10,000 RecordNotFound from CompaniesController#show → 1 issue → 1 notification
-    if COARSE_FINGERPRINT_EXCEPTIONS.include?(exception_class)
+    # For common exceptions, group by exception_class + originating code location (top_frame)
+    # This groups errors that come from the same code path, regardless of entry point
+    # Example: RecordNotFound from base_controller.rb#authenticate_with_bearer_token
+    #          called via HoursController#index, TasksController#index, etc.
+    #          → ALL grouped into 1 issue (same root cause, single fix needed)
+    if ORIGIN_BASED_FINGERPRINT_EXCEPTIONS.include?(exception_class)
       components = [
         exception_class,
-        controller_action # Full controller#action for per-action grouping
+        normalized_frame # Group by originating code location, not entry point
       ].compact
     else
       # Standard fingerprinting for other errors

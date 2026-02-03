@@ -124,6 +124,34 @@ class ProjectSettingsController < ApplicationController
                 notice: "Fizzy sync started. Issues will be synced in the background."
   end
 
+  def disconnect_github
+    settings = @project.settings || {}
+
+    # Remove all GitHub-related settings
+    github_keys = %w[
+      github_installation_id
+      github_repo
+      github_base_branch
+      github_source_branch
+      github_pat
+      github_app_id
+      github_app_pk
+      issue_pr_urls
+    ]
+
+    github_keys.each { |key| settings.delete(key) }
+
+    @project.settings = settings
+
+    if @project.save
+      redirect_to project_settings_path(@project),
+                  notice: "GitHub repository disconnected successfully."
+    else
+      redirect_to project_settings_path(@project),
+                  alert: "Failed to disconnect GitHub repository."
+    end
+  end
+
   private
 
   def set_project

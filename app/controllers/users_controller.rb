@@ -32,6 +32,11 @@ class UsersController < ApplicationController
       @user.role = params.dig(:user, :role)
     end
 
+    # Only allow super_admin assignment if current user is super_admin
+    if current_user.super_admin? && params.dig(:user, :super_admin).present?
+      @user.super_admin = params.dig(:user, :super_admin) == "1"
+    end
+
     authorize @user
 
     unless @user.save
@@ -55,6 +60,11 @@ class UsersController < ApplicationController
     authorize @user
 
     update_params = permitted_attributes(@user)
+
+    # Only allow super_admin assignment if current user is super_admin and not editing themselves
+    if current_user.super_admin? && @user != current_user && params.dig(:user, :super_admin).present?
+      @user.super_admin = params.dig(:user, :super_admin) == "1"
+    end
 
     if @user == current_user
       if update_params[:password].present?
@@ -113,10 +123,74 @@ class UsersController < ApplicationController
     end
   end
 
+  def destroy_avatar
+    @user = User.find(params[:id])
+    authorize @user, :avatar?
+
+    @user.avatar.purge_later if @user.avatar.attached?
+    redirect_to edit_user_path(@user), notice: "Avatar deleted successfully."
+  end
+
+  def disconnect_provider
+    @user = User.find(params[:id])
+    authorize @user, :disconnect_provider?
+
+    provider = params[:provider]
+    
+    unless %w[github google_oauth2].include?(provider)
+      redirect_to edit_user_path(@user), alert: "Invalid provider."
+      return
+    end
+
+    unless @user.provider == provider
+      redirect_to edit_user_path(@user), alert: "This provider is not connected."
+      return
+    end
+
+    @user.update(provider: nil, uid: nil)
+    redirect_to edit_user_path(@user), notice: "#{provider == 'google_oauth2' ? 'Google' : 'GitHub'} account disconnected successfully."
+  end
+
+  def connect_provider
+    @user = User.find(params[:id])
+    authorize @user, :connect_provider?
+
+    provider = params[:provider]
+    
+    unless %w[github google_oauth2].include?(provider)
+      redirect_to edit_user_path(@user), alert: "Invalid provider."
+      return
+    end
+
+    # Check if user already has a different provider connected
+    if @user.provider.present? && @user.provider != provider
+      other_provider = @user.provider == "google_oauth2" ? "Google" : "GitHub"
+      redirect_to edit_user_path(@user), alert: "You already have #{other_provider} connected. Disconnect it first to connect another provider."
+      return
+    end
+
+    # Check if already connected to this provider
+    if @user.provider == provider
+      redirect_to edit_user_path(@user), notice: "#{provider == 'google_oauth2' ? 'Google' : 'GitHub'} is already connected."
+      return
+    end
+
+    # Store in session that we want to link, not login
+    session[:link_provider] = provider
+    
+    # Redirect to OmniAuth path (each provider has its own helper)
+    case provider
+    when "github"
+      redirect_to user_github_omniauth_authorize_path, allow_other_host: true
+    when "google_oauth2"
+      redirect_to user_google_oauth2_omniauth_authorize_path, allow_other_host: true
+    end
+  end
+
   private
 
   def user_params
-    params.require(:user).permit(:email, :password, :password_confirmation, :current_password)
+    params.require(:user).permit(:email, :password, :password_confirmation, :current_password, :avatar)
   end
 
   def current_account

@@ -37,8 +37,10 @@ class ApplicationController < ActionController::Base
   before_action :handle_subscription_welcome
   # Check quota and show flash message
   before_action :check_quota_exceeded
+  # Super admin viewing mode: read-only access
+  before_action :enforce_read_only_for_super_admin_viewing
 
-  helper_method :current_project, :current_account, :selected_project_for_menu
+  helper_method :current_project, :current_account, :selected_project_for_menu, :viewing_as_super_admin?
 
   protected
 
@@ -75,7 +77,23 @@ class ApplicationController < ActionController::Base
   end
 
   def current_account
+    return @current_account if defined?(@current_account) && @current_account
+
+    # Super admin viewing mode: use viewed account from session
+    if current_user&.super_admin? && session[:viewed_account_id].present?
+      # Use without_tenant to ensure we can find any account
+      @current_account = ActsAsTenant.without_tenant { Account.find_by(id: session[:viewed_account_id]) }
+    end
+
     @current_account ||= current_user&.account
+  end
+
+  def viewing_as_super_admin?
+    return false unless current_user&.super_admin?
+    return false unless session[:viewed_account_id].present?
+    
+    # Check if viewing a different account than user's own
+    session[:viewed_account_id].to_i != current_user.account_id
   end
 
   def selected_project_for_menu
@@ -85,8 +103,8 @@ class ApplicationController < ActionController::Base
   private
 
   def set_current_tenant
-    if user_signed_in? && current_user.account
-      ActsAsTenant.current_tenant = current_user.account
+    if user_signed_in? && current_account
+      ActsAsTenant.current_tenant = current_account
     end
   end
 
@@ -120,6 +138,8 @@ class ApplicationController < ActionController::Base
     return unless user_signed_in?
     return if devise_controller?
     return if ONBOARDING_EXEMPT_CONTROLLERS.include?(controller_name)
+    # Skip onboarding check when super admin is viewing another account
+    return if viewing_as_super_admin?
 
     begin
       if current_user.needs_onboarding?
@@ -151,6 +171,8 @@ class ApplicationController < ActionController::Base
     return if controller_name == "onboarding"
     return if controller_name == "pricing" # Don't show on pricing page itself
     return unless current_account
+    # Skip quota check when super admin is viewing another account
+    return if viewing_as_super_admin?
 
     # Show on every page until plan is upgraded
     message = current_account.quota_exceeded_flash_message
@@ -160,7 +182,18 @@ class ApplicationController < ActionController::Base
   end
 
   def user_not_authorized
-    redirect_to root_path, alert: "You don’t have permission to perform this action"
+    redirect_to root_path, alert: "You don't have permission to perform this action"
+  end
+
+  # Super admin viewing mode: block all write operations (read-only access)
+  def enforce_read_only_for_super_admin_viewing
+    return unless viewing_as_super_admin?
+    return if request.get? || request.head?
+
+    # Allow super admin to exit viewing mode
+    return if controller_path == "super_admin/accounts" && action_name == "exit"
+
+    redirect_back fallback_location: dashboard_path, alert: "View-only mode: You cannot make changes while viewing another account."
   end
 
   layout :layout_by_resource

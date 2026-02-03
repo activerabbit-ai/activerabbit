@@ -18,8 +18,14 @@ class User < ApplicationRecord
   has_many :projects, dependent: :nullify
   belongs_to :invited_by, class_name: "User", optional: true
 
+  # Avatar
+  has_one_attached :avatar
+
   # Validations
   validates :role, inclusion: { in: ROLES }
+
+  # Avatar validation
+  validate :avatar_validation
 
   # Callbacks - Create account BEFORE user creation
   before_validation :ensure_account_exists, on: :create
@@ -89,12 +95,25 @@ class User < ApplicationRecord
     role == "member"
   end
 
+  def super_admin?
+    super_admin == true
+  end
+
   def password_required?
     if invited_by.present?
       false
     else
       super
     end
+  end
+
+  def avatar_variant(size: 128)
+    return unless avatar.attached?
+
+    avatar.variant(
+      resize_to_fill: [size, size],
+      saver: { strip: true }
+    )
   end
 
   private
@@ -125,6 +144,19 @@ class User < ApplicationRecord
       self.role = "owner" if role.blank?
     else
       self.role = role.presence || "member"
+    end
+  end
+
+  def avatar_validation
+    return unless avatar.attached?
+
+    if avatar.blob.byte_size > 5.megabytes
+      errors.add(:avatar, "is too large (max 5MB)")
+    end
+
+    allowed = %w[image/jpeg image/png image/webp]
+    unless avatar.blob.content_type.in?(allowed)
+      errors.add(:avatar, "must be JPG/PNG/WebP")
     end
   end
 end

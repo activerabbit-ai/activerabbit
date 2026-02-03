@@ -46,6 +46,23 @@ RSpec.describe User, type: :model do
       end
     end
 
+    describe "#super_admin?" do
+      it "returns true when super_admin is true" do
+        user = create(:user, account: account, super_admin: true)
+        expect(user.super_admin?).to be true
+      end
+
+      it "returns false when super_admin is false" do
+        user = create(:user, account: account, super_admin: false)
+        expect(user.super_admin?).to be false
+      end
+
+      it "defaults to false" do
+        user = create(:user, account: account)
+        expect(user.super_admin?).to be false
+      end
+    end
+
     describe "default role assignment" do
       it "assigns owner role when not invited" do
         user = create(:user, account: account, invited_by: nil, role: nil)

@@ -117,5 +117,91 @@ RSpec.describe "Users", type: :request do
       expect(new_user.reset_password_token).to be_present
       expect(new_user.reset_password_sent_at).to be_present
     end
+
+    context "regular owner cannot set super_admin" do
+      it "ignores super_admin param when owner is not super_admin" do
+        post users_path, params: {
+          user: { email: "newuser@example.com", role: "member", super_admin: "1" }
+        }
+
+        new_user = User.last
+        expect(new_user.super_admin).to be false
+      end
+    end
+  end
+
+  describe "super admin user management" do
+    let!(:super_admin) { create(:user, account: account, role: "owner", super_admin: true) }
+
+    describe "POST /users (invite as super admin)" do
+      before { sign_in super_admin }
+
+      it "allows super admin to create another super admin" do
+        post users_path, params: {
+          user: { email: "newsuperadmin@example.com", role: "owner", super_admin: "1" }
+        }
+
+        new_user = User.find_by(email: "newsuperadmin@example.com")
+        expect(new_user.super_admin).to be true
+      end
+
+      it "creates regular user when super_admin is not set" do
+        post users_path, params: {
+          user: { email: "regularuser@example.com", role: "member" }
+        }
+
+        new_user = User.find_by(email: "regularuser@example.com")
+        expect(new_user.super_admin).to be false
+      end
+    end
+
+    describe "PATCH /users/:id (update as super admin)" do
+      let!(:regular_user) { create(:user, account: account, role: "member", super_admin: false) }
+
+      before { sign_in super_admin }
+
+      it "allows super admin to grant super admin to another user" do
+        patch user_path(regular_user), params: {
+          user: { super_admin: "1" }
+        }
+
+        expect(regular_user.reload.super_admin).to be true
+      end
+
+      it "allows super admin to revoke super admin from another user" do
+        regular_user.update!(super_admin: true)
+
+        patch user_path(regular_user), params: {
+          user: { super_admin: "0" }
+        }
+
+        expect(regular_user.reload.super_admin).to be false
+      end
+
+      it "does not allow super admin to modify their own super admin status" do
+        # Super admin cannot modify themselves via this route
+        # (the form doesn't show the checkbox for editing yourself)
+        patch user_path(super_admin), params: {
+          user: { email: super_admin.email, super_admin: "0" }
+        }
+
+        # super_admin status should remain unchanged
+        expect(super_admin.reload.super_admin).to be true
+      end
+    end
+
+    describe "PATCH /users/:id (update as regular owner)" do
+      let!(:regular_user) { create(:user, account: account, role: "member", super_admin: false) }
+
+      before { sign_in owner }
+
+      it "does not allow regular owner to grant super admin" do
+        patch user_path(regular_user), params: {
+          user: { super_admin: "1" }
+        }
+
+        expect(regular_user.reload.super_admin).to be false
+      end
+    end
   end
 end
