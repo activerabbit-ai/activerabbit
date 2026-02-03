@@ -282,4 +282,75 @@ module ErrorsHelper
   def find_culprit_frame(frames)
     frames.find { |f| f[:in_app] }
   end
+
+  # Human-readable explanation for common exception types (140-200 chars)
+  # Technical but accessible — clear for developers, understandable for technical managers
+  def error_explanation(exception_class)
+    explanations = {
+      # Ruby Core Errors
+      "SystemStackError" => "Infinite recursion — a method keeps calling itself without an exit condition, exhausting the call stack. Check for circular method calls.",
+      "NoMethodError" => "Called a method on nil or an object that doesn't respond to it. Usually means a variable is nil when it shouldn't be.",
+      "NameError" => "Referenced an undefined variable or constant. Check for typos or missing requires/imports.",
+      "ArgumentError" => "Method received wrong number or type of arguments. Verify the method signature matches how it's being called.",
+      "TypeError" => "Operation on incompatible types — like concatenating String with Integer. Add proper type conversion.",
+      "ZeroDivisionError" => "Division by zero attempted. Add a guard clause to check the divisor before dividing.",
+      "RuntimeError" => "Generic runtime error raised explicitly in code. Check the message for context on what failed.",
+      "LoadError" => "Required file or gem not found. Verify it's in Gemfile and properly installed, or check the file path.",
+      "SyntaxError" => "Ruby syntax is invalid — missing end, bracket, or quote. Check the file referenced in the trace.",
+      "RangeError" => "Numeric value out of valid range — like invalid date components or array index overflow.",
+      "IOError" => "File I/O operation failed — file may be closed, locked, or inaccessible.",
+      "Errno::ENOENT" => "File or directory not found. Verify the path exists and is accessible by the application.",
+      "Errno::EACCES" => "Permission denied on file or directory. Check filesystem permissions for the app user.",
+      "Errno::ECONNREFUSED" => "Connection refused by target host. The service is down or not accepting connections on that port.",
+      "Timeout::Error" => "Operation exceeded time limit. External service may be slow — consider increasing timeout or adding retry logic.",
+      "Net::ReadTimeout" => "HTTP read timed out waiting for server response. The remote endpoint is slow or unresponsive.",
+      "Net::OpenTimeout" => "HTTP connection couldn't be established in time. Check network connectivity and target host availability.",
+
+      # ActiveRecord Errors
+      "ActiveRecord::RecordNotFound" => "No record found with the given ID or conditions. Use find_by (returns nil) instead of find, or rescue the exception.",
+      "ActiveRecord::RecordInvalid" => "Model validation failed on save! or create!. Check model validations and the data being submitted.",
+      "ActiveRecord::RecordNotUnique" => "Unique constraint violated — duplicate value in a column with unique index. Handle race conditions or validate uniqueness first.",
+      "ActiveRecord::StatementInvalid" => "Invalid SQL executed — column doesn't exist, syntax error, or constraint violation. Check the query and schema.",
+      "ActiveRecord::ConnectionNotEstablished" => "No database connection. Database server may be down, credentials wrong, or connection pool exhausted.",
+      "ActiveRecord::NoDatabaseError" => "Database doesn't exist. Run rails db:create or check DATABASE_URL configuration.",
+      "ActiveRecord::PendingMigrationError" => "Migrations haven't been run. Execute rails db:migrate to update the schema.",
+      "ActiveRecord::AssociationTypeMismatch" => "Wrong model type assigned to association — expected one class, got another. Check the assignment.",
+
+      # ActionController Errors
+      "ActionController::RoutingError" => "No route matches this URL/HTTP method. Check routes.rb or the URL being requested.",
+      "ActionController::ParameterMissing" => "Required parameter missing in params. Ensure the form/API sends the expected nested parameter structure.",
+      "ActionController::UnpermittedParameters" => "Params contain keys not in permit list. Update strong parameters to allow needed fields.",
+      "ActionController::InvalidAuthenticityToken" => "CSRF token invalid or missing. Session may have expired, or form is missing authenticity_token.",
+      "ActionController::UnknownFormat" => "No handler for requested format (HTML, JSON, etc). Add respond_to block or check Accept header.",
+
+      # ActionView Errors
+      "ActionView::MissingTemplate" => "Template file not found. Verify view exists at expected path with correct format and handler extension.",
+      "ActionView::Template::Error" => "Error while rendering template — often nil reference in view. Check the line number in the template.",
+
+      # Other Common Errors
+      "JSON::ParserError" => "Invalid JSON syntax — malformed payload or unexpected characters. Validate JSON structure before parsing.",
+      "Redis::CannotConnectError" => "Redis connection failed. Server may be down or REDIS_URL misconfigured.",
+      "Rack::Timeout::RequestTimeoutException" => "Request exceeded timeout limit. Slow query or external call blocking the response — optimize or move to background job.",
+      "JWT::DecodeError" => "JWT token couldn't be decoded — malformed, wrong algorithm, or invalid secret/key.",
+      "JWT::ExpiredSignature" => "JWT token expired. Client needs to refresh or re-authenticate.",
+      "OpenSSL::SSL::SSLError" => "SSL/TLS handshake failed — certificate invalid, expired, or protocol mismatch.",
+      "Faraday::ConnectionFailed" => "HTTP request couldn't connect to host. Service down or network unreachable.",
+      "Faraday::TimeoutError" => "HTTP request timed out. External API is slow — consider retry with backoff.",
+      "SocketError" => "Socket/DNS error — hostname couldn't be resolved. Check the URL and network configuration.",
+      "Pundit::NotAuthorizedError" => "Authorization failed — user doesn't have permission. Check policy rules for this action.",
+      "CanCan::AccessDenied" => "CanCanCan authorization denied. User lacks required ability — check Ability definitions.",
+      "Stripe::InvalidRequestError" => "Stripe API rejected the request — invalid parameters or missing required fields.",
+      "Stripe::CardError" => "Card was declined. Customer should verify card details or try a different payment method.",
+      "PG::UniqueViolation" => "PostgreSQL unique constraint violated. Duplicate value in unique column — handle at application level.",
+      "PG::ForeignKeyViolation" => "PostgreSQL foreign key constraint failed. Referenced record missing or trying to delete parent with children.",
+      "PG::UndefinedTable" => "Table doesn't exist in database. Run migrations or check table name spelling.",
+      "PG::UndefinedColumn" => "Column doesn't exist in table. Run migrations or verify column name in query.",
+      "Sidekiq::Shutdown" => "Job interrupted by Sidekiq shutdown. Will be retried automatically on restart.",
+      "SignalException" => "Process received termination signal (SIGTERM/SIGKILL). Normal during deploys — jobs should be idempotent.",
+      "Interrupt" => "Process interrupted (SIGINT/Ctrl+C). Expected in development, investigate if happening in production.",
+      "StandardError" => "Base exception class — check the specific error message and backtrace for details."
+    }
+
+    explanations[exception_class] || explanations[exception_class.to_s.split("::").last]
+  end
 end

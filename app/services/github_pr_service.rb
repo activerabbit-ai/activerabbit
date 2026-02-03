@@ -14,7 +14,7 @@ class GithubPrService
     @project_app_pk = settings["github_app_pk"]
     @env_app_id = ENV["AR_GH_APP_ID"]
     @env_app_pk = load_env_private_key
-    @openai_key = ENV["OPENAI_API_KEY"]
+    @anthropic_key = ENV["ANTHROPIC_API_KEY"]
 
     # Initialize service dependencies
     @token_manager = GithubTokenManager.new(
@@ -26,8 +26,8 @@ class GithubPrService
       env_app_id: @env_app_id,
       env_app_pk: @env_app_pk
     )
-    @branch_name_generator = BranchNameGenerator.new(openai_key: @openai_key)
-    @pr_content_generator = PrContentGenerator.new(openai_key: @openai_key)
+    @branch_name_generator = BranchNameGenerator.new(anthropic_key: @anthropic_key)
+    @pr_content_generator = PrContentGenerator.new(anthropic_key: @anthropic_key)
   end
 
   def create_n_plus_one_fix_pr(sql_fingerprint)
@@ -112,7 +112,7 @@ class GithubPrService
 
     # Create commit with suggested fix if available
     # Pass source_branch so CodeFixApplier fetches file from correct branch
-    code_fix_applier = CodeFixApplier.new(api_client: api_client, openai_key: @openai_key, source_branch: source_branch)
+    code_fix_applier = CodeFixApplier.new(api_client: api_client, anthropic_key: @anthropic_key, source_branch: source_branch)
     commit_result = create_fix_commit(api_client, code_fix_applier, owner, repo, branch, head_sha, issue, code_fix, pr_body)
     if commit_result.is_a?(Hash) && commit_result[:error]
       return { success: false, error: commit_result[:error] }

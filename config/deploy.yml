@@ -56,6 +56,7 @@ env:
     - PGPASSWORD
     - PGDATABASE
     - OPENAI_API_KEY
+    - ANTHROPIC_API_KEY
     - ADMIN_EMAIL_ALLOWLIST
     - RESEND_API_KEY
     - ACTIVERABBIT_SELF_MONITOR
@@ -69,7 +70,6 @@ env:
     # - AWS_SECRET_ACCESS_KEY
     # - AWS_REGION
     # - AWS_S3_BUCKET
-
   clear:
     RAILS_ENV: production
     RAILS_LOG_TO_STDOUT: true

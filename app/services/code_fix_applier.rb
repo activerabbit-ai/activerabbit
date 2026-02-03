@@ -1,8 +1,8 @@
 # Applies code fixes to source files
 class CodeFixApplier
-  def initialize(api_client:, openai_key:, source_branch: nil)
+  def initialize(api_client:, openai_key: nil, anthropic_key: nil, source_branch: nil)
     @api_client = api_client
-    @openai_key = openai_key
+    @anthropic_key = anthropic_key || ENV["ANTHROPIC_API_KEY"]
     @source_branch = source_branch
   end
 
@@ -119,7 +119,7 @@ class CodeFixApplier
   end
 
   def generate_code_fix(issue, sample_event, error_frame, file_content)
-    return nil unless @openai_key.present?
+    return nil unless @anthropic_key.present?
 
     source_ctx = error_frame["source_context"] || error_frame[:source_context]
     line_number = error_frame["line"] || error_frame[:line]
@@ -160,7 +160,7 @@ class CodeFixApplier
     PROMPT
 
     begin
-      response = openai_chat_completion(prompt)
+      response = claude_chat_completion(prompt)
       return nil if response.blank?
 
       # Clean up the response - remove markdown code blocks if present
@@ -1088,34 +1088,34 @@ class CodeFixApplier
     end
   end
 
-  def openai_chat_completion(prompt)
+  def claude_chat_completion(prompt)
     require "net/http"
     require "json"
 
-    uri = URI.parse("https://api.openai.com/v1/chat/completions")
+    uri = URI.parse("https://api.anthropic.com/v1/messages")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     http.read_timeout = 30
 
     body = {
-      model: "gpt-4o-mini",
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 2000,
+      system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
       messages: [
-        { role: "system", content: "You are a senior Rails developer helping fix bugs. Be concise and practical." },
         { role: "user", content: prompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 2000
+      ]
     }
 
     req = Net::HTTP::Post.new(uri.request_uri)
-    req["Authorization"] = "Bearer #{@openai_key}"
+    req["x-api-key"] = @anthropic_key
+    req["anthropic-version"] = "2023-06-01"
     req["Content-Type"] = "application/json"
     req.body = JSON.dump(body)
 
     res = http.request(req)
-    raise "OpenAI error: #{res.code}" unless res.code.to_i.between?(200, 299)
+    raise "Claude error: #{res.code}" unless res.code.to_i.between?(200, 299)
 
     json = JSON.parse(res.body)
-    json.dig("choices", 0, "message", "content")
+    json.dig("content", 0, "text")
   end
 end
