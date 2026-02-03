@@ -136,7 +136,7 @@ class UsersController < ApplicationController
     authorize @user, :disconnect_provider?
 
     provider = params[:provider]
-    
+
     unless %w[github google_oauth2].include?(provider)
       redirect_to edit_user_path(@user), alert: "Invalid provider."
       return
@@ -156,7 +156,7 @@ class UsersController < ApplicationController
     authorize @user, :connect_provider?
 
     provider = params[:provider]
-    
+
     unless %w[github google_oauth2].include?(provider)
       redirect_to edit_user_path(@user), alert: "Invalid provider."
       return
@@ -177,7 +177,7 @@ class UsersController < ApplicationController
 
     # Store in session that we want to link, not login
     session[:link_provider] = provider
-    
+
     # Redirect to OmniAuth path (each provider has its own helper)
     case provider
     when "github"

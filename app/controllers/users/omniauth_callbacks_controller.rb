@@ -42,7 +42,7 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   def link_provider_to_current_user(auth, kind, provider)
     # Check if this OAuth account is already linked to another user
     existing_user = User.find_by(provider: auth.provider, uid: auth.uid)
-    
+
     if existing_user && existing_user != current_user
       redirect_to edit_user_path(current_user), alert: "This #{kind} account is already linked to another user."
       return
