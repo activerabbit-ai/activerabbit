@@ -354,7 +354,7 @@ class ErrorsController < ApplicationController
     # Get custom branch name from params (may be empty for AI generation)
     custom_branch_name = params[:branch_name].presence
 
-    pr_service = GithubPrService.new(project_scope || @issue.project)
+    pr_service = Github::PrService.new(project_scope || @issue.project)
     result = pr_service.create_pr_for_issue(@issue, custom_branch_name: custom_branch_name)
 
     redirect_path = if @current_project

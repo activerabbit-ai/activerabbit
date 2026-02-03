@@ -17,7 +17,7 @@ RSpec.describe 'Performance PR', type: :request do
 
   it 'redirects to GitHub on success' do
     skip "Skipping due to elusive 404 error in test environment despite correct setup"
-    allow_any_instance_of(GithubPrService).to receive(:create_pr_for_issue)
+    allow_any_instance_of(Github::PrService).to receive(:create_pr_for_issue)
       .and_return({ success: true, pr_url: 'https://github.com/owner/repo/pull/1' })
 
     post "/projects/#{project.id}/performance/actions/HomeIndex/create_pr"
@@ -27,7 +27,7 @@ RSpec.describe 'Performance PR', type: :request do
 
   it 'shows alert on failure' do
     skip "Skipping due to elusive 404 error in test environment"
-    allow_any_instance_of(GithubPrService).to receive(:create_pr_for_issue)
+    allow_any_instance_of(Github::PrService).to receive(:create_pr_for_issue)
       .and_return({ success: false, error: 'Repo not found' })
 
     post "/projects/#{project.id}/performance/actions/HomeIndex/create_pr"

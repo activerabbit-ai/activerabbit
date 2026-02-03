@@ -10,7 +10,7 @@ class PerformancePrTest < ActionDispatch::IntegrationTest
   end
 
   test "create_pr success redirects to github" do
-    GithubPrService.any_instance.stubs(:create_pr_for_issue).returns({ success: true, pr_url: "https://github.com/owner/repo/pull/1" })
+    Github::PrService.any_instance.stubs(:create_pr_for_issue).returns({ success: true, pr_url: "https://github.com/owner/repo/pull/1" })
 
     post project_performance_action_create_pr_path(@project, target: "HomeController#index")
     assert_response :redirect
@@ -18,7 +18,7 @@ class PerformancePrTest < ActionDispatch::IntegrationTest
   end
 
   test "create_pr failure shows alert" do
-    GithubPrService.any_instance.stubs(:create_pr_for_issue).returns({ success: false, error: "Repo not found" })
+    Github::PrService.any_instance.stubs(:create_pr_for_issue).returns({ success: false, error: "Repo not found" })
 
     post project_performance_action_create_pr_path(@project, target: "HomeController#index")
     follow_redirect!
