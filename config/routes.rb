@@ -37,7 +37,6 @@ Rails.application.routes.draw do
   post "settings/test_slack_notification", to: "settings#test_slack_notification", as: "test_slack_notification_settings"
   resources :users do
     member do
-      delete :destroy_avatar
       delete :disconnect_provider
       post :connect_provider
     end

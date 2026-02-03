@@ -65,10 +65,6 @@ env:
     - AR_GH_APP_SLUG
     - GITHUB_APP_CLIENT_ID
     - AR_GH_APP_PK_BASE64
-    - AWS_ACCESS_KEY_ID
-    - AWS_SECRET_ACCESS_KEY
-    - AWS_REGION
-    - AWS_S3_BUCKET
 
   clear:
     RAILS_ENV: production
