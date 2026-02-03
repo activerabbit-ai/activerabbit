@@ -123,20 +123,12 @@ class UsersController < ApplicationController
     end
   end
 
-  def destroy_avatar
-    @user = User.find(params[:id])
-    authorize @user, :avatar?
-
-    @user.avatar.purge_later if @user.avatar.attached?
-    redirect_to edit_user_path(@user), notice: "Avatar deleted successfully."
-  end
-
   def disconnect_provider
     @user = User.find(params[:id])
     authorize @user, :disconnect_provider?
 
     provider = params[:provider]
-    
+
     unless %w[github google_oauth2].include?(provider)
       redirect_to edit_user_path(@user), alert: "Invalid provider."
       return
@@ -156,7 +148,7 @@ class UsersController < ApplicationController
     authorize @user, :connect_provider?
 
     provider = params[:provider]
-    
+
     unless %w[github google_oauth2].include?(provider)
       redirect_to edit_user_path(@user), alert: "Invalid provider."
       return
@@ -177,7 +169,7 @@ class UsersController < ApplicationController
 
     # Store in session that we want to link, not login
     session[:link_provider] = provider
-    
+
     # Redirect to OmniAuth path (each provider has its own helper)
     case provider
     when "github"
@@ -190,7 +182,7 @@ class UsersController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:email, :password, :password_confirmation, :current_password, :avatar)
+    params.require(:user).permit(:email, :password, :password_confirmation, :current_password)
   end
 
   def current_account

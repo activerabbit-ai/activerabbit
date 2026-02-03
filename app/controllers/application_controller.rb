@@ -91,7 +91,7 @@ class ApplicationController < ActionController::Base
   def viewing_as_super_admin?
     return false unless current_user&.super_admin?
     return false unless session[:viewed_account_id].present?
-    
+
     # Check if viewing a different account than user's own
     session[:viewed_account_id].to_i != current_user.account_id
   end
