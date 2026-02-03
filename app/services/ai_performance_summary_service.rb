@@ -12,7 +12,7 @@ class AiPerformanceSummaryService
   end
 
   def call
-    return { error: "missing_api_key", message: "OPENAI_API_KEY not configured" } if api_key.blank?
+    return { error: "missing_api_key", message: "ANTHROPIC_API_KEY not configured" } if api_key.blank?
 
     content = build_content
     response = client_completion(content)
@@ -25,36 +25,37 @@ class AiPerformanceSummaryService
   private
 
   def api_key
-    ENV["OPENAI_API_KEY"]
+    ENV["ANTHROPIC_API_KEY"]
   end
 
   def client_completion(content)
     require "net/http"
     require "json"
 
-    uri = URI.parse("https://api.openai.com/v1/chat/completions")
+    uri = URI.parse("https://api.anthropic.com/v1/messages")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
 
     body = {
-      model: "gpt-4o-mini",
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 2000,
+      system: SYSTEM_PROMPT,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: content }
-      ],
-      temperature: 0.2
+      ]
     }
 
     req = Net::HTTP::Post.new(uri.request_uri)
-    req["Authorization"] = "Bearer #{api_key}"
+    req["x-api-key"] = api_key
+    req["anthropic-version"] = "2023-06-01"
     req["Content-Type"] = "application/json"
     req.body = JSON.dump(body)
 
     res = http.request(req)
-    raise "OpenAI error: #{res.code} #{res.body}" unless res.code.to_i.between?(200, 299)
+    raise "Claude error: #{res.code} #{res.body}" unless res.code.to_i.between?(200, 299)
 
     json = JSON.parse(res.body)
-    json.dig("choices", 0, "message", "content")
+    json.dig("content", 0, "text")
   end
 
   def build_content
