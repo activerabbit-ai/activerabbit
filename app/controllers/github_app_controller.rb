@@ -28,7 +28,7 @@ class GithubAppController < ApplicationController
     end
 
     # Fetch installation info from GitHub to get repository details
-    github_info = GithubInstallationService.new(installation_id).fetch_installation_info
+    github_info = Github::InstallationService.new(installation_id).fetch_installation_info
 
     if github_info[:success]
       settings = project.settings || {}

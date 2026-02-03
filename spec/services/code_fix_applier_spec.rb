@@ -3,7 +3,7 @@ require 'active_support/core_ext/object/blank'
 require 'logger'
 
 # Load the class under test without full Rails
-require_relative '../../app/services/code_fix_applier'
+require_relative '../../app/services/github/code_fix_applier'
 
 # Stub Rails.logger for testing
 module Rails
@@ -12,8 +12,8 @@ module Rails
   end
 end
 
-RSpec.describe CodeFixApplier do
-  let(:api_client) { double('GithubApiClient') }
+RSpec.describe Github::CodeFixApplier do
+  let(:api_client) { double('Github::ApiClient') }
   let(:anthropic_key) { 'test-key' }
   let(:applier) { described_class.new(api_client: api_client, anthropic_key: anthropic_key) }
 
