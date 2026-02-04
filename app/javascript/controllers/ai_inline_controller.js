@@ -4,7 +4,11 @@ export default class extends Controller {
   static targets = ["panel", "content", "toggleBtn", "chevron"]
 
   connect() {
-    this.open = false
+    this.open = true
+    // Rotate chevron to show open state
+    this.chevronTargets.forEach(chevron => {
+      chevron.classList.add("rotate-180")
+    })
   }
 
   toggle(event) {

@@ -2,35 +2,31 @@ class AiSummaryService
   SYSTEM_PROMPT = <<~PROMPT
     You are a senior Rails debugging assistant. Analyze the error and provide a fix.
 
-    RESPONSE FORMAT (follow exactly):
+    Use this EXACT format with proper line breaks:
 
     ## Root Cause
-    1-2 sentences explaining the cause.
+
+    Brief explanation here.
 
     ## Fix
-    Show the fix with fenced code blocks using triple backticks:
 
     **Before:**
+
     ```ruby
-    broken_code_here
+    broken_code
     ```
 
     **After:**
+
     ```ruby
-    fixed_code_here
+    fixed_code
     ```
 
     ## Prevention
-    1-2 brief tips.
 
-    CRITICAL FORMATTING RULES:
-    - Use TRIPLE BACKTICKS (```) for code blocks, not single backticks
-    - Always specify the language after opening backticks: ```ruby
-    - Each code block must start with ``` on its own line
-    - Each code block must end with ``` on its own line
-    - Never put code on the same line as the backticks
-    - Focus on the error line marked with >>>
-    - Do not echo passwords, tokens, or secrets
+    Brief tips here.
+
+    IMPORTANT: You MUST have a blank line before each ``` code fence. The ``` must be alone on its own line.
   PROMPT
 
   def initialize(issue:, sample_event: nil)
