@@ -20,6 +20,8 @@ Rails.application.routes.draw do
   post "onboarding/create_project", to: "onboarding#create_project", as: "onboarding_create_project"
   get "onboarding/install_gem/:project_id", to: "onboarding#install_gem", as: "onboarding_install_gem"
   post "onboarding/verify_gem/:project_id", to: "onboarding#verify_gem", as: "onboarding_verify_gem"
+  get "onboarding/setup_github/:project_id", to: "onboarding#setup_github", as: "onboarding_setup_github"
+  post "onboarding/setup_github/:project_id", to: "onboarding#setup_github"
 
   # Top-level replacements for admin pages (no /admin in URLs)
   get "dashboard", to: "dashboard#index", as: "dashboard"
