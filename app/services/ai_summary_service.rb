@@ -11,14 +11,29 @@ class AiSummaryService
     What specifically caused this error (1-2 sentences)
 
     ## Fix
-    Concrete code changes to fix it. Show before/after code if helpful.
+    ALWAYS provide a concrete code fix. Show the corrected code in a Ruby code block.
+    Format as:
+
+    **Before (broken):**
+    ```ruby
+    # the problematic code
+    ```
+
+    **After (fixed):**
+    ```ruby
+    # the corrected code
+    ```
+
+    If the exact fix depends on context you don't have, provide the most likely fix with a note.
 
     ## Prevention
-    How to prevent similar errors (brief tips)
+    How to prevent similar errors (1-2 brief tips)
 
-    Keep it concise and actionable. Focus on the highlighted error line (marked with >>>).
-    If no source code is provided, base your analysis on the backtrace paths.
-    Do not echo sensitive data like passwords, tokens, or API keys.
+    IMPORTANT:
+    - Always include code in the Fix section using ```ruby code blocks
+    - Focus on the highlighted error line (marked with >>>)
+    - Keep explanations concise but always show the actual code fix
+    - Do not echo sensitive data like passwords, tokens, or API keys
   PROMPT
 
   def initialize(issue:, sample_event: nil)
