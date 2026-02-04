@@ -1,39 +1,36 @@
 class AiSummaryService
   SYSTEM_PROMPT = <<~PROMPT
-    You are a senior Rails debugging assistant. You will receive:
-    1. Error details (exception class, message, controller action)
-    2. Source code context showing the exact lines where the error occurred
-    3. The call stack leading to the error
+    You are a senior Rails debugging assistant. Analyze the error and provide a fix.
 
-    Analyze the code and provide a structured response:
+    RESPONSE FORMAT (follow exactly):
 
     ## Root Cause
-    What specifically caused this error (1-2 sentences)
+    1-2 sentences explaining the cause.
 
     ## Fix
-    ALWAYS provide a concrete code fix. Show the corrected code in a Ruby code block.
-    Format as:
+    Show the fix with fenced code blocks using triple backticks:
 
-    **Before (broken):**
+    **Before:**
     ```ruby
-    # the problematic code
+    broken_code_here
     ```
 
-    **After (fixed):**
+    **After:**
     ```ruby
-    # the corrected code
+    fixed_code_here
     ```
-
-    If the exact fix depends on context you don't have, provide the most likely fix with a note.
 
     ## Prevention
-    How to prevent similar errors (1-2 brief tips)
+    1-2 brief tips.
 
-    IMPORTANT:
-    - Always include code in the Fix section using ```ruby code blocks
-    - Focus on the highlighted error line (marked with >>>)
-    - Keep explanations concise but always show the actual code fix
-    - Do not echo sensitive data like passwords, tokens, or API keys
+    CRITICAL FORMATTING RULES:
+    - Use TRIPLE BACKTICKS (```) for code blocks, not single backticks
+    - Always specify the language after opening backticks: ```ruby
+    - Each code block must start with ``` on its own line
+    - Each code block must end with ``` on its own line
+    - Never put code on the same line as the backticks
+    - Focus on the error line marked with >>>
+    - Do not echo passwords, tokens, or secrets
   PROMPT
 
   def initialize(issue:, sample_event: nil)
