@@ -5,6 +5,10 @@ class QuotaAlertJob < ApplicationJob
 
   # Check all accounts and send quota alerts where appropriate
   # Runs daily via Sidekiq Cron
+  #
+  # IMPORTANT: Quota alerts are ALWAYS sent regardless of user notification settings.
+  # These are critical billing/usage emails that cannot be disabled.
+  # Only requirement: user must have confirmed their email address.
   def perform
     Account.find_each do |account|
       check_account_quotas(account)
@@ -46,7 +50,7 @@ class QuotaAlertJob < ApplicationJob
     end
 
     # Check if we should send an alert
-    if should_send_alert?(level, last_sent_at, last_level, percentage)
+    if should_send_alert?(account, level, last_sent_at, last_level, percentage)
       send_appropriate_alert(account, resource_type, level, last_alert_info)
 
       # Update last alert info
@@ -58,16 +62,23 @@ class QuotaAlertJob < ApplicationJob
     end
   end
 
-  def should_send_alert?(level, last_sent_at, last_level, percentage)
+  def should_send_alert?(account, level, last_sent_at, last_level, percentage)
     # Always send if no alert was ever sent
     return true if last_sent_at.nil?
 
     # If usage has escalated to a higher level, send immediately
     return true if level_escalated?(last_level, level)
 
-    # For exceeded quota, send reminder every 3 days
+    # For exceeded quota, send reminders
     if level == "exceeded" && percentage >= 100
       days_since_last = (Time.current - last_sent_at) / 1.day
+
+      # Free plan: send reminder every 2 days to encourage upgrade
+      if account.effective_plan_name.downcase == "free"
+        return days_since_last >= 2
+      end
+
+      # Other plans: send reminder every 3 days
       return days_since_last >= 3
     end
 
@@ -96,6 +107,7 @@ class QuotaAlertJob < ApplicationJob
       # Check if this is first time or a reminder
       first_exceeded_at = last_alert_info["first_exceeded_at"]&.to_time || Time.current
       days_over_quota = ((Time.current - first_exceeded_at) / 1.day).ceil
+      is_free_plan = account.effective_plan_name.downcase == "free"
 
       if days_over_quota <= 1
         # First time exceeding
@@ -104,8 +116,12 @@ class QuotaAlertJob < ApplicationJob
 
         # Track when first exceeded
         account.last_quota_alert_sent_at[resource_type.to_s]["first_exceeded_at"] = Time.current.iso8601
+      elsif is_free_plan
+        # Free plan: send upgrade reminder every 2 days
+        QuotaAlertMailer.free_plan_upgrade_reminder(account, resource_type, days_over_quota).deliver_now
+        Rails.logger.info "[QuotaAlert] Sent Free plan upgrade reminder (day #{days_over_quota}) for #{account.name} - #{resource_type}"
       else
-        # Reminder (every 2 days)
+        # Paid plans: send reminder every 3 days
         QuotaAlertMailer.quota_exceeded_reminder(account, resource_type, days_over_quota).deliver_now
         Rails.logger.info "[QuotaAlert] Sent exceeded reminder (day #{days_over_quota}) for #{account.name} - #{resource_type}"
       end

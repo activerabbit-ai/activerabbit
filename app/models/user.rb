@@ -1,9 +1,10 @@
 class User < ApplicationRecord
   ROLES = %w[owner member].freeze
   # Include default devise modules. Others available are:
-  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  # :lockable, :timeoutable, and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable, :trackable,
+         :confirmable,
          :omniauthable, omniauth_providers: %i[github google_oauth2]
 
   # Billing handled per User (one Stripe customer per user)
@@ -42,19 +43,34 @@ class User < ApplicationRecord
 
     user = find_by(provider: auth.provider, uid: auth.uid)
 
-    if user.nil? && auth_email.present?
+    # Existing OAuth user - ensure they're confirmed (OAuth = verified email)
+    if user.present?
+      user.update_columns(confirmed_at: Time.current) if user.confirmed_at.nil?
+      return user
+    end
+
+    # Check if user exists with same email (link OAuth to existing account)
+    if auth_email.present?
       user = find_by(email: auth_email)
 
       if user.present?
-        user.update_columns(provider: auth.provider, uid: auth.uid)
+        # Link OAuth and auto-confirm (OAuth provider verified the email)
+        user.update_columns(
+          provider: auth.provider,
+          uid: auth.uid,
+          confirmed_at: user.confirmed_at || Time.current
+        )
         return user
       end
     end
 
-    user || find_or_initialize_by(provider: auth.provider, uid: auth.uid) do |new_user|
+    # Create new user with OAuth
+    find_or_initialize_by(provider: auth.provider, uid: auth.uid) do |new_user|
       new_user.email = auth_email
       new_user.password = SecureRandom.hex(20)
       new_user.name = auth.info.name if new_user.respond_to?(:name)
+      # Auto-confirm OAuth users since they verified via provider
+      new_user.confirmed_at = Time.current
 
       new_user.save
     end
@@ -91,6 +107,12 @@ class User < ApplicationRecord
 
   def super_admin?
     super_admin == true
+  end
+
+  # Check if user has confirmed their email
+  # OAuth users are considered confirmed (they verified via provider)
+  def email_confirmed?
+    confirmed_at.present? || provider.present?
   end
 
   def password_required?

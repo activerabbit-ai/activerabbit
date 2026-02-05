@@ -188,6 +188,17 @@ class Account < ApplicationRecord
     name
   end
 
+  # Check if the account has any usage stats (events, performance events, etc.)
+  # Used to skip sending reports to accounts with no data
+  def has_any_stats?
+    return false unless usage_data_available?
+
+    cached_events_used.to_i > 0 ||
+      cached_performance_events_used.to_i > 0 ||
+      cached_ai_summaries_used.to_i > 0 ||
+      cached_pull_requests_used.to_i > 0
+  end
+
   private
 
   def check_stripe_payment_methods

@@ -142,7 +142,10 @@ class AlertJob
   # Email fallback
   # ------------------------
   def send_email_alert(project, subject, body, dashboard_url: nil)
-    project.account.users.find_each.with_index do |user, index|
+    # Only send to users who have confirmed their email
+    confirmed_users = project.account.users.select(&:email_confirmed?)
+
+    confirmed_users.each_with_index do |user, index|
       # Small delay between emails to avoid Resend rate limit (2/second)
       sleep(0.6) if index > 0
 

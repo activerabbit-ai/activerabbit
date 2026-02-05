@@ -123,4 +123,92 @@ RSpec.describe User, type: :model do
       expect(user).to be_valid
     end
   end
+
+  describe "#email_confirmed?" do
+    let(:account) { @test_account }
+
+    context "when user has confirmed_at set" do
+      it "returns true" do
+        user = create(:user, :confirmed, account: account)
+        expect(user.email_confirmed?).to be true
+      end
+    end
+
+    context "when user has not confirmed email" do
+      it "returns false" do
+        user = create(:user, :unconfirmed, account: account)
+        expect(user.email_confirmed?).to be false
+      end
+    end
+
+    context "when user signed up via OAuth" do
+      it "returns true even without confirmed_at" do
+        user = create(:user, :oauth, account: account)
+        expect(user.confirmed_at).to be_nil
+        expect(user.provider).to be_present
+        expect(user.email_confirmed?).to be true
+      end
+    end
+
+    context "when user has both provider and confirmed_at" do
+      it "returns true" do
+        user = create(:user, account: account, provider: "github", confirmed_at: Time.current)
+        expect(user.email_confirmed?).to be true
+      end
+    end
+  end
+
+  describe ".from_omniauth" do
+    let(:account) { @test_account }
+
+    let(:auth) do
+      OmniAuth::AuthHash.new(
+        provider: "github",
+        uid: "12345",
+        info: { email: "oauth@example.com", name: "OAuth User" }
+      )
+    end
+
+    context "when creating a new OAuth user" do
+      it "auto-confirms the user" do
+        user = User.from_omniauth(auth)
+
+        expect(user.provider).to eq("github")
+        expect(user.confirmed_at).to be_present
+        expect(user.email_confirmed?).to be true
+      end
+    end
+
+    context "when existing OAuth user logs in again" do
+      let!(:existing_user) do
+        create(:user, account: account, provider: "github", uid: "12345", email: "oauth@example.com", confirmed_at: nil)
+      end
+
+      it "auto-confirms the user if not confirmed" do
+        expect(existing_user.confirmed_at).to be_nil
+
+        user = User.from_omniauth(auth)
+
+        expect(user.id).to eq(existing_user.id)
+        expect(user.reload.confirmed_at).to be_present
+      end
+    end
+
+    context "when existing email user links OAuth" do
+      let!(:existing_user) do
+        create(:user, :unconfirmed, account: account, email: "oauth@example.com")
+      end
+
+      it "links OAuth and auto-confirms the user" do
+        expect(existing_user.provider).to be_nil
+        expect(existing_user.confirmed_at).to be_nil
+
+        user = User.from_omniauth(auth)
+
+        expect(user.id).to eq(existing_user.id)
+        expect(user.reload.provider).to eq("github")
+        expect(user.confirmed_at).to be_present
+      end
+    end
+  end
 end

@@ -156,4 +156,61 @@ RSpec.describe AlertJob, type: :job do
       end
     end
   end
+
+  describe "email confirmation filtering" do
+    let!(:performance_event) do
+      ActsAsTenant.with_tenant(account) do
+        create(:performance_event, project: project, duration_ms: 5000)
+      end
+    end
+
+    let(:payload) do
+      {
+        "event_id" => performance_event.id,
+        "duration_ms" => 5000,
+        "target" => "TestController#action"
+      }
+    end
+
+    context "with unconfirmed users" do
+      let!(:unconfirmed_user) { create(:user, :unconfirmed, account: account, email: "unconfirmed@example.com") }
+
+      it "only sends emails to confirmed users" do
+        # Should only receive email for the confirmed user, not the unconfirmed one
+        expect(AlertMailer).to receive(:send_alert).with(
+          hash_including(to: user.email)
+        ).and_call_original
+
+        expect(AlertMailer).not_to receive(:send_alert).with(
+          hash_including(to: unconfirmed_user.email)
+        )
+
+        described_class.new.perform(alert_rule.id, "performance_regression", payload)
+      end
+    end
+
+    context "with OAuth user" do
+      let!(:oauth_user) { create(:user, :oauth, account: account, email: "oauth@example.com") }
+
+      it "sends emails to OAuth users" do
+        # Should receive email for both confirmed and OAuth users
+        expect(AlertMailer).to receive(:send_alert).twice.and_call_original
+
+        described_class.new.perform(alert_rule.id, "performance_regression", payload)
+      end
+    end
+
+    context "when all users are unconfirmed" do
+      before do
+        user.update!(confirmed_at: nil, provider: nil)
+      end
+
+      it "does not send any emails" do
+        expect(AlertMailer).not_to receive(:send_alert)
+
+        # Job should still complete successfully (notification record created)
+        described_class.new.perform(alert_rule.id, "performance_regression", payload)
+      end
+    end
+  end
 end

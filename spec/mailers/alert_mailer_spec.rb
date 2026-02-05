@@ -126,4 +126,100 @@ RSpec.describe AlertMailer, type: :mailer do
       expect(mail.body.encoded).to include('https://example.com/dashboard')
     end
   end
+
+  describe '#performance_incident_opened email confirmation' do
+    let(:incident) do
+      create(:performance_incident,
+        project: project,
+        target: 'UsersController#index',
+        status: 'open',
+        severity: 'warning',
+        trigger_p95_ms: 900.0,
+        threshold_ms: 750.0,
+        environment: 'production'
+      )
+    end
+
+    context 'when project owner has unconfirmed email' do
+      before do
+        user.update!(confirmed_at: nil, provider: nil)
+      end
+
+      it 'does not include unconfirmed user in recipients' do
+        mail = described_class.performance_incident_opened(project: project, incident: incident)
+
+        # Mail should be nil or have empty recipients
+        expect(mail).to be_nil
+      end
+    end
+
+    context 'when project owner is OAuth user' do
+      before do
+        user.update!(confirmed_at: nil, provider: 'github', uid: '12345')
+      end
+
+      it 'includes OAuth user in recipients' do
+        mail = described_class.performance_incident_opened(project: project, incident: incident)
+
+        expect(mail).not_to be_nil
+        expect(mail.to).to include(user.email)
+      end
+    end
+
+    context 'when project owner has confirmed email' do
+      before do
+        user.update!(confirmed_at: Time.current)
+      end
+
+      it 'includes confirmed user in recipients' do
+        mail = described_class.performance_incident_opened(project: project, incident: incident)
+
+        expect(mail).not_to be_nil
+        expect(mail.to).to include(user.email)
+      end
+    end
+  end
+
+  describe '#performance_incident_resolved email confirmation' do
+    let(:incident) do
+      create(:performance_incident,
+        project: project,
+        target: 'UsersController#index',
+        status: 'closed',
+        severity: 'warning',
+        trigger_p95_ms: 900.0,
+        peak_p95_ms: 1100.0,
+        resolve_p95_ms: 400.0,
+        threshold_ms: 750.0,
+        opened_at: 30.minutes.ago,
+        closed_at: Time.current,
+        environment: 'production'
+      )
+    end
+
+    context 'when project owner has unconfirmed email' do
+      before do
+        user.update!(confirmed_at: nil, provider: nil)
+      end
+
+      it 'does not include unconfirmed user in recipients' do
+        mail = described_class.performance_incident_resolved(project: project, incident: incident)
+
+        expect(mail).to be_nil
+      end
+    end
+
+    context 'when project owner has confirmed email' do
+      before do
+        user.update!(confirmed_at: Time.current)
+      end
+
+      it 'includes confirmed user in recipients' do
+        mail = described_class.performance_incident_resolved(project: project, incident: incident)
+
+        expect(mail).not_to be_nil
+        expect(mail.to).to include(user.email)
+      end
+    end
+  end
 end

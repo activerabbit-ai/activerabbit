@@ -20,14 +20,20 @@ class WeeklyReportJob
     cache_key = "weekly_report:#{account.id}:#{week_key}"
     return if Rails.cache.exist?(cache_key)
 
+    # Skip accounts with no stats - nothing to report
+    return unless account.has_any_stats?
+
     # Wrap entire operation in tenant context - needed for mailer template rendering
     # which accesses tenant-scoped Issue objects
     ActsAsTenant.with_tenant(account) do
       report = WeeklyReportBuilder.new(account).build
 
       # Query users directly to avoid any tenant scoping issues
+      # Only send to users who have confirmed their email
       users = User.where(account_id: account.id)
-      users.find_each.with_index do |user, index|
+      confirmed_users = users.select(&:email_confirmed?)
+
+      confirmed_users.each_with_index do |user, index|
         # Small delay between emails to avoid Resend rate limit (2/second)
         sleep(0.6) if index > 0
 

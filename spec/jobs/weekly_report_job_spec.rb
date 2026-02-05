@@ -147,4 +147,105 @@ RSpec.describe WeeklyReportJob, type: :job do
       expect(Rails.cache.exist?(cache_key)).to be true
     end
   end
+
+  describe "email confirmation filtering" do
+    let(:mock_mail) { double("Mail", deliver_now: true) }
+
+    before do
+      allow(WeeklyReportMailer).to receive(:with).and_return(double(weekly_report: mock_mail))
+    end
+
+    context "with unconfirmed user" do
+      let!(:unconfirmed_user) { create(:user, :unconfirmed, account: account, email: "unconfirmed@example.com") }
+
+      it "does not send email to unconfirmed users" do
+        # Should only send to confirmed user (the default user created in let!(:user))
+        expect(WeeklyReportMailer).to receive(:with).with(
+          hash_including(user: user)
+        ).once.and_return(double(weekly_report: mock_mail))
+
+        expect(WeeklyReportMailer).not_to receive(:with).with(
+          hash_including(user: unconfirmed_user)
+        )
+
+        described_class.new.perform(account.id)
+      end
+    end
+
+    context "with OAuth user (no confirmed_at but has provider)" do
+      let!(:oauth_user) { create(:user, :oauth, account: account, email: "oauth@example.com") }
+
+      it "sends email to OAuth users" do
+        # Should send to both confirmed user and OAuth user
+        expect(WeeklyReportMailer).to receive(:with).twice.and_return(double(weekly_report: mock_mail))
+
+        described_class.new.perform(account.id)
+      end
+    end
+
+    context "when all users are unconfirmed" do
+      before do
+        user.update!(confirmed_at: nil, provider: nil)
+      end
+
+      it "does not send any emails" do
+        expect(WeeklyReportMailer).not_to receive(:with)
+
+        described_class.new.perform(account.id)
+      end
+    end
+  end
+
+  describe "account stats filtering" do
+    let(:mock_mail) { double("Mail", deliver_now: true) }
+
+    before do
+      allow(WeeklyReportMailer).to receive(:with).and_return(double(weekly_report: mock_mail))
+    end
+
+    context "when account has no stats" do
+      before do
+        account.update!(
+          cached_events_used: 0,
+          cached_performance_events_used: 0,
+          cached_ai_summaries_used: 0,
+          cached_pull_requests_used: 0,
+          usage_cached_at: Time.current
+        )
+      end
+
+      it "does not send weekly report" do
+        expect(WeeklyReportMailer).not_to receive(:with)
+
+        described_class.new.perform(account.id)
+      end
+    end
+
+    context "when account has stats" do
+      before do
+        account.update!(
+          cached_events_used: 100,
+          usage_cached_at: Time.current
+        )
+      end
+
+      it "sends weekly report" do
+        expect(WeeklyReportMailer).to receive(:with).and_return(double(weekly_report: mock_mail))
+
+        described_class.new.perform(account.id)
+      end
+    end
+
+    context "when usage data has not been cached yet" do
+      before do
+        account.update!(usage_cached_at: nil)
+      end
+
+      it "does not send weekly report" do
+        expect(WeeklyReportMailer).not_to receive(:with)
+
+        described_class.new.perform(account.id)
+      end
+    end
+  end
 end

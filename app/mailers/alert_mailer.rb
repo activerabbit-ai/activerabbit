@@ -94,10 +94,12 @@ class AlertMailer < ApplicationMailer
     # Could be from project settings, account admins, or user
     recipients = []
 
-    # Add project owner
-    recipients << project.user.email if project.user&.email.present?
+    # Add project owner if they have confirmed their email
+    if project.user&.email.present? && project.user&.email_confirmed?
+      recipients << project.user.email
+    end
 
-    # Add account admin emails if configured
+    # Add account admin emails if configured (only confirmed users)
     if project.account&.respond_to?(:admin_emails)
       recipients += Array(project.account.admin_emails)
     end
