@@ -18,7 +18,14 @@ module Github
         code_fix = parsed[:fix_code]
         before_code = parsed[:before_code]
 
-        { title: title, body: body, code_fix: code_fix, before_code: before_code }
+        { 
+          title: title, 
+          body: body, 
+          code_fix: code_fix, 
+          before_code: before_code,
+          file_fixes: parsed[:file_fixes],
+          related_changes: parsed[:related_changes]
+        }
       elsif @anthropic_key.present?
         # Generate fresh AI analysis for the PR
         ai_result = generate_ai_pr_analysis(issue, sample_event)
@@ -26,13 +33,15 @@ module Github
         body = ai_result[:body] || build_basic_pr_body(issue, sample_event)
         code_fix = ai_result[:code_fix]
 
-        { title: title, body: body, code_fix: code_fix }
+        { title: title, body: body, code_fix: code_fix, file_fixes: [], related_changes: nil }
       else
         # Fallback to basic content
         {
           title: "Fix #{issue.exception_class} in #{issue.controller_action}",
           body: build_basic_pr_body(issue, sample_event),
-          code_fix: nil
+          code_fix: nil,
+          file_fixes: [],
+          related_changes: nil
         }
       end
     end
@@ -54,7 +63,7 @@ module Github
     end
 
     def parse_ai_summary(summary)
-      result = { root_cause: nil, fix: nil, fix_code: nil, before_code: nil, prevention: nil }
+      result = { root_cause: nil, fix: nil, fix_code: nil, before_code: nil, prevention: nil, file_fixes: [], related_changes: nil }
       return result if summary.blank?
 
       # Parse markdown sections from AI summary
@@ -63,142 +72,135 @@ module Github
       sections.each do |section|
         if section.start_with?("Root Cause")
           result[:root_cause] = section.sub(/^Root Cause\s*\n/, "").strip
-        elsif section.start_with?("Fix")
-          fix_content = section.sub(/^Fix\s*\n/, "").strip
+        elsif section.start_with?("Suggested Fix") || section.start_with?("Fix")
+          fix_content = section.sub(/^(?:Suggested )?Fix\s*\n/, "").strip
           result[:fix] = fix_content
 
-          # Log the full fix content for debugging (first 500 chars)
           Rails.logger.info "[GitHub API] Fix section content (first 500 chars): #{fix_content[0..500]}"
 
-          # Check if fix_content contains "Before" and "After" markers
-          has_before_after = fix_content =~ /(?:^|\n)\s*\*\*before\*\*|\*\*after\*\*|before:|after:/i
-          if has_before_after
-            Rails.logger.info "[GitHub API] Fix section contains Before/After markers - will prioritize 'After' block"
-          end
-
-          # Extract code blocks from the fix section with their positions
-          code_block_matches = fix_content.to_enum(:scan, /```(?:ruby|rb)?\s*(.*?)```/m).map do
-            [Regexp.last_match.begin(0), Regexp.last_match[1]]
-          end
-
-          code_blocks = code_block_matches.map { |_, code| code }
-
-          if code_blocks.any?
-            # Find the correct code block - prefer "After" or the last one
-            raw_code = nil
-            selected_idx = nil
-
-            # First, try to find "Before" and "After" blocks
-            before_code = nil
-            code_block_matches.each_with_index do |(position, block), idx|
-              block_text = block.strip
-              # Get context before this block (last 200 chars before the code block)
-              context_start = [0, position - 200].max
-              context_before = fix_content[context_start..position].to_s.downcase
-
-              # Check if this is "Before" block
-              is_before_block = context_before =~ /(?:^|\n)\s*\*\*before\*\*|\*\*before\*\*|before:/i
-              if is_before_block && before_code.nil?
-                before_code = block_text
-                Rails.logger.info "[GitHub API] Found 'Before' code block ##{idx + 1}"
-              end
-
-              # Check if this block is marked as "After" or contains fix indicators
-              is_after_block = context_before =~ /(?:^|\n)\s*\*\*after\*\*|\*\*after\*\*|after:|after\s+code|fixed\s+code|correct\s+code|solution/i
-              has_fix_indicators = block_text =~ /params\[|\.present\?|\.blank\?|rescue|begin|\.find_by/i
-
-              if is_after_block || (has_fix_indicators && idx == code_blocks.size - 1)
-                raw_code = block_text
-                selected_idx = idx
-                Rails.logger.info "[GitHub API] Selected code block ##{idx + 1} (marked as After/Fixed or contains fix indicators)"
-                Rails.logger.info "[GitHub API] Context before block: #{context_before[-100..-1]}"
-                break
-              end
-            end
-
-            # Store before_code for SimpleFixApplier
-            result[:before_code] = before_code if before_code.present?
-
-            # If no "After" block found, use the last block (usually the fix)
-            if raw_code.nil?
-              raw_code = code_blocks.last.strip
-              selected_idx = code_blocks.size - 1
-              Rails.logger.info "[GitHub API] No 'After' block found, using the last code block (##{code_blocks.size})"
-            end
-
-            # If there are multiple blocks, log all of them for debugging
-            if code_blocks.size > 1
-              Rails.logger.info "[GitHub API] Multiple code blocks found (#{code_blocks.size}), selected block ##{selected_idx + 1}"
-              code_blocks.each_with_index do |block, idx|
-                marker = idx == selected_idx ? " <-- SELECTED" : ""
-                Rails.logger.info "[GitHub API]   Block ##{idx + 1}#{marker} (first 150 chars): #{block.strip[0..150]}"
-              end
-            end
-
-            Rails.logger.info "[GitHub API] Extracted raw code from AI summary (first 300 chars): #{raw_code[0..300]}"
-
-            # Verify this is actually a fix (not the original error)
-            # Check for common patterns that indicate this is the original error, not the fix
-            looks_like_original_error = (
-              (raw_code.include?("Product.find(123)") || raw_code.include?(".find(123)")) &&
-              !raw_code.include?("params[:id]") &&
-              !raw_code.include?("params[")
-            ) || (
-              raw_code.match(/\.find\(\d+\)/) && # Hardcoded number
-              !raw_code.match(/params\[/) # No params
-            )
-
-            if looks_like_original_error
-              Rails.logger.warn "[GitHub API] WARNING: Extracted code appears to be the ORIGINAL error, not the fix!"
-              Rails.logger.warn "[GitHub API] This might be a 'Before' block. Trying to find 'After' block..."
-
-              # Try to find a block that's different and looks like a fix
-              found_alternative = false
-              code_blocks.each_with_index do |block, idx|
-                block_text = block.strip
-                # Check if this block looks like a fix (has params, or is different from original)
-                looks_like_fix = block_text.include?("params[:id]") ||
-                                 block_text.include?("params[") ||
-                                 (block_text != raw_code &&
-                                  block_text.length > 10 &&
-                                  !block_text.match(/\.find\(\d+\)/)) # Doesn't have hardcoded number
-
-                if looks_like_fix
-                  raw_code = block_text
-                  selected_idx = idx
-                  found_alternative = true
-                  Rails.logger.info "[GitHub API] Found alternative block ##{idx + 1} that looks like a fix (first 300 chars): #{raw_code[0..300]}"
-                  break
-                end
-              end
-
-              unless found_alternative
-                Rails.logger.error "[GitHub API] ERROR: Could not find a fix block! All blocks appear to be 'Before' examples."
-              end
-            end
-
-            extracted = extract_method_from_code(raw_code)
-            result[:fix_code] = extracted || raw_code
-
-            if extracted && extracted != raw_code
-              Rails.logger.info "[GitHub API] Extracted method from code block (removed class/module)"
-              Rails.logger.info "[GitHub API] Extracted fix_code (first 300 chars): #{extracted[0..300]}"
-            else
-              Rails.logger.info "[GitHub API] Using raw code as fix_code (no extraction needed)"
-              Rails.logger.info "[GitHub API] Final fix_code (first 300 chars): #{result[:fix_code][0..300]}"
-            end
-
-            # Final validation - warn if fix_code still looks like the original error
-            if result[:fix_code].include?("Product.find(123)") && !result[:fix_code].include?("params[:id]")
-              Rails.logger.error "[GitHub API] ERROR: Final fix_code still contains the original error code!"
-              Rails.logger.error "[GitHub API] This indicates the AI summary may not contain a proper fix, or parsing failed"
+          # Check for multi-file format: "### File N:" sections
+          if fix_content =~ /###\s+File\s+\d+:/i
+            result[:file_fixes] = parse_multi_file_fixes(fix_content)
+            Rails.logger.info "[GitHub API] Parsed #{result[:file_fixes].size} file fixes from multi-file format"
+            
+            # For backward compatibility, use the first file's fix as the primary fix
+            if result[:file_fixes].any?
+              first_fix = result[:file_fixes].first
+              result[:fix_code] = first_fix[:after_code]
+              result[:before_code] = first_fix[:before_code]
             end
           else
-            Rails.logger.warn "[GitHub API] No code blocks found in Fix section"
+            # Single-file format (legacy)
+            parsed = parse_single_file_fix(fix_content)
+            result[:fix_code] = parsed[:fix_code]
+            result[:before_code] = parsed[:before_code]
+            
+            # Extract file path if present
+            if fix_content =~ /\*\*File:\*\*\s*`([^`]+)`/
+              file_path = $1
+              result[:file_fixes] << {
+                file_path: file_path,
+                before_code: result[:before_code],
+                after_code: result[:fix_code]
+              }
+            end
           end
         elsif section.start_with?("Prevention")
           result[:prevention] = section.sub(/^Prevention\s*\n/, "").strip
+        elsif section.start_with?("Related Changes")
+          result[:related_changes] = section.sub(/^Related Changes\s*\n/, "").strip
         end
+      end
+
+      result
+    end
+
+    # Parse multiple file fixes from "### File N:" format
+    # Safety limit: max 3 files (AiSummaryService::MAX_FILES_PER_FIX)
+    def parse_multi_file_fixes(fix_content)
+      file_fixes = []
+      max_files = AiSummaryService::MAX_FILES_PER_FIX
+      
+      # Split by "### File N:" headers
+      file_sections = fix_content.split(/(?=###\s+File\s+\d+:)/i)
+      
+      file_sections.each do |file_section|
+        # Safety limit check
+        if file_fixes.size >= max_files
+          Rails.logger.warn "[GitHub API] Reached max file limit (#{max_files}), skipping remaining file fixes"
+          break
+        end
+        
+        next unless file_section =~ /###\s+File\s+\d+:\s*`([^`]+)`/i
+        
+        file_path = $1
+        Rails.logger.info "[GitHub API] Parsing fix for file: #{file_path}"
+        
+        # Extract before and after code blocks
+        parsed = parse_single_file_fix(file_section)
+        
+        if parsed[:fix_code].present?
+          file_fixes << {
+            file_path: file_path,
+            before_code: parsed[:before_code],
+            after_code: parsed[:fix_code]
+          }
+        end
+      end
+      
+      file_fixes
+    end
+
+    # Parse a single file fix section (before/after code blocks)
+    def parse_single_file_fix(fix_content)
+      result = { fix_code: nil, before_code: nil }
+      
+      # Extract code blocks from the fix section with their positions
+      code_block_matches = fix_content.to_enum(:scan, /```(?:ruby|rb)?\s*(.*?)```/m).map do
+        [Regexp.last_match.begin(0), Regexp.last_match[1]]
+      end
+
+      code_blocks = code_block_matches.map { |_, code| code }
+
+      return result unless code_blocks.any?
+
+      # Find "Before" and "After" blocks
+      raw_code = nil
+      before_code = nil
+      
+      code_block_matches.each_with_index do |(position, block), idx|
+        block_text = block.strip
+        context_start = [0, position - 200].max
+        context_before = fix_content[context_start..position].to_s.downcase
+
+        # Check if this is "Before" block
+        is_before_block = context_before =~ /(?:^|\n)\s*\*\*before\*\*|\*\*before\*\*|before:/i
+        if is_before_block && before_code.nil?
+          before_code = block_text
+        end
+
+        # Check if this block is marked as "After"
+        is_after_block = context_before =~ /(?:^|\n)\s*\*\*after\*\*|\*\*after\*\*|after:|after\s+code|fixed\s+code|correct\s+code|solution/i
+        if is_after_block
+          raw_code = block_text
+          break
+        end
+      end
+
+      result[:before_code] = before_code if before_code.present?
+
+      # If no "After" block found, use the last block
+      if raw_code.nil? && code_blocks.size >= 2
+        # Assume first block is "Before", last is "After"
+        result[:before_code] ||= code_blocks.first.strip
+        raw_code = code_blocks.last.strip
+      elsif raw_code.nil? && code_blocks.size == 1
+        raw_code = code_blocks.first.strip
+      end
+
+      if raw_code.present?
+        extracted = extract_method_from_code(raw_code)
+        result[:fix_code] = extracted || raw_code
       end
 
       result
@@ -288,6 +290,16 @@ module Github
         lines << "Manual review required. See error context below."
       end
       lines << ""
+
+      # Related Changes (additional files that may need attention)
+      if parsed[:related_changes].present?
+        lines << "## ⚠️ Related Changes (Manual Review Required)"
+        lines << ""
+        lines << "> **Note:** This PR only fixes the primary error file. The following additional changes may be needed and should be applied locally before merging:"
+        lines << ""
+        lines << parsed[:related_changes]
+        lines << ""
+      end
 
       # Error Context
       lines << "## 📋 Error Details"
@@ -466,7 +478,7 @@ module Github
       http.read_timeout = 30
 
       body = {
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-opus-4-20250514",
         max_tokens: 2000,
         system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
         messages: [

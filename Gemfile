@@ -103,6 +103,7 @@ group :development, :test do
   gem "faker"
   gem "shoulda-matchers"
   gem "climate_control"
+  gem "webmock"
 end
 
 # ActiveRabbit AI monitoring gem

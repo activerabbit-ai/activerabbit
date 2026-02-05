@@ -51,7 +51,8 @@ class ErrorIngestJob
       if account && !account.within_quota?(:ai_summaries)
         Rails.logger.warn("[Quota] AI summary skipped for issue #{issue.id} - account #{account.id} over quota")
       elsif account
-        ai = AiSummaryService.new(issue: issue, sample_event: event).call
+        github_client = build_github_client(project)
+        ai = AiSummaryService.new(issue: issue, sample_event: event, github_client: github_client).call
         if ai[:summary].present?
           issue.update(ai_summary: ai[:summary], ai_summary_generated_at: Time.current)
         end
@@ -94,5 +95,33 @@ class ErrorIngestJob
     return true if recent_events >= 10
 
     false
+  end
+
+  # Build GitHub API client for a project (for enhanced AI context)
+  def build_github_client(project)
+    return nil unless project&.github_repo_full_name.present?
+
+    settings = project.settings || {}
+    installation_id = settings["github_installation_id"]
+    project_pat = settings["github_pat"]
+    env_pat = ENV["GITHUB_TOKEN"]
+
+    token_manager = Github::TokenManager.new(
+      project_pat: project_pat,
+      installation_id: installation_id,
+      env_pat: env_pat,
+      project_app_id: settings["github_app_id"],
+      project_app_pk: settings["github_app_pk"],
+      env_app_id: ENV["AR_GH_APP_ID"],
+      env_app_pk: ENV["AR_GH_APP_PK"]
+    )
+
+    token = token_manager.get_token
+    return nil unless token.present?
+
+    Github::ApiClient.new(token)
+  rescue => e
+    Rails.logger.warn "[ErrorIngestJob] Could not create GitHub client: #{e.message}"
+    nil
   end
 end

@@ -60,14 +60,24 @@ class PricingController < ApplicationController
     # Get plan quotas and usage in one call (reads from cached columns)
     plan_quotas = @account.usage_summary
 
-    # 30-day data from DailyResourceUsage (still fast - small table)
-    thirty_days_ago = 30.days.ago.to_date
-    today = Date.current
-    last_30_days_usage = DailyResourceUsage.usage_for_period(@account.id, thirty_days_ago, today)
-
-    @events_last_30_days = last_30_days_usage&.total_errors.to_i
-    @ai_summaries_last_30_days = last_30_days_usage&.total_ai_summaries.to_i
-    @pull_requests_last_30_days = last_30_days_usage&.total_pull_requests.to_i
+    # 30-day data - query directly from source tables for accuracy
+    # (DailyResourceUsage may have gaps if jobs didn't run)
+    thirty_days_ago = 30.days.ago
+    
+    ActsAsTenant.without_tenant do
+      @events_last_30_days = Event.where(account_id: @account.id)
+                                  .where("occurred_at >= ?", thirty_days_ago)
+                                  .count
+      
+      @ai_summaries_last_30_days = Issue.where(account_id: @account.id)
+                                        .where("ai_summary_generated_at >= ?", thirty_days_ago)
+                                        .count
+      
+      @pull_requests_last_30_days = AiRequest.where(account_id: @account.id, request_type: "pull_request")
+                                             .where("occurred_at >= ?", thirty_days_ago)
+                                             .count
+    end
+    
     @requests_total_last_30_days = @events_last_30_days + @ai_summaries_last_30_days + @pull_requests_last_30_days
 
     # Event/Error tracking usage (from cached columns - instant!)

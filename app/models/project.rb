@@ -41,6 +41,11 @@ class Project < ApplicationRecord
     api_tokens.active.first&.token
   end
 
+  # Convenience method to get GitHub repo full name (e.g., "owner/repo")
+  def github_repo_full_name
+    settings&.dig("github_repo")
+  end
+
   def create_default_alert_rules!
     # Create default alert rules for new projects
     # Using Sentry/AppSignal-style defaults

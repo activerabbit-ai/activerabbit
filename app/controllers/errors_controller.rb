@@ -217,7 +217,8 @@ class ErrorsController < ApplicationController
         @ai_result = { error: "no_summary_available", message: "No AI summary available for this issue." }
       else
         # First-time attempt only
-        result = AiSummaryService.new(issue: @issue, sample_event: @selected_event).call
+        github_client = github_client_for_issue(@issue)
+        result = AiSummaryService.new(issue: @issue, sample_event: @selected_event, github_client: github_client).call
         if result[:summary].present?
           @issue.update(ai_summary: result[:summary], ai_summary_generated_at: Time.current)
         else
@@ -235,7 +236,8 @@ class ErrorsController < ApplicationController
     @selected_event = @issue.events.order(occurred_at: :desc).first
 
     # Force regeneration by clearing the previous summary
-    result = AiSummaryService.new(issue: @issue, sample_event: @selected_event).call
+    github_client = github_client_for_issue(@issue)
+    result = AiSummaryService.new(issue: @issue, sample_event: @selected_event, github_client: github_client).call
 
     if result[:summary].present?
       @issue.update(ai_summary: result[:summary], ai_summary_generated_at: Time.current)
@@ -416,5 +418,34 @@ class ErrorsController < ApplicationController
 
   def set_project
     @project = current_account.projects.find(params[:project_id])
+  end
+
+  # Get GitHub API client for the issue's project (for enhanced AI context)
+  def github_client_for_issue(issue)
+    project = issue.project
+    return nil unless project&.github_repo_full_name.present?
+
+    settings = project.settings || {}
+    installation_id = settings["github_installation_id"]
+    project_pat = settings["github_pat"]
+    env_pat = ENV["GITHUB_TOKEN"]
+
+    token_manager = Github::TokenManager.new(
+      project_pat: project_pat,
+      installation_id: installation_id,
+      env_pat: env_pat,
+      project_app_id: settings["github_app_id"],
+      project_app_pk: settings["github_app_pk"],
+      env_app_id: ENV["AR_GH_APP_ID"],
+      env_app_pk: ENV["AR_GH_APP_PK"]
+    )
+
+    token = token_manager.get_token
+    return nil unless token.present?
+
+    Github::ApiClient.new(token)
+  rescue => e
+    Rails.logger.warn "[ErrorsController] Could not create GitHub client: #{e.message}"
+    nil
   end
 end

@@ -37,7 +37,7 @@ class AiPerformanceSummaryService
     http.use_ssl = true
 
     body = {
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-opus-4-20250514",
       max_tokens: 2000,
       system: SYSTEM_PROMPT,
       messages: [

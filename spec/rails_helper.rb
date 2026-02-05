@@ -7,6 +7,8 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 require 'rspec/rails'
 # Devise helpers
 require 'devise'
+# WebMock for HTTP stubbing
+require 'webmock/rspec'
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -74,4 +76,9 @@ RSpec.configure do |config|
   # Devise test helpers
   config.include Devise::Test::IntegrationHelpers, type: :request
   config.include Devise::Test::ControllerHelpers, type: :controller
+
+  # WebMock configuration
+  config.before(:each) do
+    WebMock.disable_net_connect!(allow_localhost: true)
+  end
 end
