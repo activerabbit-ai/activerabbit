@@ -170,7 +170,7 @@ RSpec.describe AiSummaryService, type: :service do
       it 'fetches full error file from GitHub when client provided' do
         controller_content = Base64.encode64("class UsersController < ApplicationController\n  def show\n    @user = User.find(params[:id])\n    @user.foo\n  end\nend")
         model_content = Base64.encode64("class User < ApplicationRecord\n  validates :name, presence: true\nend")
-        
+
         # Stub all potential GitHub API calls
         allow(github_client).to receive(:get).and_return(nil)
         allow(github_client).to receive(:get)
@@ -199,7 +199,7 @@ RSpec.describe AiSummaryService, type: :service do
       expect(AiSummaryService::SYSTEM_PROMPT).to include("### File 1:")
       expect(AiSummaryService::SYSTEM_PROMPT).to include("**Line:**")
     end
-    
+
     it 'mentions Related Changes for multi-file scenarios' do
       expect(AiSummaryService::SYSTEM_PROMPT).to include("Related Changes")
       expect(AiSummaryService::SYSTEM_PROMPT).to include("fix locally")

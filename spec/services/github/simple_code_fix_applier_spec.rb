@@ -160,7 +160,7 @@ RSpec.describe Github::SimpleCodeFixApplier, type: :service do
         allow(api_client).to receive(:get)
           .with("/repos/owner/repo/contents/app/models/user.rb")
           .and_return({ "content" => Base64.encode64("class User < ApplicationRecord\nend") })
-        
+
         # Still stub Anthropic in case fast path fails
         stub_request(:post, "https://api.anthropic.com/v1/messages")
           .with(headers: { 'X-Api-Key' => 'test-key' })

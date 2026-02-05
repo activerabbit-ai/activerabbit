@@ -18,10 +18,10 @@ module Github
         code_fix = parsed[:fix_code]
         before_code = parsed[:before_code]
 
-        { 
-          title: title, 
-          body: body, 
-          code_fix: code_fix, 
+        {
+          title: title,
+          body: body,
+          code_fix: code_fix,
           before_code: before_code,
           file_fixes: parsed[:file_fixes],
           related_changes: parsed[:related_changes]
@@ -82,7 +82,7 @@ module Github
           if fix_content =~ /###\s+File\s+\d+:/i
             result[:file_fixes] = parse_multi_file_fixes(fix_content)
             Rails.logger.info "[GitHub API] Parsed #{result[:file_fixes].size} file fixes from multi-file format"
-            
+
             # For backward compatibility, use the first file's fix as the primary fix
             if result[:file_fixes].any?
               first_fix = result[:file_fixes].first
@@ -94,7 +94,7 @@ module Github
             parsed = parse_single_file_fix(fix_content)
             result[:fix_code] = parsed[:fix_code]
             result[:before_code] = parsed[:before_code]
-            
+
             # Extract file path if present
             if fix_content =~ /\*\*File:\*\*\s*`([^`]+)`/
               file_path = $1
@@ -120,25 +120,25 @@ module Github
     def parse_multi_file_fixes(fix_content)
       file_fixes = []
       max_files = AiSummaryService::MAX_FILES_PER_FIX
-      
+
       # Split by "### File N:" headers
       file_sections = fix_content.split(/(?=###\s+File\s+\d+:)/i)
-      
+
       file_sections.each do |file_section|
         # Safety limit check
         if file_fixes.size >= max_files
           Rails.logger.warn "[GitHub API] Reached max file limit (#{max_files}), skipping remaining file fixes"
           break
         end
-        
+
         next unless file_section =~ /###\s+File\s+\d+:\s*`([^`]+)`/i
-        
+
         file_path = $1
         Rails.logger.info "[GitHub API] Parsing fix for file: #{file_path}"
-        
+
         # Extract before and after code blocks
         parsed = parse_single_file_fix(file_section)
-        
+
         if parsed[:fix_code].present?
           file_fixes << {
             file_path: file_path,
@@ -147,14 +147,14 @@ module Github
           }
         end
       end
-      
+
       file_fixes
     end
 
     # Parse a single file fix section (before/after code blocks)
     def parse_single_file_fix(fix_content)
       result = { fix_code: nil, before_code: nil }
-      
+
       # Extract code blocks from the fix section with their positions
       code_block_matches = fix_content.to_enum(:scan, /```(?:ruby|rb)?\s*(.*?)```/m).map do
         [Regexp.last_match.begin(0), Regexp.last_match[1]]
@@ -167,7 +167,7 @@ module Github
       # Find "Before" and "After" blocks
       raw_code = nil
       before_code = nil
-      
+
       code_block_matches.each_with_index do |(position, block), idx|
         block_text = block.strip
         context_start = [0, position - 200].max

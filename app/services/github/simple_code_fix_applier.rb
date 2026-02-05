@@ -13,7 +13,7 @@ module Github
     def try_apply_actual_fix(owner, repo, sample_event, issue, existing_fix_code = nil, before_code = nil)
       @owner = owner
       @repo = repo
-      
+
       # Get the error frame with source context
       frames = sample_event.structured_stack_trace || []
       error_frame = frames.find { |f| (f["in_app"] || f[:in_app]) && (f["source_context"] || f[:source_context]) }
@@ -98,7 +98,7 @@ module Github
     def try_apply_fix_to_file(owner, repo, file_path, before_code, after_code)
       @owner = owner
       @repo = repo
-      
+
       return { success: false, reason: "Missing file path" } if file_path.blank?
       return { success: false, reason: "Missing fix code" } if after_code.blank?
 
@@ -122,13 +122,13 @@ module Github
         direct_result = try_direct_replacement(current_content, before_code, after_code, 1)
         if direct_result && direct_result["replacements"].present?
           Rails.logger.info "[SimpleFixApplier] Direct replacement succeeded for #{normalized_path}"
-          
+
           # Apply the replacements
           lines = current_content.lines
           direct_result["replacements"].sort_by { |r| -r["line"] }.each do |replacement|
             line_idx = replacement["line"] - 1
             next if line_idx < 0 || line_idx >= lines.size
-            
+
             original_indent = lines[line_idx].match(/^(\s*)/)[1]
             line_ending = lines[line_idx].end_with?("\n") ? "\n" : ""
             new_stripped = replacement["new"].strip
@@ -151,11 +151,11 @@ module Github
         # Append before the last 'end' (usually class/module end)
         lines = current_content.lines
         last_end_idx = lines.rindex { |l| l.strip == "end" }
-        
+
         if last_end_idx && last_end_idx > 0
           indent = lines[last_end_idx - 1].match(/^(\s*)/)[1] rescue "  "
           indented_code = after_code.lines.map { |l| l.strip.empty? ? "\n" : "#{indent}#{l.rstrip}\n" }.join
-          
+
           lines.insert(last_end_idx, "\n#{indented_code}")
           new_content = lines.join
           Rails.logger.info "[SimpleFixApplier] Inserted new code into #{normalized_path}"
@@ -202,31 +202,31 @@ module Github
     def fetch_related_files_context(error_file_path, error_file_content, stack_frames, issue)
       related_files = []
       files_to_fetch = []
-      
+
       # 1. Extract model/class names referenced in the error file
       referenced_classes = extract_referenced_classes(error_file_content)
       Rails.logger.info "[SimpleFixApplier] Referenced classes: #{referenced_classes.join(', ')}"
-      
+
       # 2. Determine related files based on error file type
       if error_file_path.include?("/controllers/")
         # For controllers, fetch related model and possibly the view
         controller_name = File.basename(error_file_path, ".rb").sub(/_controller$/, "")
         model_name = controller_name.singularize
         files_to_fetch << "app/models/#{model_name}.rb"
-        
+
         # Also check for service objects
         referenced_classes.each do |klass|
           if klass.end_with?("Service")
             files_to_fetch << "app/services/#{klass.underscore}.rb"
           end
         end
-        
+
       elsif error_file_path.include?("/models/")
         # For models, fetch related models (associations)
         referenced_classes.each do |klass|
           files_to_fetch << "app/models/#{klass.underscore}.rb"
         end
-        
+
       elsif error_file_path.include?("/services/")
         # For services, fetch models they use
         referenced_classes.each do |klass|
@@ -234,7 +234,7 @@ module Github
             files_to_fetch << "app/models/#{klass.underscore}.rb"
           end
         end
-        
+
       elsif error_file_path.include?("/jobs/")
         # For jobs, fetch related models and services
         referenced_classes.each do |klass|
@@ -245,7 +245,7 @@ module Github
           end
         end
       end
-      
+
       # 3. Add files from stack trace (in-app frames only)
       stack_frames.select { |f| f["in_app"] || f[:in_app] }.first(5).each do |frame|
         frame_file = frame["file"] || frame[:file]
@@ -253,17 +253,17 @@ module Github
         normalized = normalize_file_path(frame_file)
         files_to_fetch << normalized if normalized && normalized != error_file_path
       end
-      
+
       # 4. Check for schema.rb if dealing with database/model errors
-      if issue.exception_class.to_s.include?("ActiveRecord") || 
+      if issue.exception_class.to_s.include?("ActiveRecord") ||
          issue.sample_message.to_s.include?("column") ||
          issue.sample_message.to_s.include?("table")
         files_to_fetch << "db/schema.rb"
       end
-      
+
       # Dedupe and limit
       files_to_fetch = files_to_fetch.uniq.reject { |f| f == error_file_path }.first(5)
-      
+
       # Fetch each file
       files_to_fetch.each do |file_path|
         content = fetch_file_content(file_path)
@@ -277,7 +277,7 @@ module Github
           Rails.logger.info "[SimpleFixApplier] Fetched related file: #{file_path} (#{content.lines.size} lines)"
         end
       end
-      
+
       # Build context string
       context_parts = []
       related_files.each do |file|
@@ -288,53 +288,53 @@ module Github
           ```
         FILE
       end
-      
+
       {
         context: context_parts.join("\n"),
         files_fetched: related_files.size,
         files: related_files
       }
     end
-    
+
     # Extract class names referenced in Ruby code
     def extract_referenced_classes(content)
       classes = []
-      
+
       # Match class references like User, Product, OrderService, etc.
       # Look for: ClassName.method, ClassName::Constant, belongs_to :class_name, has_many :class_names
       content.scan(/\b([A-Z][a-zA-Z0-9]+)(?:\.|::|\s)/).each do |match|
         classes << match[0]
       end
-      
+
       # Match association declarations
       content.scan(/(?:belongs_to|has_one|has_many|has_and_belongs_to_many)\s+:(\w+)/).each do |match|
         classes << match[0].classify
       end
-      
+
       # Match common Rails patterns
       content.scan(/(\w+)\.(?:find|find_by|where|create|new|first|last|all)/).each do |match|
         word = match[0]
         classes << word if word.match?(/^[A-Z]/)
       end
-      
+
       # Filter out common non-model classes
-      excluded = %w[Rails ActiveRecord ActionController ApplicationController ApplicationRecord 
-                    String Integer Float Array Hash Time DateTime Date File Logger JSON 
+      excluded = %w[Rails ActiveRecord ActionController ApplicationController ApplicationRecord
+                    String Integer Float Array Hash Time DateTime Date File Logger JSON
                     Thread Mutex Queue ENV Kernel Object Class Module]
-      
+
       classes.uniq.reject { |c| excluded.include?(c) || c.length < 3 }
     end
-    
+
     # Fetch a single file from GitHub
     def fetch_file_content(file_path)
       return nil if file_path.blank?
-      
+
       file_url = "/repos/#{@owner}/#{@repo}/contents/#{file_path}"
       file_url += "?ref=#{@source_branch}" if @source_branch.present?
-      
+
       response = @api_client.get(file_url)
       return nil unless response.is_a?(Hash) && response["content"]
-      
+
       Base64.decode64(response["content"])
     rescue => e
       Rails.logger.debug "[SimpleFixApplier] Could not fetch #{file_path}: #{e.message}"
@@ -383,7 +383,7 @@ module Github
       before_lines.each_with_index do |old_line, idx|
         line_num = match_start + idx + 1
         new_line = after_lines[idx] || ""
-        
+
         # Preserve original indentation from file
         original_indent = lines[match_start + idx]&.match(/^(\s*)/)&.[](1) || ""
         new_content = original_indent + new_line.lstrip
@@ -461,7 +461,7 @@ module Github
       before_after_section = if before_code.present? && existing_fix_code.present?
         <<~SECTION
           SUGGESTED FIX FROM AI ANALYSIS:
-          
+
           BEFORE (incorrect code):
           ```
           #{before_code}
@@ -487,7 +487,7 @@ module Github
       related_files_section = ""
       if related_files_context && related_files_context[:context].present?
         related_files_section = <<~SECTION
-          
+
           RELATED FILES (for understanding the codebase context):
           #{related_files_context[:context]}
         SECTION

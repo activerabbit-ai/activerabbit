@@ -22,10 +22,10 @@ class SlackAuthController < ApplicationController
       redirect_to root_path, alert: "Invalid OAuth state"
       return
     end
-  
+
     project_id = session.delete(:slack_project_id)
     @project = current_account.projects.find(project_id)
-  
+
     code = params[:code]
     unless code
       redirect_to @project, alert: "Slack did not send the authorization code"

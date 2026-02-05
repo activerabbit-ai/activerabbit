@@ -90,7 +90,7 @@ class OnboardingController < ApplicationController
         @project.update(settings: settings)
 
         redirect_to dashboard_path, notice: "GitHub connected from #{source_project.name}! Welcome to ActiveRabbit!"
-        return
+        nil
       end
     end
   end
