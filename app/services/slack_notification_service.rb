@@ -1,4 +1,6 @@
 class SlackNotificationService
+  include ErrorsHelper
+
   def initialize(project)
     @project = project
     @token = project.slack_access_token
@@ -77,6 +79,10 @@ class SlackNotificationService
     context = latest_event&.context || {}
     params = extract_params(context)
 
+    # Get human-readable explanation for this error type
+    explanation = error_explanation(issue.exception_class)
+    message_text = explanation.presence || truncate_text(issue.sample_message || latest_event&.message || "No message", 300)
+
     fields = [
       {
         title: "Project",
@@ -84,38 +90,13 @@ class SlackNotificationService
         short: true
       },
       {
-        title: "Environment",
-        value: latest_event&.environment || @project.environment || "production",
-        short: true
-      },
-      {
-        title: "Exception",
-        value: issue.exception_class,
-        short: false
-      },
-      {
         title: "Message",
-        value: truncate_text(issue.sample_message || latest_event&.message || "No message", 300),
+        value: message_text,
         short: false
       },
       {
         title: "Frequency",
         value: "#{payload['count']} occurrences in #{payload['time_window']} minutes",
-        short: true
-      },
-      {
-        title: "Total",
-        value: "#{issue.count} total occurrences",
-        short: true
-      },
-      {
-        title: "Location",
-        value: issue.controller_action || "Unknown",
-        short: true
-      },
-      {
-        title: "Code",
-        value: truncate_text(issue.top_frame || "Unknown", 100),
         short: true
       }
     ]
@@ -160,14 +141,17 @@ class SlackNotificationService
       }
     end
 
-    # Add params if available
-    if params.present?
-      fields << {
-        title: "Latest Params",
-        value: truncate_text(format_params(params), 200),
-        short: false
-      }
-    end
+    # Add Total and Environment at the bottom
+    fields << {
+      title: "Total",
+      value: "#{issue.count} total occurrences",
+      short: true
+    }
+    fields << {
+      title: "Environment",
+      value: latest_event&.environment || @project.environment || "production",
+      short: true
+    }
 
     {
       text: "🚨 *High Error Frequency Alert*",
@@ -221,9 +205,9 @@ class SlackNotificationService
               short: true
             },
             {
-              title: "Environment",
-              value: @project.environment,
-              short: true
+              title: "Endpoint",
+              value: event.target.presence || payload["target"] || payload["controller_action"] || event.request_path || "Unknown",
+              short: false
             },
             {
               title: "Response Time",
@@ -236,13 +220,13 @@ class SlackNotificationService
               short: true
             },
             {
-              title: "Endpoint",
-              value: event.target.presence || payload["target"] || payload["controller_action"] || event.request_path || "Unknown",
-              short: false
-            },
-            {
               title: "Occurred At",
               value: event.occurred_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+              short: true
+            },
+            {
+              title: "Environment",
+              value: @project.environment,
               short: true
             }
           ],
@@ -330,6 +314,10 @@ class SlackNotificationService
     context = latest_event&.context || {}
     params = extract_params(context)
 
+    # Get human-readable explanation for this error type
+    explanation = error_explanation(issue.exception_class)
+    message_text = explanation.presence || truncate_text(issue.sample_message || latest_event&.message || "No message", 300)
+
     fields = [
       {
         title: "Project",
@@ -337,29 +325,9 @@ class SlackNotificationService
         short: true
       },
       {
-        title: "Environment",
-        value: latest_event&.environment || @project.environment || "production",
-        short: true
-      },
-      {
-        title: "Exception",
-        value: issue.exception_class,
-        short: false
-      },
-      {
         title: "Message",
-        value: truncate_text(issue.sample_message || latest_event&.message || "No message", 300),
+        value: message_text,
         short: false
-      },
-      {
-        title: "Location",
-        value: issue.controller_action || "Unknown",
-        short: true
-      },
-      {
-        title: "Code",
-        value: truncate_text(issue.top_frame || "Unknown", 100),
-        short: true
       }
     ]
 
@@ -393,6 +361,11 @@ class SlackNotificationService
     fields << {
       title: "Occurrences",
       value: issue.count.to_s,
+      short: true
+    }
+    fields << {
+      title: "Environment",
+      value: latest_event&.environment || @project.environment || "production",
       short: true
     }
 
