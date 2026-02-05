@@ -103,7 +103,5 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: .ruby-version
-          bundler-cache: true
-
-      - name: Audit JavaScript dependencies (importmap)
+          bundler-cache: true      - name: Audit JavaScript dependencies (importmap)
         run: bin/importmap audit

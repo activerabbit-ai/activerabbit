@@ -39,9 +39,15 @@ RSpec.describe LifecycleMailer, type: :mailer do
       context "with unconfirmed user only" do
         let!(:user) { create(:user, :unconfirmed, account: account) }
 
-        it "returns nil" do
+        it "does not send email to unconfirmed user" do
           mail = described_class.public_send(method_name, **method_args.call(account))
-          expect(mail).to be_nil
+          # When no confirmed user, mailer returns early - check that no email would be sent
+          if mail.nil?
+            expect(mail).to be_nil
+          else
+            # ActionMailer wraps early returns in NullMail
+            expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+          end
         end
       end
 

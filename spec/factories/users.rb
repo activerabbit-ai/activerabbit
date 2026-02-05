@@ -24,6 +24,8 @@ FactoryBot.define do
     trait :unconfirmed do
       confirmed_at { nil }
       provider { nil }
+      # Skip Devise confirmation email on create - must be done before create
+      before(:create) { |user| user.skip_confirmation_notification! }
     end
 
     trait :oauth do

@@ -151,7 +151,7 @@ class QuotaAlertMailer < ApplicationMailer
   end
 
   def pricing_url
-    Rails.application.routes.url_helpers.pricing_url(
+    Rails.application.routes.url_helpers.plan_url(
       host: ENV.fetch("APP_HOST", "localhost:3000"),
       protocol: Rails.env.production? ? "https" : "http"
     )
