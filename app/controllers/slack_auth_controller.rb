@@ -5,17 +5,27 @@ class SlackAuthController < ApplicationController
 
   def authorize
     client_id = ENV["SLACK_CLIENT_ID"]
-    scopes = %w[chat:write channels:read channels:manage groups:read].join(",")
+    scopes = %w[chat:write channels:read channels:manage chat:write.public].join(",")
 
-    slack_url = "https://slack.com/oauth/v2/authorize?client_id=#{client_id}&scope=#{scopes}&redirect_uri=#{callback_url}&state=#{@project.id}"
+    state = SecureRandom.hex(32)
+    session[:slack_oauth_state] = state
+    session[:slack_project_id] = @project.id
+
+    slack_url = "https://slack.com/oauth/v2/authorize?client_id=#{client_id}&scope=#{scopes}&redirect_uri=#{callback_url}&state=#{state}"
 
     redirect_to slack_url, allow_other_host: true
   end
 
   def callback
-    project_id = params[:state]
+    unless params[:state] == session.delete(:slack_oauth_state)
+      Rails.logger.warn "Invalid Slack OAuth state"
+      redirect_to root_path, alert: "Invalid OAuth state"
+      return
+    end
+  
+    project_id = session.delete(:slack_project_id)
     @project = current_account.projects.find(project_id)
-
+  
     code = params[:code]
     unless code
       redirect_to @project, alert: "Slack did not send the authorization code"

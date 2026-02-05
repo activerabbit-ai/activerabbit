@@ -16,28 +16,62 @@ class SlackConnectService
 
     data = JSON.parse(response.body)
     if data["ok"]
-      data["channel"]["id"]
+      channel_id = data["channel"]["id"]
+      join_channel(channel_id)
+      channel_id
+    elsif data["error"] == "name_taken"
+      Rails.logger.info "Slack channel '#{name}' already exists, finding it..."
+      find_channel(name)
     else
       error_msg = data["error"] || "Unknown error"
-      Rails.logger.warn "Failed to create Slack channel '#{name}': #{error_msg}. Attempting to find existing channel..."
-      find_channel(name)
+      Rails.logger.error "Failed to create Slack channel '#{name}': #{error_msg}"
+      nil
     end
   end
 
-  def find_channel(name)
-    response = @conn.get("conversations.list", { types: "public_channel,private_channel" }, { "Authorization" => "Bearer #{@token}" })
+  def join_channel(channel_id)
+    return unless channel_id
+
+    response = @conn.post("conversations.join") do |req|
+      req.headers["Authorization"] = "Bearer #{@token}"
+      req.headers["Content-Type"] = "application/json"
+      req.body = { channel: channel_id }.to_json
+    end
+
     data = JSON.parse(response.body)
-    unless data["ok"]
-      Rails.logger.error "Failed to list Slack channels: #{data['error'] || 'Unknown error'}"
-      return nil
+    if !data["ok"] && data["error"] != "already_in_channel"
+      Rails.logger.warn "Failed to join Slack channel #{channel_id}: #{data['error'] || 'Unknown error'}"
     end
-    channel = data["channels"].find { |c| c["name"] == name }
-    if channel
-      Rails.logger.info "Found existing Slack channel '#{name}' with ID: #{channel['id']}"
-      channel["id"]
-    else
-      Rails.logger.warn "Slack channel '#{name}' not found in workspace"
-      nil
+    data["ok"] || data["error"] == "already_in_channel"
+  end
+
+  def find_channel(name)
+    cursor = nil
+
+    loop do
+      params = { types: "public_channel", limit: 200 }
+      params[:cursor] = cursor if cursor
+
+      response = @conn.get("conversations.list", params, { "Authorization" => "Bearer #{@token}" })
+      data = JSON.parse(response.body)
+
+      unless data["ok"]
+        Rails.logger.error "Failed to list Slack channels: #{data['error'] || 'Unknown error'}"
+        return nil
+      end
+
+      channel = data["channels"].find { |c| c["name"] == name }
+      if channel
+        Rails.logger.info "Found existing Slack channel '#{name}' with ID: #{channel['id']}"
+        join_channel(channel["id"])
+        return channel["id"]
+      end
+
+      cursor = data.dig("response_metadata", "next_cursor")
+      break if cursor.nil? || cursor.empty?
     end
+
+    Rails.logger.warn "Slack channel '#{name}' not found in workspace"
+    nil
   end
 end
