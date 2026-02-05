@@ -63,21 +63,21 @@ class PricingController < ApplicationController
     # 30-day data - query directly from source tables for accuracy
     # (DailyResourceUsage may have gaps if jobs didn't run)
     thirty_days_ago = 30.days.ago
-    
+
     ActsAsTenant.without_tenant do
       @events_last_30_days = Event.where(account_id: @account.id)
                                   .where("occurred_at >= ?", thirty_days_ago)
                                   .count
-      
+
       @ai_summaries_last_30_days = Issue.where(account_id: @account.id)
                                         .where("ai_summary_generated_at >= ?", thirty_days_ago)
                                         .count
-      
+
       @pull_requests_last_30_days = AiRequest.where(account_id: @account.id, request_type: "pull_request")
                                              .where("occurred_at >= ?", thirty_days_ago)
                                              .count
     end
-    
+
     @requests_total_last_30_days = @events_last_30_days + @ai_summaries_last_30_days + @pull_requests_last_30_days
 
     # Event/Error tracking usage (from cached columns - instant!)

@@ -47,6 +47,9 @@ Rails.application.routes.draw do
   get  "slack/oauth/authorize", to: "slack_auth#authorize"
   get  "slack/oauth/callback",  to: "slack_auth#callback"
 
+  # Public integration landing pages (for Slack App Directory review)
+  get "integrations/slack", to: "integrations#slack", as: :slack_integration
+
   # GitHub App installation callback and webhook
   get  "github/app/callback",   to: "github_app#callback"
   post "github/app/webhook",    to: "github_app#webhook"

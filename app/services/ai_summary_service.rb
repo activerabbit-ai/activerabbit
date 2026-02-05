@@ -142,7 +142,7 @@ class AiSummaryService
         if error_frame
           error_file_path = normalize_file_path(error_frame["file"] || error_frame[:file])
           error_line_number = error_frame["line"] || error_frame[:line]
-          
+
           # Collect source code for class extraction (from SDK)
           ctx = error_frame["source_context"] || error_frame[:source_context]
           if ctx
@@ -227,7 +227,7 @@ class AiSummaryService
     return nil unless content.present?
 
     lines = content.lines
-    
+
     # Add line numbers, marking the error line
     lines.map.with_index(1) do |line, num|
       marker = num == error_line ? " >>> " : "     "
@@ -324,16 +324,16 @@ class AiSummaryService
       controller_name = File.basename(error_file_path, ".rb").sub(/_controller$/, "")
       model_name = controller_name.singularize
       files_to_fetch << "app/models/#{model_name}.rb"
-      
+
       referenced_classes.each do |klass|
         files_to_fetch << "app/services/#{klass.underscore}.rb" if klass.end_with?("Service")
       end
-      
+
     elsif error_file_path&.include?("/models/")
       referenced_classes.each do |klass|
         files_to_fetch << "app/models/#{klass.underscore}.rb"
       end
-      
+
     elsif error_file_path&.include?("/services/")
       referenced_classes.each do |klass|
         if klass.end_with?("Service")
@@ -342,7 +342,7 @@ class AiSummaryService
           files_to_fetch << "app/models/#{klass.underscore}.rb"
         end
       end
-      
+
     elsif error_file_path&.include?("/jobs/")
       referenced_classes.each do |klass|
         if klass.end_with?("Service")
@@ -390,20 +390,20 @@ class AiSummaryService
   # Extract class names referenced in Ruby code
   def extract_referenced_classes(content)
     classes = []
-    
+
     # Match class references
     content.scan(/\b([A-Z][a-zA-Z0-9]+)(?:\.|::|\s)/).each { |m| classes << m[0] }
-    
+
     # Match associations
     content.scan(/(?:belongs_to|has_one|has_many|has_and_belongs_to_many)\s+:(\w+)/).each do |m|
       classes << m[0].classify
     end
-    
+
     # Filter common non-model classes
     excluded = %w[Rails ActiveRecord ActionController ApplicationController ApplicationRecord
                   String Integer Float Array Hash Time DateTime Date File Logger JSON
                   Thread Mutex Queue ENV Kernel Object Class Module Base Error]
-    
+
     classes.uniq.reject { |c| excluded.include?(c) || c.length < 3 }
   end
 
@@ -412,7 +412,7 @@ class AiSummaryService
     file_url = "/repos/#{owner}/#{repo}/contents/#{file_path}"
     response = @github_client.get(file_url)
     return nil unless response.is_a?(Hash) && response["content"]
-    
+
     Base64.decode64(response["content"])
   rescue => e
     Rails.logger.debug "[AiSummaryService] Could not fetch #{file_path}: #{e.message}"

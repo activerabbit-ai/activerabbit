@@ -1,4 +1,6 @@
 class SlackNotificationService
+  include ErrorsHelper
+
   def initialize(project)
     @project = project
     @token = project.slack_access_token
@@ -77,6 +79,10 @@ class SlackNotificationService
     context = latest_event&.context || {}
     params = extract_params(context)
 
+    # Get human-readable explanation for this error type
+    explanation = error_explanation(issue.exception_class)
+    message_text = explanation.presence || truncate_text(issue.sample_message || latest_event&.message || "No message", 300)
+
     fields = [
       {
         title: "Project",
@@ -84,38 +90,13 @@ class SlackNotificationService
         short: true
       },
       {
-        title: "Environment",
-        value: latest_event&.environment || @project.environment || "production",
-        short: true
-      },
-      {
-        title: "Exception",
-        value: issue.exception_class,
-        short: false
-      },
-      {
         title: "Message",
-        value: truncate_text(issue.sample_message || latest_event&.message || "No message", 300),
+        value: message_text,
         short: false
       },
       {
         title: "Frequency",
         value: "#{payload['count']} occurrences in #{payload['time_window']} minutes",
-        short: true
-      },
-      {
-        title: "Total",
-        value: "#{issue.count} total occurrences",
-        short: true
-      },
-      {
-        title: "Location",
-        value: issue.controller_action || "Unknown",
-        short: true
-      },
-      {
-        title: "Code",
-        value: truncate_text(issue.top_frame || "Unknown", 100),
         short: true
       }
     ]
@@ -160,14 +141,17 @@ class SlackNotificationService
       }
     end
 
-    # Add params if available
-    if params.present?
-      fields << {
-        title: "Latest Params",
-        value: truncate_text(format_params(params), 200),
-        short: false
-      }
-    end
+    # Add Total and Environment at the bottom
+    fields << {
+      title: "Total",
+      value: "#{issue.count} total occurrences",
+      short: true
+    }
+    fields << {
+      title: "Environment",
+      value: latest_event&.environment || @project.environment || "production",
+      short: true
+    }
 
     {
       text: "🚨 *High Error Frequency Alert*",
@@ -221,9 +205,9 @@ class SlackNotificationService
               short: true
             },
             {
-              title: "Environment",
-              value: @project.environment,
-              short: true
+              title: "Endpoint",
+              value: event.target.presence || payload["target"] || payload["controller_action"] || event.request_path || "Unknown",
+              short: false
             },
             {
               title: "Response Time",
@@ -236,13 +220,13 @@ class SlackNotificationService
               short: true
             },
             {
-              title: "Endpoint",
-              value: event.target.presence || payload["target"] || payload["controller_action"] || event.request_path || "Unknown",
-              short: false
+              title: "Occurred At",
+              value: format_time(event.occurred_at),
+              short: true
             },
             {
-              title: "Occurred At",
-              value: event.occurred_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+              title: "Environment",
+              value: @project.environment,
               short: true
             }
           ],
@@ -330,6 +314,10 @@ class SlackNotificationService
     context = latest_event&.context || {}
     params = extract_params(context)
 
+    # Get human-readable explanation for this error type
+    explanation = error_explanation(issue.exception_class)
+    message_text = explanation.presence || truncate_text(issue.sample_message || latest_event&.message || "No message", 300)
+
     fields = [
       {
         title: "Project",
@@ -337,29 +325,9 @@ class SlackNotificationService
         short: true
       },
       {
-        title: "Environment",
-        value: latest_event&.environment || @project.environment || "production",
-        short: true
-      },
-      {
-        title: "Exception",
-        value: issue.exception_class,
-        short: false
-      },
-      {
         title: "Message",
-        value: truncate_text(issue.sample_message || latest_event&.message || "No message", 300),
+        value: message_text,
         short: false
-      },
-      {
-        title: "Location",
-        value: issue.controller_action || "Unknown",
-        short: true
-      },
-      {
-        title: "Code",
-        value: truncate_text(issue.top_frame || "Unknown", 100),
-        short: true
       }
     ]
 
@@ -376,10 +344,11 @@ class SlackNotificationService
     end
 
     # Add params if available (useful for debugging RecordNotFound etc)
-    if params.present?
+    formatted_params = format_params(params)
+    if formatted_params.present?
       fields << {
         title: "Params",
-        value: truncate_text(format_params(params), 200),
+        value: truncate_text(formatted_params, 200),
         short: false
       }
     end
@@ -387,12 +356,17 @@ class SlackNotificationService
     # Add occurrence info
     fields << {
       title: "First Seen",
-      value: issue.first_seen_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
-      short: true
+      value: format_time(issue.first_seen_at),
+      short: false
     }
     fields << {
       title: "Occurrences",
       value: issue.count.to_s,
+      short: false
+    }
+    fields << {
+      title: "Environment",
+      value: latest_event&.environment || @project.environment || "production",
       short: true
     }
 
@@ -466,6 +440,24 @@ class SlackNotificationService
     return "" if text.blank?
     text = text.to_s
     text.length > max_length ? "#{text[0..max_length]}..." : text
+  end
+
+  # Format time in human-readable format
+  def format_time(time)
+    return "Unknown" if time.blank?
+
+    time = time.utc
+    today = Time.current.utc.to_date
+
+    if time.to_date == today
+      "Today at #{time.strftime('%H:%M UTC')}"
+    elsif time.to_date == today - 1.day
+      "Yesterday at #{time.strftime('%H:%M UTC')}"
+    elsif time.year == today.year
+      time.strftime("%b %d at %H:%M UTC")
+    else
+      time.strftime("%b %d, %Y at %H:%M UTC")
+    end
   end
 
   def build_custom_message(title, message, color)

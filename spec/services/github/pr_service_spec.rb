@@ -108,7 +108,7 @@ RSpec.describe Github::PrService, type: :service do
       before do
         # Mock all GitHub API calls
         stub_request(:get, %r{https://api.github.com/.*})
-          .to_return(status: 200, body: { 
+          .to_return(status: 200, body: {
             "default_branch" => "main",
             "object" => { "sha" => "abc123" },
             "tree" => { "sha" => "tree123" },
@@ -117,11 +117,11 @@ RSpec.describe Github::PrService, type: :service do
           }.to_json, headers: { 'Content-Type' => 'application/json' })
 
         stub_request(:post, %r{https://api.github.com/.*})
-          .to_return(status: 201, body: { 
+          .to_return(status: 201, body: {
             "ref" => "refs/heads/fix/test",
             "sha" => "newtree123",
-            "html_url" => "https://github.com/owner/repo/pull/1", 
-            "number" => 1 
+            "html_url" => "https://github.com/owner/repo/pull/1",
+            "number" => 1
           }.to_json, headers: { 'Content-Type' => 'application/json' })
 
         stub_request(:patch, %r{https://api.github.com/.*})

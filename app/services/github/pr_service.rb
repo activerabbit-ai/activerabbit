@@ -194,26 +194,26 @@ module Github
       # Try to apply additional file fixes (multi-file support)
       # Safety limit: max 3 files total (AiSummaryService::MAX_FILES_PER_FIX)
       max_files = AiSummaryService::MAX_FILES_PER_FIX
-      
+
       if file_fixes.present? && file_fixes.size > 1 && files_fixed.size < max_files
         remaining_slots = max_files - files_fixed.size
         Rails.logger.info "[GitHub API] Processing up to #{remaining_slots} additional file fixes (safety limit: #{max_files} files max)"
-        
+
         # Skip the first one if it was already handled above
         additional_fixes = file_fixes.drop(1).first(remaining_slots)
-        
+
         additional_fixes.each do |file_fix|
           break if files_fixed.size >= max_files  # Double-check safety limit
           next if files_fixed.include?(file_fix[:file_path])
           next unless file_fix[:after_code].present?
-          
+
           fix_result = code_fix_applier.try_apply_fix_to_file(
-            owner, repo, 
-            file_fix[:file_path], 
-            file_fix[:before_code], 
+            owner, repo,
+            file_fix[:file_path],
+            file_fix[:before_code],
             file_fix[:after_code]
           )
-          
+
           if fix_result[:success]
             tree_entries << fix_result[:tree_entry]
             commit_msg_parts << "fix: #{fix_result[:file_path]}"

@@ -434,12 +434,12 @@ RSpec.describe Github::PrContentGenerator, type: :service do
       # Should be limited to MAX_FILES_PER_FIX (1)
       expect(result[:file_fixes].size).to eq(AiSummaryService::MAX_FILES_PER_FIX)
       expect(result[:file_fixes].size).to eq(1)
-      
+
       # Should have first file only
       expect(result[:file_fixes].map { |f| f[:file_path] }).to eq([
         "app/file1.rb"
       ])
-      
+
       # Related changes should be captured for display
       expect(result[:related_changes]).to include("app/file2.rb")
       expect(result[:related_changes]).to include("app/file3.rb")
