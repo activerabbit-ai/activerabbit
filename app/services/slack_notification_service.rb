@@ -221,7 +221,7 @@ class SlackNotificationService
             },
             {
               title: "Occurred At",
-              value: event.occurred_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+              value: format_time(event.occurred_at),
               short: true
             },
             {
@@ -344,10 +344,11 @@ class SlackNotificationService
     end
 
     # Add params if available (useful for debugging RecordNotFound etc)
-    if params.present?
+    formatted_params = format_params(params)
+    if formatted_params.present?
       fields << {
         title: "Params",
-        value: truncate_text(format_params(params), 200),
+        value: truncate_text(formatted_params, 200),
         short: false
       }
     end
@@ -355,13 +356,13 @@ class SlackNotificationService
     # Add occurrence info
     fields << {
       title: "First Seen",
-      value: issue.first_seen_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
-      short: true
+      value: format_time(issue.first_seen_at),
+      short: false
     }
     fields << {
       title: "Occurrences",
       value: issue.count.to_s,
-      short: true
+      short: false
     }
     fields << {
       title: "Environment",
@@ -439,6 +440,24 @@ class SlackNotificationService
     return "" if text.blank?
     text = text.to_s
     text.length > max_length ? "#{text[0..max_length]}..." : text
+  end
+
+  # Format time in human-readable format
+  def format_time(time)
+    return "Unknown" if time.blank?
+
+    time = time.utc
+    today = Time.current.utc.to_date
+
+    if time.to_date == today
+      "Today at #{time.strftime('%H:%M UTC')}"
+    elsif time.to_date == today - 1.day
+      "Yesterday at #{time.strftime('%H:%M UTC')}"
+    elsif time.year == today.year
+      time.strftime("%b %d at %H:%M UTC")
+    else
+      time.strftime("%b %d, %Y at %H:%M UTC")
+    end
   end
 
   def build_custom_message(title, message, color)

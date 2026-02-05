@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "ActiveRabbit" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Favicons %>
+    <link rel="icon" type="image/x-icon" href="<%= asset_path('faviicons/favicon.ico') %>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<%= asset_path('faviicons/favicon-32.png') %>">
+    <link rel="icon" type="image/png" sizes="16x16" href="<%= asset_path('faviicons/favicon-16.png') %>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= asset_path('faviicons/favicon-512.png') %>">
+
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <%= yield %>
+    <%= render "shared/google_analytics" %>
+  </body>
+</html>
