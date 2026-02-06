@@ -210,8 +210,8 @@ RSpec.describe Github::SimpleCodeFixApplier, type: :service do
       result = service.send(:try_direct_replacement, file_content, before_code, after_code, 4)
 
       expect(result).to be_present
-      expect(result["replacements"]).to be_present
-      expect(result["replacements"].first["new"]).to include("@user&.foo")
+      expect(result[:replacements]).to be_present
+      expect(result[:replacements].first[:new]).to include("@user&.foo")
     end
 
     it 'returns nil when before_code not found in file' do

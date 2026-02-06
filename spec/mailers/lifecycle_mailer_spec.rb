@@ -41,7 +41,7 @@ RSpec.describe LifecycleMailer, type: :mailer do
 
         it "returns nil" do
           mail = described_class.public_send(method_name, **method_args.call(account))
-          expect(mail).to be_nil
+          expect(mail.message).to be_a(ActionMailer::Base::NullMail)
         end
       end
 

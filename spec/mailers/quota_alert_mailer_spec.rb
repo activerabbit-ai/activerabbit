@@ -69,7 +69,7 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
         account.update!(cached_events_used: 4200)
         mail = described_class.warning_80_percent(account, :events)
 
-        expect(mail).to be_nil
+        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
       end
     end
   end
@@ -117,7 +117,7 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
       it "returns nil" do
         mail = described_class.quota_exceeded(account, :events)
 
-        expect(mail).to be_nil
+        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
       end
     end
   end
@@ -138,7 +138,7 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
       it "returns nil" do
         mail = described_class.quota_exceeded_reminder(account, :events, 5)
 
-        expect(mail).to be_nil
+        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
       end
     end
   end
@@ -174,7 +174,7 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
       it "returns nil" do
         mail = described_class.free_plan_upgrade_reminder(account, :events, 5)
 
-        expect(mail).to be_nil
+        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
       end
     end
 

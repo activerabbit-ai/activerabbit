@@ -35,6 +35,10 @@ RSpec.describe AlertJob, type: :job do
         "channels" => { "email" => true }
       }
     })
+
+    # Stub Resend API for email delivery
+    stub_request(:post, "https://api.resend.com/emails")
+      .to_return(status: 200, body: '{"id": "test-email-id"}', headers: { 'Content-Type' => 'application/json' })
   end
 
   describe "#perform" do

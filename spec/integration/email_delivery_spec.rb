@@ -6,6 +6,12 @@ RSpec.describe "Email Delivery Integration", type: :job do
   # These tests verify that emails are actually queued for delivery,
   # not just that the mailer methods return mail objects.
 
+  before do
+    # Ensure we use the :test delivery method so emails are captured in deliveries array
+    ActionMailer::Base.delivery_method = :test
+    ActionMailer::Base.deliveries.clear
+  end
+
   describe "QuotaAlertJob email delivery" do
     let(:account) do
       create(:account, :free_plan,
@@ -163,15 +169,15 @@ RSpec.describe "Email Delivery Integration", type: :job do
       it "does NOT deliver welcome email" do
         result = LifecycleMailer.welcome(account: account)
 
-        # Mailer returns nil when no confirmed user found
-        expect(result).to be_nil
+        # Mailer returns NullMail when no confirmed user found
+        expect(result.message).to be_a(ActionMailer::Base::NullMail)
         expect(emails_sent.count).to eq(0)
       end
 
       it "does NOT deliver trial ending email" do
         result = LifecycleMailer.trial_ending_soon(account: account, days_left: 3)
 
-        expect(result).to be_nil
+        expect(result.message).to be_a(ActionMailer::Base::NullMail)
         expect(emails_sent.count).to eq(0)
       end
     end
@@ -216,7 +222,7 @@ RSpec.describe "Email Delivery Integration", type: :job do
       it "does NOT deliver performance incident email" do
         result = AlertMailer.performance_incident_opened(project: project, incident: incident)
 
-        expect(result).to be_nil
+        expect(result.message).to be_a(ActionMailer::Base::NullMail)
         expect(emails_sent.count).to eq(0)
       end
     end

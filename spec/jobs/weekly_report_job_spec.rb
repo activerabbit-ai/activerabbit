@@ -13,7 +13,11 @@ RSpec.describe WeeklyReportJob, type: :job do
   end
 
   before do
-    account.update!(name: "Test Account")
+    account.update!(
+      name: "Test Account",
+      cached_events_used: 100,
+      usage_cached_at: Time.current
+    )
     Rails.cache.clear
   end
 
@@ -63,19 +67,22 @@ RSpec.describe WeeklyReportJob, type: :job do
     end
 
     context "with multiple accounts" do
-      let!(:other_account) { create(:account, name: "Other Account") }
+      let!(:other_account) { create(:account, name: "Other Account", cached_events_used: 50, usage_cached_at: Time.current) }
       let!(:other_user) { create(:user, account: other_account, email: "other@example.com") }
 
       it "sends one email per account when no account_id provided" do
-        # Count total users across all accounts
-        total_users = User.count
+        # Count users in accounts that have stats (confirmed users only)
+        accounts_with_stats = Account.select(&:has_any_stats?)
+        total_users = accounts_with_stats.sum { |a| a.users.select(&:email_confirmed?).count }
         expect(WeeklyReportMailer).to receive(:with).exactly(total_users).times.and_return(double(weekly_report: mock_mail))
 
         described_class.new.perform
       end
 
       it "does not send duplicate emails when run multiple times" do
-        total_users = User.count
+        # Count users in accounts that have stats (confirmed users only)
+        accounts_with_stats = Account.select(&:has_any_stats?)
+        total_users = accounts_with_stats.sum { |a| a.users.select(&:email_confirmed?).count }
         # Should only send once per user total, not twice
         expect(WeeklyReportMailer).to receive(:with).exactly(total_users).times.and_return(double(weekly_report: mock_mail))
 

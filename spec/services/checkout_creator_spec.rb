@@ -2,8 +2,8 @@ require 'rails_helper'
 require 'ostruct'
 
 RSpec.describe CheckoutCreator do
-  let(:user) { User.create!(email: 'buyer@example.com', password: 'Password1!') }
-  let(:account) { user.account }
+  let(:account) { create(:account) }
+  let(:user) { create(:user, :confirmed, account: account, email: 'buyer@example.com') }
 
   before do
     allow(Stripe::Checkout::Session).to receive(:create).and_return(OpenStruct.new(url: 'https://stripe.example/session'))

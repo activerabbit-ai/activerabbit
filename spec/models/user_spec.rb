@@ -181,7 +181,10 @@ RSpec.describe User, type: :model do
 
     context "when existing OAuth user logs in again" do
       let!(:existing_user) do
-        create(:user, account: account, provider: "github", uid: "12345", email: "oauth@example.com", confirmed_at: nil)
+        user = build(:user, account: account, provider: "github", uid: "12345", email: "oauth@example.com", confirmed_at: nil)
+        user.skip_confirmation_notification!
+        user.save!
+        user
       end
 
       it "auto-confirms the user if not confirmed" do

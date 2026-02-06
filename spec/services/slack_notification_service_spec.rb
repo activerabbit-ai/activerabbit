@@ -106,7 +106,8 @@ RSpec.describe SlackNotificationService, type: :service do
         attachments = params[:attachments]
         fields = attachments.first[:fields]
 
-        expect(fields.find { |f| f[:title] == 'Exception' }[:value]).to eq(issue.exception_class)
+        # Exception class is in the main text, not as a field
+        expect(params[:text]).to include(issue.exception_class)
         expect(fields.find { |f| f[:title] == 'Project' }[:value]).to eq(project.name)
       end
 

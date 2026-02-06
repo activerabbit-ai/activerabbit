@@ -99,4 +99,5 @@ Rails.application.configure do
   config.hosts << "127.0.0.1"
   config.hosts << "host.docker.internal"
   config.hosts << "host.docker.internal:3000"
+  config.hosts << "160ec4227c78.ngrok-free.app"
 end

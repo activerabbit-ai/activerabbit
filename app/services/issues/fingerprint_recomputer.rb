@@ -15,6 +15,9 @@ module Issues
     def initialize(dry_run: true)
       @dry_run = dry_run
       @stats = { processed: 0, merged: 0, updated: 0, unchanged: 0, errors: 0 }
+      # Track virtual fingerprint changes for dry run mode
+      # Key: [project_id, new_fingerprint] => issue_id that "owns" this fingerprint
+      @virtual_fingerprints = {}
     end
 
     def call
@@ -53,15 +56,33 @@ module Issues
       end
 
       # Check if there's already an issue with the new fingerprint in the same project
-      existing = Issue.where(project_id: issue.project_id, fingerprint: new_fingerprint)
-                      .where.not(id: issue.id)
-                      .first
+      # In dry run mode, also check virtual fingerprints
+      existing = find_existing_issue(issue.project_id, new_fingerprint, issue.id)
 
       if existing
         merge_issues(issue, existing)
       else
         update_fingerprint(issue, new_fingerprint)
       end
+    end
+
+    def find_existing_issue(project_id, new_fingerprint, current_issue_id)
+      # First check actual database
+      existing = Issue.where(project_id: project_id, fingerprint: new_fingerprint)
+                      .where.not(id: current_issue_id)
+                      .first
+      return existing if existing
+
+      # In dry run mode, also check virtual fingerprints
+      if dry_run
+        virtual_key = [project_id, new_fingerprint]
+        virtual_owner_id = @virtual_fingerprints[virtual_key]
+        if virtual_owner_id && virtual_owner_id != current_issue_id
+          return Issue.find_by(id: virtual_owner_id)
+        end
+      end
+
+      nil
     end
 
     def merge_issues(source_issue, target_issue)
@@ -98,7 +119,10 @@ module Issues
       puts "    Old fingerprint: #{issue.fingerprint[0..16]}..."
       puts "    New fingerprint: #{new_fingerprint[0..16]}..."
 
-      unless dry_run
+      if dry_run
+        # Track virtual fingerprint for detecting merges in dry run mode
+        @virtual_fingerprints[[issue.project_id, new_fingerprint]] = issue.id
+      else
         issue.update_column(:fingerprint, new_fingerprint)
       end
 
