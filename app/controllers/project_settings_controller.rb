@@ -155,18 +155,10 @@ class ProjectSettingsController < ApplicationController
   private
 
   def set_project
-    # Use @current_project set by ApplicationController for slug-based routes
-    # or find by project_id for regular routes
-    if @current_project
-      @project = @current_project
-    elsif params[:project_id].present?
-      @project = current_account.projects.find(params[:project_id])
-    else
-      redirect_to dashboard_path, alert: "Project not found."
-    end
-  end
-
-  def update_notification_settings
+@project = current_account.projects.find_by(id: params[:project_id])
+unless @project
+  redirect_to dashboard_path, alert: "Project not found."
+end  def update_notification_settings
     return true unless params[:project]
 
     notif_params = params
