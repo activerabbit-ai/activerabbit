@@ -32,6 +32,10 @@ FactoryBot.define do
       provider { "github" }
       uid { SecureRandom.hex(10) }
       confirmed_at { nil } # OAuth users don't need confirmed_at
+
+      after(:build) do |user|
+        user.skip_confirmation_notification!
+      end
     end
   end
 end

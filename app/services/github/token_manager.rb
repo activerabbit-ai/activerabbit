@@ -14,7 +14,8 @@ module Github
     end
 
     def get_token
-      @project_pat.presence || generate_installation_token || @env_pat
+      # Prefer installation token (GitHub App) for PR authorship, fallback to PAT
+      generate_installation_token || @project_pat.presence || @env_pat
     end
 
     def configured?

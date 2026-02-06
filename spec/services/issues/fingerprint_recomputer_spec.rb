@@ -8,6 +8,13 @@ RSpec.describe Issues::FingerprintRecomputer, type: :service do
 
   before do
     ActsAsTenant.current_tenant = account
+    # Clean up all issues before each test since FingerprintRecomputer processes ALL issues
+    # Must use without_tenant because the service bypasses tenant scoping
+    # Delete events first due to foreign key constraint
+    ActsAsTenant.without_tenant do
+      Event.delete_all
+      Issue.delete_all
+    end
   end
 
   describe '#call' do

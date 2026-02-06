@@ -1,10 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe WeeklyReportBuilder do
-  # Uses @test_account from spec/support/acts_as_tenant.rb
-  let(:account) { @test_account }
+  let(:account) { create(:account) }
   let(:project) { create(:project, account: account) }
-  let(:issue) { create(:issue, account: account, project: project) }
+  let(:issue) { create(:issue, project: project) }
+
+  before do
+    ActsAsTenant.current_tenant = account
+  end
 
   describe '#initialize' do
     it 'sets the period to previous calendar week (Mon-Sun)' do

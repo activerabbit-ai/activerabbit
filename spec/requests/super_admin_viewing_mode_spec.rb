@@ -1,12 +1,14 @@
 require 'rails_helper'
 
 RSpec.describe "Super Admin Viewing Mode", type: :request do
-  let(:account) { @test_account }
-  let!(:super_admin) { create(:user, account: account, role: "owner", super_admin: true) }
+  let(:account) { create(:account) }
+  let!(:super_admin) { create(:user, :confirmed, account: account, role: "owner", super_admin: true) }
   let!(:other_account) { create(:account, name: "Other Company Account") }
-  let!(:other_user) { create(:user, account: other_account, role: "owner") }
+  let!(:other_user) { create(:user, :confirmed, account: other_account, role: "owner") }
 
   before do
+    ActsAsTenant.current_tenant = account
+
     # Create project in super admin's account
     ActsAsTenant.with_tenant(account) do
       @own_project = create(:project, account: account, name: "Own Project")

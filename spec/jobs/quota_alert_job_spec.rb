@@ -10,6 +10,12 @@ RSpec.describe QuotaAlertJob, type: :job do
   let(:account) { create(:account, :with_stats) }
   let!(:user) { create(:user, :confirmed, account: account) }
 
+  before do
+    # Stub Resend API for email delivery
+    stub_request(:post, "https://api.resend.com/emails")
+      .to_return(status: 200, body: '{"id": "test-email-id"}', headers: { 'Content-Type' => 'application/json' })
+  end
+
   describe "#perform" do
     it "checks quotas for all accounts" do
       create(:account, :with_stats)

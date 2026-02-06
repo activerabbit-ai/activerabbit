@@ -120,18 +120,18 @@ module Github
       # Try direct replacement if before_code is provided
       if before_code.present?
         direct_result = try_direct_replacement(current_content, before_code, after_code, 1)
-        if direct_result && direct_result["replacements"].present?
+        if direct_result && direct_result[:replacements].present?
           Rails.logger.info "[SimpleFixApplier] Direct replacement succeeded for #{normalized_path}"
 
           # Apply the replacements
           lines = current_content.lines
-          direct_result["replacements"].sort_by { |r| -r["line"] }.each do |replacement|
-            line_idx = replacement["line"] - 1
+          direct_result[:replacements].sort_by { |r| -r[:line] }.each do |replacement|
+            line_idx = replacement[:line] - 1
             next if line_idx < 0 || line_idx >= lines.size
 
             original_indent = lines[line_idx].match(/^(\s*)/)[1]
             line_ending = lines[line_idx].end_with?("\n") ? "\n" : ""
-            new_stripped = replacement["new"].strip
+            new_stripped = replacement[:new].strip
             lines[line_idx] = "#{original_indent}#{new_stripped}#{line_ending}"
           end
           new_content = lines.join
@@ -387,11 +387,15 @@ module Github
         # Preserve original indentation from file
         original_indent = lines[match_start + idx]&.match(/^(\s*)/)&.[](1) || ""
         new_content = original_indent + new_line.lstrip
+        old_content = lines[match_start + idx]&.chomp || old_line
+
+        # Only include replacement if old != new (skip unchanged lines)
+        next if old_content.strip == new_content.strip
 
         replacements << {
-          "line" => line_num,
-          "old" => lines[match_start + idx]&.chomp || old_line,
-          "new" => new_content.chomp
+          line: line_num,
+          old: old_content,
+          new: new_content.chomp
         }
       end
 
@@ -402,14 +406,16 @@ module Github
           insert_after = match_start + before_lines.size + idx
           original_indent = lines[match_start]&.match(/^(\s*)/)&.[](1) || ""
           insertions << {
-            "after_line" => insert_after,
-            "content" => original_indent + new_line.lstrip.chomp
+            after_line: insert_after,
+            content: original_indent + new_line.lstrip.chomp
           }
         end
-        return { "replacements" => replacements, "insertions" => insertions } if insertions.any?
+        return { replacements: replacements, insertions: insertions } if insertions.any?
       end
 
-      { "replacements" => replacements }
+      return nil if replacements.empty?
+
+      { replacements: replacements }
     rescue => e
       Rails.logger.warn "[SimpleFixApplier] Direct replacement failed: #{e.message}"
       nil
@@ -609,9 +615,9 @@ module Github
 
       # First, apply insertions (in reverse order to maintain line numbers)
       if fix_instructions[:insertions].present?
-        fix_instructions[:insertions].sort_by { |i| -i["after_line"] }.each do |insertion|
-          after_idx = insertion["after_line"] # 1-indexed, insert after this line
-          content = insertion["content"]
+        fix_instructions[:insertions].sort_by { |i| -(i[:after_line] || i["after_line"]) }.each do |insertion|
+          after_idx = insertion[:after_line] || insertion["after_line"] # 1-indexed, insert after this line
+          content = insertion[:content] || insertion["content"]
 
           next if after_idx < 0 || after_idx > new_lines.size
 
@@ -643,10 +649,11 @@ module Github
       end
 
       # Then, apply replacements
-      (fix_instructions[:replacements] || []).sort_by { |r| -r["line"] }.each do |replacement|
-        line_idx = replacement["line"] - 1
-        old_content = replacement["old"]
-        new_content = replacement["new"]
+      (fix_instructions[:replacements] || []).sort_by { |r| -(r[:line] || r["line"]) }.each do |replacement|
+        line_num = replacement[:line] || replacement["line"]
+        line_idx = line_num - 1
+        old_content = replacement[:old] || replacement["old"]
+        new_content = replacement[:new] || replacement["new"]
 
         next if line_idx < 0 || line_idx >= new_lines.size
 
@@ -668,9 +675,9 @@ module Github
           end
 
           changes_made += 1
-          Rails.logger.info "[SimpleFixApplier] Replaced line #{replacement['line']}: #{old_content.strip[0..50]} -> #{new_stripped[0..50]}"
+          Rails.logger.info "[SimpleFixApplier] Replaced line #{line_num}: #{old_content.strip[0..50]} -> #{new_stripped[0..50]}"
         else
-          Rails.logger.warn "[SimpleFixApplier] Line #{replacement['line']} mismatch:"
+          Rails.logger.warn "[SimpleFixApplier] Line #{line_num} mismatch:"
           Rails.logger.warn "  Expected: #{old_content.inspect}"
           Rails.logger.warn "  Actual:   #{current_line.inspect}"
 
@@ -681,7 +688,7 @@ module Github
             line_ending = current_line.end_with?("\n") ? "\n" : ""
             new_lines[line_idx] = "#{original_indent}#{new_stripped}#{line_ending}"
             changes_made += 1
-            Rails.logger.info "[SimpleFixApplier] Fuzzy match succeeded for line #{replacement['line']}"
+            Rails.logger.info "[SimpleFixApplier] Fuzzy match succeeded for line #{line_num}"
           end
         end
       end

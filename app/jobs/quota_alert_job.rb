@@ -121,6 +121,10 @@ class QuotaAlertJob < ApplicationJob
         # First time exceeding
         QuotaAlertMailer.quota_exceeded(account, resource_type).deliver_now
         Rails.logger.info "[QuotaAlert] Sent exceeded alert for #{account.name} - #{resource_type}"
+
+        # Track when first exceeded - initialize hash if needed
+        account.last_quota_alert_sent_at[resource_type.to_s] ||= {}
+        account.last_quota_alert_sent_at[resource_type.to_s]["first_exceeded_at"] = Time.current.iso8601
       elsif is_free_plan
         # Free plan: send upgrade reminder every 2 days
         QuotaAlertMailer.free_plan_upgrade_reminder(account, resource_type, days_over_quota).deliver_now

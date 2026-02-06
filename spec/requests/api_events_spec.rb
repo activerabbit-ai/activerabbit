@@ -2,14 +2,14 @@ require 'rails_helper'
 
 RSpec.describe 'API::V1::Events', type: :request, api: true do
   let(:account) { create(:account) }
-  let(:user) do
-    create(:user, account: account).tap do |u|
-      u.update_column(:account_id, account.id) if u.account_id != account.id
-    end
-  end
+  let(:user) { create(:user, account: account) }
   let(:project) { create(:project, user: user, account: account) }
-  let(:token) { create(:api_token, project: project, account: user.account) }
+  let(:token) { create(:api_token, project: project, account: account) }
   let(:headers) { { 'CONTENT_TYPE' => 'application/json', 'X-Project-Token' => token.token } }
+
+  before do
+    ActsAsTenant.current_tenant = account
+  end
 
   describe 'POST /api/v1/events/errors' do
     it 'queues error event when valid' do

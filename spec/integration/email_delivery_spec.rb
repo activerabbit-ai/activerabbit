@@ -6,6 +6,12 @@ RSpec.describe "Email Delivery Integration", type: :job do
   # These tests verify that emails are actually queued for delivery,
   # not just that the mailer methods return mail objects.
 
+  before do
+    # Ensure we use the :test delivery method so emails are captured in deliveries array
+    ActionMailer::Base.delivery_method = :test
+    ActionMailer::Base.deliveries.clear
+  end
+
   describe "QuotaAlertJob email delivery" do
     let(:account) do
       create(:account, :free_plan,

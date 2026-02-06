@@ -264,7 +264,7 @@ module Github
       # Header with issue link
       lines << "## 🐛 Bug Fix: #{issue.exception_class}"
       lines << ""
-      lines << "**Issue ID:** ##{issue.id}"
+      lines << "**Issue ID:** [##{issue.id}](#{error_url(issue)})"
       lines << "**Controller:** `#{issue.controller_action}`"
       lines << "**Occurrences:** #{issue.count} times"
       lines << "**First seen:** #{issue.first_seen_at&.strftime('%Y-%m-%d %H:%M')}"
@@ -354,7 +354,7 @@ module Github
 
       lines << "## 🐛 Bug Fix: #{issue.exception_class}"
       lines << ""
-      lines << "**Issue ID:** ##{issue.id}"
+      lines << "**Issue ID:** [##{issue.id}](#{error_url(issue)})"
       lines << "**Controller:** `#{issue.controller_action}`"
       lines << ""
 
@@ -511,6 +511,11 @@ module Github
       end_count = code.scan(/\bend\b/).size
 
       has_def && has_end && def_count <= end_count
+    end
+
+    def error_url(issue)
+      host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
+      "#{host}/#{issue.project.slug}/errors/#{issue.id}"
     end
   end
 end
