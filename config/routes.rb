@@ -37,7 +37,8 @@ Rails.application.routes.draw do
   patch "settings/update_notification_settings", to: "settings#update_notification_settings", as: "update_notification_settings"
   patch "settings/update_user_slack_preferences", to: "settings#update_user_slack_preferences", as: "update_user_slack_preferences_settings"
   post "settings/test_slack_notification", to: "settings#test_slack_notification", as: "test_slack_notification_settings"
-  resources :users do
+  # Constrain to numeric IDs to avoid conflicting with Devise routes like /users/confirmation
+  resources :users, constraints: { id: /\d+/ } do
     member do
       delete :disconnect_provider
       post :connect_provider

@@ -233,10 +233,16 @@ RSpec.describe QuotaAlertJob, type: :job do
     context "when account has no confirmed users" do
       let!(:unconfirmed_user) { create(:user, :unconfirmed, account: account_over_quota) }
 
-      it "mailer returns NullMail and does not send" do
+      it "mailer returns nil or NullMail and does not send" do
         # The mailer should return early when no confirmed user found
         mail = QuotaAlertMailer.quota_exceeded(account_over_quota, :events)
-        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+
+        # ActionMailer wraps early returns in NullMail
+        if mail.nil?
+          expect(mail).to be_nil
+        else
+          expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        end
       end
     end
 

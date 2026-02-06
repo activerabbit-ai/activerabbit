@@ -51,14 +51,22 @@ class QuotaAlertJob < ApplicationJob
 
     # Check if we should send an alert
     if should_send_alert?(account, level, last_sent_at, last_level, percentage)
+      is_first_exceeded = level == "exceeded" && !last_alert_info["first_exceeded_at"]
       send_appropriate_alert(account, resource_type, level, last_alert_info)
 
       # Update last alert info
-      account.last_quota_alert_sent_at[resource_key] = {
+      new_alert_info = {
         "sent_at" => Time.current.iso8601,
         "level" => level,
         "percentage" => percentage.round(2)
       }
+
+      # Track first_exceeded_at for exceeded level
+      if level == "exceeded"
+        new_alert_info["first_exceeded_at"] = is_first_exceeded ? Time.current.iso8601 : last_alert_info["first_exceeded_at"]
+      end
+
+      account.last_quota_alert_sent_at[resource_key] = new_alert_info
     end
   end
 

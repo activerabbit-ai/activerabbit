@@ -1,2 +1,35 @@
-<p>We were unable to process your payment.</p>
-<p>Please update your payment method.</p>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; margin-bottom: 20px; }
+    .alert { background: #fee2e2; border: 1px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; }
+    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">ActiveRabbit</div>
+    
+    <h1>Payment failed — please update your card</h1>
+    
+    <div class="alert">
+      <strong>Action required!</strong> We couldn't process your payment for <%= @account.name %>.
+    </div>
+    
+    <p>Please update your payment method to continue using ActiveRabbit without interruption.</p>
+    
+    <p><a href="<%= plan_url(host: ENV.fetch('APP_HOST', 'localhost:3000')) %>" class="button">Update Payment Method</a></p>
+    
+    <p>If you have any questions, please reply to this email.</p>
+    
+    <div class="footer">
+      <p>ActiveRabbit<br>AI-Powered Error Tracking for Rails</p>
+    </div>
+  </div>
+</body>
+</html>

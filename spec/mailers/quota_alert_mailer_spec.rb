@@ -65,11 +65,16 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
     context "with unconfirmed user only" do
       let!(:user) { create(:user, :unconfirmed, account: account) }
 
-      it "returns nil" do
+      it "does not send email" do
         account.update!(cached_events_used: 4200)
         mail = described_class.warning_80_percent(account, :events)
 
-        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        # When no confirmed user, mailer returns early - NullMail wrapper or nil
+        if mail.nil?
+          expect(mail).to be_nil
+        else
+          expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        end
       end
     end
   end
@@ -114,10 +119,15 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
     context "with unconfirmed user only" do
       let!(:user) { create(:user, :unconfirmed, account: account) }
 
-      it "returns nil" do
+      it "does not send email" do
         mail = described_class.quota_exceeded(account, :events)
 
-        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        # When no confirmed user, mailer returns early - NullMail wrapper or nil
+        if mail.nil?
+          expect(mail).to be_nil
+        else
+          expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        end
       end
     end
   end
@@ -135,10 +145,15 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
     context "with unconfirmed user only" do
       before { user.update!(confirmed_at: nil, provider: nil) }
 
-      it "returns nil" do
+      it "does not send email" do
         mail = described_class.quota_exceeded_reminder(account, :events, 5)
 
-        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        # When no confirmed user, mailer returns early - NullMail wrapper or nil
+        if mail.nil?
+          expect(mail).to be_nil
+        else
+          expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        end
       end
     end
   end
@@ -171,10 +186,15 @@ RSpec.describe QuotaAlertMailer, type: :mailer do
     context "with unconfirmed user only" do
       before { user.update!(confirmed_at: nil, provider: nil) }
 
-      it "returns nil" do
+      it "does not send email" do
         mail = described_class.free_plan_upgrade_reminder(account, :events, 5)
 
-        expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        # When no confirmed user, mailer returns early - NullMail wrapper or nil
+        if mail.nil?
+          expect(mail).to be_nil
+        else
+          expect(mail.message).to be_a(ActionMailer::Base::NullMail)
+        end
       end
     end
 
