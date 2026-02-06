@@ -1,0 +1,57 @@
+# Healthcheck fixtures for testing
+
+homepage:
+  account: default
+  project: default
+  name: "Homepage"
+  check_type: "http"
+  status: "healthy"
+  enabled: true
+  last_checked_at: <%= Time.current %>
+  response_time_ms: 10.5
+  message: "OK"
+  config:
+    url: "https://example.com"
+    timeout: 5
+
+api_health:
+  account: default
+  project: default
+  name: "API Health"
+  check_type: "http"
+  status: "healthy"
+  enabled: true
+  last_checked_at: <%= Time.current %>
+  response_time_ms: 25.0
+  message: "OK"
+  config:
+    url: "https://api.example.com/health"
+    timeout: 10
+
+unhealthy:
+  account: default
+  project: default
+  name: "Failing Service"
+  check_type: "http"
+  status: "unhealthy"
+  enabled: true
+  last_checked_at: <%= 5.minutes.ago %>
+  response_time_ms: 5000.0
+  message: "Timeout"
+  config:
+    url: "https://slow.example.com"
+    timeout: 5
+
+disabled:
+  account: default
+  project: default
+  name: "Disabled Check"
+  check_type: "http"
+  status: "healthy"
+  enabled: false
+  last_checked_at: <%= 1.day.ago %>
+  response_time_ms: 50.0
+  message: "OK"
+  config:
+    url: "https://old.example.com"
+    timeout: 5

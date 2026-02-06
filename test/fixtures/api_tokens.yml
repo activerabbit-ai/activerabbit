@@ -1,0 +1,15 @@
+# API token fixtures for testing
+
+default:
+  account: default
+  project: default
+  name: "Default Token"
+  token: <%= SecureRandom.hex(32) %>
+  active: true
+
+inactive_token:
+  account: default
+  project: default
+  name: "Inactive Token"
+  token: <%= SecureRandom.hex(32) %>
+  active: false

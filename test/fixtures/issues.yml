@@ -1,0 +1,53 @@
+# Issue fixtures for testing
+
+open_issue:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("fp-open-1") %>
+  exception_class: "RuntimeError"
+  top_frame: "/app/controllers/home_controller.rb:10:in `index'"
+  controller_action: "HomeController#index"
+  status: "open"
+  count: 5
+  first_seen_at: <%= 1.day.ago %>
+  last_seen_at: <%= Time.current %>
+  closed_at: nil
+
+closed_issue:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("fp-closed-1") %>
+  exception_class: "NoMethodError"
+  top_frame: "/app/models/user.rb:25:in `validate'"
+  controller_action: "UsersController#create"
+  status: "closed"
+  count: 10
+  first_seen_at: <%= 1.week.ago %>
+  last_seen_at: <%= 2.days.ago %>
+  closed_at: <%= 1.day.ago %>
+
+wip_issue:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("fp-wip-1") %>
+  exception_class: "ArgumentError"
+  top_frame: "/app/services/payment.rb:42:in `charge'"
+  controller_action: "PaymentsController#create"
+  status: "wip"
+  count: 3
+  first_seen_at: <%= 3.days.ago %>
+  last_seen_at: <%= 1.hour.ago %>
+  closed_at: nil
+
+record_not_found:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("fp-notfound-1") %>
+  exception_class: "ActiveRecord::RecordNotFound"
+  top_frame: "/app/controllers/users_controller.rb:15:in `show'"
+  controller_action: "UsersController#show"
+  status: "open"
+  count: 2
+  first_seen_at: <%= 12.hours.ago %>
+  last_seen_at: <%= 30.minutes.ago %>
+  closed_at: nil

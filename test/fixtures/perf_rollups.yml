@@ -1,0 +1,49 @@
+# Performance rollup fixtures for testing
+
+minute_rollup:
+  account: default
+  project: default
+  timeframe: "minute"
+  timestamp: <%= Time.current.change(sec: 0) %>
+  target: "HomeController#index"
+  environment: "production"
+  request_count: 10
+  avg_duration_ms: 300.0
+  p50_duration_ms: 250.0
+  p95_duration_ms: 1200.0
+  p99_duration_ms: 1800.0
+  min_duration_ms: 100.0
+  max_duration_ms: 5000.0
+  error_count: 0
+
+hour_rollup:
+  account: default
+  project: default
+  timeframe: "hour"
+  timestamp: <%= Time.current.change(min: 0, sec: 0) %>
+  target: "UsersController#index"
+  environment: "production"
+  request_count: 500
+  avg_duration_ms: 320.0
+  p50_duration_ms: 280.0
+  p95_duration_ms: 1400.0
+  p99_duration_ms: 2000.0
+  min_duration_ms: 50.0
+  max_duration_ms: 8000.0
+  error_count: 5
+
+day_rollup:
+  account: default
+  project: default
+  timeframe: "day"
+  timestamp: <%= Time.current.beginning_of_day %>
+  target: "OrdersController#create"
+  environment: "production"
+  request_count: 10000
+  avg_duration_ms: 280.0
+  p50_duration_ms: 220.0
+  p95_duration_ms: 1100.0
+  p99_duration_ms: 1600.0
+  min_duration_ms: 20.0
+  max_duration_ms: 12000.0
+  error_count: 50

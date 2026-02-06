@@ -71,9 +71,9 @@ jobs:
         run: |
           bin/rails db:test:prepare
 
-      - name: Run RSpec test suite
+      - name: Run Minitest suite
         run: |
-          bundle exec rspec
+          bin/rails test test/
 
   # ---- Security scans ----
   security_ruby:

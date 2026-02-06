@@ -1,0 +1,83 @@
+# User fixtures for testing
+
+owner:
+  account: default
+  email: "owner@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "owner"
+  super_admin: false
+  confirmed_at: <%= Time.current %>
+
+member:
+  account: default
+  email: "member@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "member"
+  super_admin: false
+  confirmed_at: <%= Time.current %>
+
+super_admin:
+  account: default
+  email: "superadmin@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "owner"
+  super_admin: true
+  confirmed_at: <%= Time.current %>
+
+unconfirmed:
+  account: default
+  email: "unconfirmed@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "member"
+  super_admin: false
+  confirmed_at: nil
+
+unconfirmed_user:
+  account: default
+  email: "unconfirmed_user@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "member"
+  super_admin: false
+  confirmed_at: nil
+
+other_account_owner:
+  account: other_account
+  email: "other_owner@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "owner"
+  super_admin: false
+  confirmed_at: <%= Time.current %>
+
+oauth_user:
+  account: default
+  email: "oauth@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "member"
+  super_admin: false
+  provider: "github"
+  uid: "oauth12345"
+  confirmed_at: nil
+
+second_owner:
+  account: team_account
+  email: "secondowner@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "owner"
+  super_admin: false
+  confirmed_at: <%= Time.current %>
+
+free_account_owner:
+  account: free_account
+  email: "freeowner@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "owner"
+  super_admin: false
+  confirmed_at: <%= Time.current %>
+
+trial_user:
+  account: trial_account
+  email: "trial@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "owner"
+  super_admin: false
+  confirmed_at: <%= Time.current %>

@@ -1,0 +1,19 @@
+# AI request fixtures for testing
+
+pull_request:
+  account: default
+  user: owner
+  request_type: "pull_request"
+  occurred_at: <%= Time.current %>
+
+summary:
+  account: default
+  user: owner
+  request_type: "summary"
+  occurred_at: <%= 1.hour.ago %>
+
+old_request:
+  account: default
+  user: member
+  request_type: "pull_request"
+  occurred_at: <%= 1.week.ago %>

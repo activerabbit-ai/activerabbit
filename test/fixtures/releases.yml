@@ -1,0 +1,25 @@
+# Release fixtures for testing
+
+v1_0_0:
+  account: default
+  project: default
+  version: "v1.0.0"
+  environment: "production"
+  deployed_at: <%= 1.week.ago %>
+  metadata: {}
+
+v1_0_1:
+  account: default
+  project: default
+  version: "v1.0.1"
+  environment: "production"
+  deployed_at: <%= 1.day.ago %>
+  metadata: {}
+
+staging_release:
+  account: default
+  project: default
+  version: "v1.1.0-beta"
+  environment: "staging"
+  deployed_at: <%= 2.hours.ago %>
+  metadata: {}

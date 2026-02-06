@@ -1,0 +1,37 @@
+# Daily resource usage fixtures for testing
+
+today:
+  account: default
+  day: <%= Date.current %>
+  errors_count: 100
+  ai_summaries_count: 10
+  pull_requests_count: 5
+  uptime_monitors_count: 3
+  status_pages_count: 1
+
+yesterday:
+  account: default
+  day: <%= Date.yesterday %>
+  errors_count: 150
+  ai_summaries_count: 15
+  pull_requests_count: 3
+  uptime_monitors_count: 3
+  status_pages_count: 1
+
+high_usage:
+  account: default
+  day: <%= 2.days.ago.to_date %>
+  errors_count: 45000
+  ai_summaries_count: 95
+  pull_requests_count: 18
+  uptime_monitors_count: 5
+  status_pages_count: 1
+
+no_usage:
+  account: free_account
+  day: <%= Date.current %>
+  errors_count: 0
+  ai_summaries_count: 0
+  pull_requests_count: 0
+  uptime_monitors_count: 0
+  status_pages_count: 0

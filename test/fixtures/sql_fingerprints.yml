@@ -1,0 +1,43 @@
+# SQL fingerprint fixtures for testing
+
+user_select:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("SELECT * FROM USERS WHERE ID = ?") %>
+  query_type: "SELECT"
+  normalized_query: "SELECT * FROM USERS WHERE ID = ?"
+  total_count: 50
+  total_duration_ms: 500.0
+  avg_duration_ms: 10.0
+  max_duration_ms: 25.0
+  first_seen_at: <%= 1.week.ago %>
+  last_seen_at: <%= 1.hour.ago %>
+  controller_action: "UsersController#show"
+
+posts_select:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("SELECT * FROM POSTS WHERE USER_ID = ?") %>
+  query_type: "SELECT"
+  normalized_query: "SELECT * FROM POSTS WHERE USER_ID = ?"
+  total_count: 200
+  total_duration_ms: 800.0
+  avg_duration_ms: 4.0
+  max_duration_ms: 15.0
+  first_seen_at: <%= 1.week.ago %>
+  last_seen_at: <%= 30.minutes.ago %>
+  controller_action: "PostsController#index"
+
+slow_query:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("SELECT * FROM REPORTS WHERE DATE > ?") %>
+  query_type: "SELECT"
+  normalized_query: "SELECT * FROM REPORTS WHERE DATE > ?"
+  total_count: 10
+  total_duration_ms: 5000.0
+  avg_duration_ms: 500.0
+  max_duration_ms: 1200.0
+  first_seen_at: <%= 3.days.ago %>
+  last_seen_at: <%= 2.hours.ago %>
+  controller_action: "ReportsController#index"

@@ -1,0 +1,44 @@
+# Account fixtures for testing
+
+default:
+  name: "Test Account"
+  active: true
+  current_plan: "team"
+  trial_ends_at: <%= 7.days.from_now %>
+  cached_events_used: 0
+  cached_performance_events_used: 0
+  cached_ai_summaries_used: 0
+  cached_pull_requests_used: 0
+  usage_cached_at: <%= Time.current %>
+
+free_account:
+  name: "Free Account"
+  active: true
+  current_plan: "free"
+  trial_ends_at: <%= 1.day.ago %>
+  cached_events_used: 0
+  cached_performance_events_used: 0
+
+team_account:
+  name: "Team Account"
+  active: true
+  current_plan: "team"
+  trial_ends_at: nil
+  cached_events_used: 100
+  cached_performance_events_used: 50
+  usage_cached_at: <%= Time.current %>
+
+trial_account:
+  name: "Trial Account"
+  active: true
+  current_plan: "team"
+  trial_ends_at: <%= 14.days.from_now %>
+
+other_account:
+  name: "Other Company Account"
+  active: true
+  current_plan: "business"
+  trial_ends_at: nil
+  cached_events_used: 500
+  cached_performance_events_used: 200
+  usage_cached_at: <%= Time.current %>

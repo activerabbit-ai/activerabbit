@@ -1,0 +1,29 @@
+# Notification preference fixtures for testing
+
+new_issue_pref:
+  project: default
+  alert_type: "new_issue"
+  enabled: true
+  frequency: "every_2_hours"
+  last_sent_at: nil
+
+performance_regression_pref:
+  project: default
+  alert_type: "performance_regression"
+  enabled: true
+  frequency: "every_2_hours"
+  last_sent_at: nil
+
+recently_sent_pref:
+  project: default
+  alert_type: "error_frequency"
+  enabled: true
+  frequency: "every_2_hours"
+  last_sent_at: <%= 30.minutes.ago %>
+
+disabled_pref:
+  project: default
+  alert_type: "n_plus_one"
+  enabled: false
+  frequency: "immediately"
+  last_sent_at: nil

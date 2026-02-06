@@ -1,0 +1,48 @@
+# Performance incident fixtures for testing
+
+open_warning:
+  account: default
+  project: default
+  target: "UsersController#index"
+  status: "open"
+  severity: "warning"
+  opened_at: <%= Time.current %>
+  trigger_p95_ms: 850.0
+  peak_p95_ms: 900.0
+  threshold_ms: 750.0
+  breach_count: 3
+  environment: "production"
+  open_notification_sent: false
+  close_notification_sent: false
+
+open_critical:
+  account: default
+  project: default
+  target: "ReportsController#generate"
+  status: "open"
+  severity: "critical"
+  opened_at: <%= 1.hour.ago %>
+  trigger_p95_ms: 1800.0
+  peak_p95_ms: 2500.0
+  threshold_ms: 1500.0
+  breach_count: 10
+  environment: "production"
+  open_notification_sent: true
+  close_notification_sent: false
+
+closed_incident:
+  account: default
+  project: default
+  target: "OrdersController#create"
+  status: "closed"
+  severity: "warning"
+  opened_at: <%= 2.days.ago %>
+  closed_at: <%= 1.day.ago %>
+  trigger_p95_ms: 850.0
+  peak_p95_ms: 900.0
+  resolve_p95_ms: 400.0
+  threshold_ms: 750.0
+  breach_count: 5
+  environment: "production"
+  open_notification_sent: true
+  close_notification_sent: true

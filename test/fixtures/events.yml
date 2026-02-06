@@ -1,0 +1,43 @@
+# Event fixtures for testing
+
+default:
+  account: default
+  project: default
+  issue: open_issue
+  exception_class: "RuntimeError"
+  message: "Something went wrong"
+  backtrace: "[\"app/controllers/home_controller.rb:10:in `index'\", \"/gems/rails-7.0/lib/action_controller.rb:100:in `process'\"]"
+  controller_action: "HomeController#index"
+  request_path: "/"
+  request_method: "GET"
+  occurred_at: <%= Time.current %>
+  environment: "production"
+  context: {}
+
+recent:
+  account: default
+  project: default
+  issue: open_issue
+  exception_class: "RuntimeError"
+  message: "Recent error"
+  backtrace: "[\"app/models/user.rb:42:in `validate_email'\"]"
+  controller_action: "UsersController#update"
+  request_path: "/users/1"
+  request_method: "PATCH"
+  occurred_at: <%= 5.minutes.ago %>
+  environment: "production"
+  context: {}
+
+old_event:
+  account: default
+  project: default
+  issue: closed_issue
+  exception_class: "NoMethodError"
+  message: "undefined method"
+  backtrace: "[\"app/models/user.rb:25:in `validate'\"]"
+  controller_action: "UsersController#create"
+  request_path: "/users"
+  request_method: "POST"
+  occurred_at: <%= 2.days.ago %>
+  environment: "production"
+  context: {}

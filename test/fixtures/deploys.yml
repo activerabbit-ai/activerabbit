@@ -1,0 +1,23 @@
+# Deploy fixtures for testing
+
+default:
+  account: default
+  project: default
+  release: v1_0_0
+  user: owner
+  status: "completed"
+  started_at: <%= 1.hour.ago %>
+  finished_at: <%= Time.current %>
+  metadata: {}
+  errors_metadata: {}
+
+in_progress:
+  account: default
+  project: default
+  release: v1_0_1
+  user: owner
+  status: "in_progress"
+  started_at: <%= 5.minutes.ago %>
+  finished_at: nil
+  metadata: {}
+  errors_metadata: {}

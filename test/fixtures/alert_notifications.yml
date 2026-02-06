@@ -1,0 +1,28 @@
+# Alert notification fixtures for testing
+
+pending_notification:
+  account: default
+  project: default
+  alert_rule: new_issue_rule
+  notification_type: "multi"
+  status: "pending"
+  payload: {}
+
+sent_notification:
+  account: default
+  project: default
+  alert_rule: new_issue_rule
+  notification_type: "email"
+  status: "sent"
+  sent_at: <%= 1.hour.ago %>
+  payload: {}
+
+failed_notification:
+  account: default
+  project: default
+  alert_rule: error_frequency_rule
+  notification_type: "slack"
+  status: "failed"
+  failed_at: <%= 30.minutes.ago %>
+  error_message: "Channel not found"
+  payload: {}

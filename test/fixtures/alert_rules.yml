@@ -1,0 +1,51 @@
+# Alert rule fixtures for testing
+
+new_issue_rule:
+  account: default
+  project: default
+  name: "New Issue Alert"
+  rule_type: "new_issue"
+  threshold_value: 1
+  time_window_minutes: 5
+  cooldown_minutes: 30
+  enabled: true
+
+error_frequency_rule:
+  account: default
+  project: default
+  name: "Error Frequency Alert"
+  rule_type: "error_frequency"
+  threshold_value: 10
+  time_window_minutes: 5
+  cooldown_minutes: 30
+  enabled: true
+
+performance_regression_rule:
+  account: default
+  project: default
+  name: "Performance Regression Alert"
+  rule_type: "performance_regression"
+  threshold_value: 2000
+  time_window_minutes: 1
+  cooldown_minutes: 15
+  enabled: true
+
+n_plus_one_rule:
+  account: default
+  project: default
+  name: "N+1 Query Alert"
+  rule_type: "n_plus_one"
+  threshold_value: 1
+  time_window_minutes: 1
+  cooldown_minutes: 60
+  enabled: true
+
+disabled_rule:
+  account: default
+  project: default
+  name: "Disabled Alert"
+  rule_type: "new_issue"
+  threshold_value: 1
+  time_window_minutes: 5
+  cooldown_minutes: 30
+  enabled: false

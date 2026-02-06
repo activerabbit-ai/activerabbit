@@ -1,0 +1,56 @@
+# Project fixtures for testing
+
+default:
+  account: default
+  user: owner
+  name: "Default Project"
+  slug: "default-project"
+  url: "http://example.com"
+  environment: "production"
+  active: true
+  settings: {}
+
+with_slack:
+  account: default
+  user: owner
+  name: "Slack Project"
+  slug: "slack-project"
+  url: "http://slack-example.com"
+  environment: "production"
+  active: true
+  slack_access_token: "xoxb-test-token"
+  slack_channel_id: "#alerts"
+  slack_team_name: "Test Team"
+  settings: {}
+
+with_github:
+  account: default
+  user: owner
+  name: "GitHub Project"
+  slug: "github-project"
+  url: "http://github-example.com"
+  environment: "production"
+  active: true
+  settings:
+    github_repo: "owner/repo"
+    github_pat: "ghp_xxx"
+
+inactive:
+  account: default
+  user: member
+  name: "Inactive Project"
+  slug: "inactive-project"
+  url: "http://inactive.example.com"
+  environment: "staging"
+  active: false
+  settings: {}
+
+secondary:
+  account: other_account
+  user: other_account_owner
+  name: "Secondary Project"
+  slug: "secondary-project"
+  url: "http://secondary.example.com"
+  environment: "production"
+  active: true
+  settings: {}

@@ -1,0 +1,40 @@
+# Performance event fixtures for testing
+
+default:
+  account: default
+  project: default
+  target: "HomeController#index"
+  duration_ms: 250.0
+  db_duration_ms: 80.0
+  view_duration_ms: 120.0
+  allocations: 12000
+  sql_queries_count: 12
+  occurred_at: <%= Time.current %>
+  environment: "production"
+  context: {}
+
+slow_request:
+  account: default
+  project: default
+  target: "UsersController#index"
+  duration_ms: 5000.0
+  db_duration_ms: 3500.0
+  view_duration_ms: 1000.0
+  allocations: 50000
+  sql_queries_count: 150
+  occurred_at: <%= Time.current %>
+  environment: "production"
+  context: {}
+
+fast_request:
+  account: default
+  project: default
+  target: "HealthController#check"
+  duration_ms: 10.0
+  db_duration_ms: 5.0
+  view_duration_ms: 2.0
+  allocations: 500
+  sql_queries_count: 1
+  occurred_at: <%= Time.current %>
+  environment: "production"
+  context: {}
