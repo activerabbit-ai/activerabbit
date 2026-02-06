@@ -127,7 +127,17 @@
     <p>Please confirm your email address (<strong><%= @email %></strong>) to get started with error monitoring.</p>
 
     <div class="button-wrapper">
-      <a href="<%= confirmation_url(@resource, confirmation_token: @token) %>" class="button">Confirm Email Address</a>
+      <%
+        app_host = ENV.fetch('APP_HOST') { Rails.env.production? ? 'https://activerabbit.ai' : 'http://localhost:3000' }
+        # Strip trailing slash and ensure we have a proper base URL
+        base_url = app_host.sub(/\/+$/, '')
+        # Add protocol if missing
+        unless base_url.start_with?('http://', 'https://')
+          base_url = (Rails.env.production? ? 'https://' : 'http://') + base_url
+        end
+        confirmation_link = "#{base_url}/confirmation?confirmation_token=#{@token}"
+      %>
+      <a href="<%= confirmation_link %>" class="button">Confirm Email Address</a>
     </div>
 
     <div class="note">

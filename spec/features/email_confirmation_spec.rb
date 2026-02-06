@@ -29,14 +29,14 @@ RSpec.describe "Email Confirmation", type: :request do
       expect(user.confirmed?).to be false
 
       # Confirm using raw token
-      get user_confirmation_path(confirmation_token: raw_token)
+      get "/confirmation?confirmation_token=#{raw_token}"
 
       user.reload
       expect(user.confirmed?).to be true
     end
   end
 
-  describe "GET /users/confirmation" do
+  describe "GET /confirmation" do
     let(:account) { create(:account) }
 
     context "with valid token" do
@@ -51,27 +51,27 @@ RSpec.describe "Email Confirmation", type: :request do
       it "confirms the user" do
         expect(user.confirmed?).to be false
 
-        get user_confirmation_path(confirmation_token: @raw_token)
+        get "/confirmation?confirmation_token=#{@raw_token}"
 
         user.reload
         expect(user.confirmed?).to be true
       end
 
       it "redirects to sign in" do
-        get user_confirmation_path(confirmation_token: @raw_token)
+        get "/confirmation?confirmation_token=#{@raw_token}"
 
-        expect(response).to redirect_to(new_user_session_path)
+        expect(response).to redirect_to("/signin")
       end
     end
 
     context "with invalid token" do
       it "does not confirm and shows error or redirects" do
-        get user_confirmation_path(confirmation_token: "invalid_token")
+        get "/confirmation?confirmation_token=invalid_token"
 
         # Devise either renders a page with errors or redirects
         # Check that it either has error content or redirects
         if response.redirect?
-          expect(response).to redirect_to(new_user_confirmation_path).or redirect_to(new_user_session_path)
+          expect(response).to redirect_to("/confirmation/new").or redirect_to("/signin")
         else
           expect(response.body.downcase).to include("invalid").or include("token")
         end
@@ -89,7 +89,7 @@ RSpec.describe "Email Confirmation", type: :request do
       end
 
       it "does not confirm user if token expired" do
-        get user_confirmation_path(confirmation_token: @raw_token)
+        get "/confirmation?confirmation_token=#{@raw_token}"
 
         user.reload
         # User should not be confirmed with expired token (unless confirm_within is not set)
@@ -108,7 +108,7 @@ RSpec.describe "Email Confirmation", type: :request do
       end
 
       it "handles already confirmed user" do
-        get user_confirmation_path(confirmation_token: @raw_token)
+        get "/confirmation?confirmation_token=#{@raw_token}"
 
         # User should remain confirmed
         user.reload
