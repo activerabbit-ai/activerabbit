@@ -71,7 +71,7 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
   test "POST regenerate_token creates new token" do
     # Ensure project has a token first
     @project.generate_api_token! if @project.api_tokens.active.empty?
-    
+
     post regenerate_token_project_path(@project)
 
     assert_redirected_to project_slug_errors_path(@project.slug)

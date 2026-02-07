@@ -92,7 +92,7 @@ class Api::V1::ReleasesController < Api::BaseController
     release = @current_project.releases.find(params[:id])
 
     # Queue regression detection
-    RegressionDetectionJob.perform_async(release.id)
+    RegressionDetectionJob.perform_async(release.id, release.account_id)
 
     render_success(
       { id: release.id },

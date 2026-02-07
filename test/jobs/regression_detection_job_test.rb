@@ -2,6 +2,7 @@ require "test_helper"
 
 class RegressionDetectionJobTest < ActiveSupport::TestCase
   setup do
+    @account = accounts(:default)
     @release = releases(:v1_0_0)
   end
 
@@ -9,7 +10,7 @@ class RegressionDetectionJobTest < ActiveSupport::TestCase
     # Stub the regression detection to return empty (no regressions)
     @release.stub(:detect_performance_regression!, []) do
       assert_nothing_raised do
-        RegressionDetectionJob.new.perform(@release.id)
+        RegressionDetectionJob.new.perform(@release.id, @account.id)
       end
     end
   end
@@ -28,7 +29,7 @@ class RegressionDetectionJobTest < ActiveSupport::TestCase
     Release.stub(:find, @release) do
       @release.stub(:detect_performance_regression!, regressions) do
         assert_nothing_raised do
-          RegressionDetectionJob.new.perform(@release.id)
+          RegressionDetectionJob.new.perform(@release.id, @account.id)
         end
       end
     end
@@ -36,7 +37,7 @@ class RegressionDetectionJobTest < ActiveSupport::TestCase
 
   test "raises error when release not found" do
     assert_raises ActiveRecord::RecordNotFound do
-      RegressionDetectionJob.new.perform(999999)
+      RegressionDetectionJob.new.perform(999999, @account.id)
     end
   end
 
@@ -49,8 +50,16 @@ class RegressionDetectionJobTest < ActiveSupport::TestCase
     Release.stub(:find, @release) do
       @release.stub(:detect_performance_regression!, regressions) do
         assert_nothing_raised do
-          RegressionDetectionJob.new.perform(@release.id)
+          RegressionDetectionJob.new.perform(@release.id, @account.id)
         end
+      end
+    end
+  end
+
+  test "works without account_id using fallback" do
+    @release.stub(:detect_performance_regression!, []) do
+      assert_nothing_raised do
+        RegressionDetectionJob.new.perform(@release.id)
       end
     end
   end

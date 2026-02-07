@@ -31,7 +31,7 @@ class PerfRollupJobTest < ActiveSupport::TestCase
   test "continues processing other accounts when one fails" do
     # Create a scenario where rollup might fail for one account
     # but should continue for others
-    PerfRollup.stub(:rollup_minute_data!, ->{ raise "Test error" }) do
+    PerfRollup.stub(:rollup_minute_data!, -> { raise "Test error" }) do
       # Should not raise because errors are caught per-account
       assert_nothing_raised do
         PerfRollupJob.new.perform("minute")

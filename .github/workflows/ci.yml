@@ -71,6 +71,10 @@ jobs:
         run: |
           bin/rails db:test:prepare
 
+      - name: Precompile assets
+        run: |
+          bin/rails assets:precompile
+
       - name: Run Minitest suite
         run: |
           bin/rails test test/
@@ -103,5 +107,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: .ruby-version
-          bundler-cache: true      - name: Audit JavaScript dependencies (importmap)
+          bundler-cache: true
+
+      - name: Audit JavaScript dependencies (importmap)
         run: bin/importmap audit
