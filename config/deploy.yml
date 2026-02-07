@@ -11,7 +11,7 @@ servers:
   job:
     hosts:
       - 5.78.134.55
-    cmd: bundle exec sidekiq -q default -q ingest -q alerts
+    cmd: bundle exec sidekiq -c 10 -q default -q ingest -q alerts
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
 # Remove this section when using multiple web servers and ensure you terminate SSL at your load balancer.
@@ -78,7 +78,7 @@ env:
 
     # Sidekiq configuration
     SIDEKIQ_CONCURRENCY: 10
-    DB_POOL: 12
+    DB_POOL: 25
 
     # Security
     FORCE_SSL: true

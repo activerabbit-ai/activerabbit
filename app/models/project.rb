@@ -26,6 +26,7 @@ class Project < ApplicationRecord
   validates :url, presence: true, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), message: "must be a valid URL" }
 
   before_validation :generate_slug, if: -> { slug.nil? && name.present? }
+  after_create :update_account_name_from_first_project
 
   scope :active, -> { where(active: true) }
 
@@ -162,6 +163,22 @@ class Project < ApplicationRecord
   end
 
   private
+
+  # When the first project is created for an account with a default name,
+  # update the account name to match the project name
+  def update_account_name_from_first_project
+    return unless account.present?
+
+    # Only update if this is the first project for the account
+    return if account.projects.count > 1
+
+    # Only update if the account has a generic default name (e.g., "John's Account")
+    # These are generated in User#ensure_account with the pattern "username's Account"
+    return unless account.name&.match?(/['']s Account\z/)
+
+    # Update account name to match the project name
+    account.update(name: name)
+  end
 
   def generate_slug
     base_slug = name.parameterize

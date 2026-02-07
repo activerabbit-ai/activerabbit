@@ -10,7 +10,14 @@ class AccountSettingsController < ApplicationController
   def update
     @account = current_account
 
-    if update_slack_settings
+    if params[:update_type] == "account_name"
+      if update_account_name
+        redirect_to account_settings_path, notice: "Account name updated successfully."
+      else
+        flash.now[:alert] = "Failed to update account name: #{@account.errors.full_messages.join(', ')}"
+        render :show, status: :unprocessable_entity
+      end
+    elsif update_slack_settings
       if params[:test_slack] == "true"
         test_slack_notification
       else
@@ -67,6 +74,11 @@ class AccountSettingsController < ApplicationController
   end
 
   private
+
+  def update_account_name
+    name_params = params.require(:account).permit(:name)
+    @account.update(name: name_params[:name])
+  end
 
   def ensure_account_access
     # Users can only modify their own account settings
