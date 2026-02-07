@@ -7,6 +7,79 @@ require "ostruct"
 # WebMock for HTTP stubbing (already in Gemfile)
 require "webmock/minitest"
 
+# Sidekiq testing mode - prevents Redis connections
+require "sidekiq/testing"
+Sidekiq::Testing.fake!
+
+# ==============================================================================
+# Mock Redis for tests (prevents connection to remote Redis server)
+# ==============================================================================
+class MockRedis
+  def initialize
+    @data = {}
+  end
+
+  def set(key, value, ex: nil, nx: false)
+    if nx && @data.key?(key)
+      return false
+    end
+    @data[key] = { value: value, expires_at: ex ? Time.current + ex : nil }
+    true
+  end
+
+  def get(key)
+    entry = @data[key]
+    return nil unless entry
+    return nil if entry[:expires_at] && Time.current > entry[:expires_at]
+    entry[:value]
+  end
+
+  def del(*keys)
+    keys.flatten.count { |key| @data.delete(key) }
+  end
+
+  def exists?(key)
+    entry = @data[key]
+    return false unless entry
+    return false if entry[:expires_at] && Time.current > entry[:expires_at]
+    true
+  end
+
+  def keys(pattern = "*")
+    @data.keys.select { |k| File.fnmatch(pattern, k) }
+  end
+
+  def flushdb
+    @data.clear
+  end
+
+  def incr(key)
+    @data[key] ||= { value: 0, expires_at: nil }
+    @data[key][:value] = @data[key][:value].to_i + 1
+  end
+
+  def expire(key, seconds)
+    return false unless @data.key?(key)
+    @data[key][:expires_at] = Time.current + seconds
+    true
+  end
+
+  def ttl(key)
+    entry = @data[key]
+    return -2 unless entry
+    return -1 unless entry[:expires_at]
+    [(entry[:expires_at] - Time.current).to_i, 0].max
+  end
+
+  # Support for connection pool interface
+  def with
+    yield self
+  end
+end
+
+# Override IssueAlertJob's redis_pool in tests
+IssueAlertJob.instance_variable_set(:@redis_pool, MockRedis.new)
+
 # Better test output with stats
 require "minitest/pride" if ENV["PRIDE"]
 
