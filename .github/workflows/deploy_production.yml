@@ -12,7 +12,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: github.event.inputs.confirm == 'deploy'
-    environment: production
 
     steps:
       - name: Checkout code
