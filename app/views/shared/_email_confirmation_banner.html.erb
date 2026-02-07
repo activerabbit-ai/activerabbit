@@ -1,0 +1,41 @@
+<% if user_signed_in? && !current_user.email_confirmed? %>
+  <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3 flex-1">
+        <p class="text-sm text-yellow-700">
+          <strong>Please confirm your email address.</strong>
+          We sent a confirmation email to <strong><%= current_user.email %></strong>.
+          <% if current_user.confirmation_sent_at.present? %>
+            <% hours_since_sent = ((Time.current - current_user.confirmation_sent_at) / 1.hour).round %>
+            <% days_left = [2 - (hours_since_sent / 24.0), 0].max.ceil %>
+            <% if days_left > 0 %>
+              Please confirm within <strong><%= days_left %> day<%= days_left == 1 ? '' : 's' %></strong>.
+            <% else %>
+              Please confirm now to continue using ActiveRabbit.
+            <% end %>
+          <% end %>
+        </p>
+        <p class="mt-2 text-sm">
+          <span class="text-yellow-700">Didn't receive it?</span>
+          <%= link_to "Resend confirmation email", new_user_confirmation_path, class: "font-medium underline text-yellow-700 hover:text-yellow-600" %>
+        </p>
+      </div>
+      <div class="ml-auto pl-3">
+        <div class="-mx-1.5 -my-1.5">
+          <a href="<%= new_user_confirmation_path %>" class="inline-flex rounded-md bg-yellow-100 p-1.5 text-yellow-500 hover:bg-yellow-200 focus:outline-none">
+            <span class="sr-only">Resend</span>
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

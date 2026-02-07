@@ -56,7 +56,7 @@ oauth_user:
   super_admin: false
   provider: "github"
   uid: "oauth12345"
-  confirmed_at: nil
+  confirmed_at: <%= Time.current %>
 
 second_owner:
   account: team_account
@@ -81,3 +81,23 @@ trial_user:
   role: "owner"
   super_admin: false
   confirmed_at: <%= Time.current %>
+
+# User within 2-day grace period (created 1 day ago)
+unconfirmed_within_grace_period:
+  account: default
+  email: "grace_period@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "member"
+  super_admin: false
+  confirmed_at: nil
+  confirmation_sent_at: <%= 1.day.ago %>
+
+# User past grace period (created 3 days ago)
+unconfirmed_past_grace_period:
+  account: default
+  email: "past_grace@example.com"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  role: "member"
+  super_admin: false
+  confirmed_at: nil
+  confirmation_sent_at: <%= 3.days.ago %>
