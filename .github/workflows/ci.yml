@@ -71,6 +71,10 @@ jobs:
         run: |
           bin/rails db:test:prepare
 
+      - name: Precompile assets
+        run: |
+          bin/rails assets:precompile
+
       - name: Run Minitest suite
         run: |
           bin/rails test test/

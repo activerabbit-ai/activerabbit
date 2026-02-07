@@ -3,7 +3,25 @@ class RegressionDetectionJob
 
   sidekiq_options queue: :analysis, retry: 2
 
-  def perform(release_id)
+  def perform(release_id, account_id = nil)
+    # Set tenant for ActsAsTenant scoping
+    if account_id
+      account = Account.find(account_id)
+      ActsAsTenant.with_tenant(account) do
+        process_release(release_id)
+      end
+    else
+      # Fallback: find release without tenant (for backwards compatibility)
+      release = Release.unscoped.find(release_id)
+      ActsAsTenant.with_tenant(release.account) do
+        process_release(release_id)
+      end
+    end
+  end
+
+  private
+
+  def process_release(release_id)
     release = Release.find(release_id)
 
     Rails.logger.info "Starting regression detection for release #{release.version}"

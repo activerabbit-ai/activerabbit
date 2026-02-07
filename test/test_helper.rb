@@ -31,16 +31,16 @@ WebMock.stub_request(:any, /api\.resend\.com/).to_return(
 )
 
 WebMock.stub_request(:any, /api\.stripe\.com/).to_return(
-  status: 200, body: '{}', headers: { "Content-Type" => "application/json" }
+  status: 200, body: "{}", headers: { "Content-Type" => "application/json" }
 )
 
 # ActiveRabbit client (critical: flushes during parallel worker fork)
 WebMock.stub_request(:any, /activerabbit\.ai/).to_return(
-  status: 200, body: '{}', headers: { "Content-Type" => "application/json" }
+  status: 200, body: "{}", headers: { "Content-Type" => "application/json" }
 )
 
 WebMock.stub_request(:any, /app\.activerabbit\.ai/).to_return(
-  status: 200, body: '{}', headers: { "Content-Type" => "application/json" }
+  status: 200, body: "{}", headers: { "Content-Type" => "application/json" }
 )
 
 module ActiveSupport
@@ -62,7 +62,6 @@ module ActiveSupport
     teardown do
       ActsAsTenant.current_tenant = nil
     end
-
   end
 end
 
