@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe "Super Admin Viewing Mode", type: :request do
+  include Rails.application.routes.url_helpers
+
   let(:account) { create(:account) }
   let!(:super_admin) { create(:user, :confirmed, account: account, role: "owner", super_admin: true) }
   let!(:other_account) { create(:account, name: "Other Company Account") }
@@ -8,6 +10,10 @@ RSpec.describe "Super Admin Viewing Mode", type: :request do
 
   before do
     ActsAsTenant.current_tenant = account
+    # Ensure Devise mappings are loaded for sign_in helper
+    Rails.application.reload_routes!
+    # Ensure CSRF protection is disabled for tests
+    ActionController::Base.allow_forgery_protection = false
 
     # Create project in super admin's account
     ActsAsTenant.with_tenant(account) do

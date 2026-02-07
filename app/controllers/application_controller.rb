@@ -12,6 +12,7 @@ class ApplicationController < ActionController::Base
     subscriptions
     account_settings
     settings
+    users
   ].freeze
 
   # Include Pagy backend for pagination

@@ -81,4 +81,9 @@ RSpec.configure do |config|
   config.before(:each) do
     WebMock.disable_net_connect!(allow_localhost: true)
   end
+
+  # Use localhost as default host for request specs to avoid host authorization issues
+  config.before(:each, type: :request) do
+    host! 'localhost'
+  end
 end

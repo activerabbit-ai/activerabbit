@@ -13,8 +13,8 @@ RSpec.describe WeeklyReportJob, type: :job do
   end
 
   before do
+    # Update account stats without changing name (to avoid uniqueness conflicts)
     account.update!(
-      name: "Test Account",
       cached_events_used: 100,
       usage_cached_at: Time.current
     )

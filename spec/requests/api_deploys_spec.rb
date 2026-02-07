@@ -3,13 +3,17 @@ require 'rails_helper'
 RSpec.describe 'API::V1::Deploys', type: :request, api: true do
   let(:account) { create(:account) }
   let(:user) { create(:user, account: account) }
-  let(:project) { create(:project, user: user, account: account) }
-  let(:token)   { create(:api_token, project: project, account: account) }
-  let(:headers) { { 'CONTENT_TYPE' => 'application/json', 'X-Project-Token' => token.token } }
-
-  before do
-    ActsAsTenant.current_tenant = account
+  let(:project) do
+    ActsAsTenant.with_tenant(account) do
+      create(:project, user: user, account: account)
+    end
   end
+  let(:token) do
+    ActsAsTenant.with_tenant(account) do
+      create(:api_token, project: project, account: account)
+    end
+  end
+  let(:headers) { { 'CONTENT_TYPE' => 'application/json', 'X-Project-Token' => token.token } }
 
   describe 'POST /api/v1/deploys' do
     it 'creates a deploy and associated release' do
@@ -25,8 +29,8 @@ RSpec.describe 'API::V1::Deploys', type: :request, api: true do
 
       expect {
         post '/api/v1/deploys', params: body, headers: headers
-      }.to change { Deploy.count }.by(1)
-        .and change { Release.count }.by(1)
+      }.to change { ActsAsTenant.with_tenant(account) { Deploy.count } }.by(1)
+        .and change { ActsAsTenant.with_tenant(account) { Release.count } }.by(1)
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -36,13 +40,15 @@ RSpec.describe 'API::V1::Deploys', type: :request, api: true do
 
     it 'reuses existing release for same version/environment' do
       # Pre-create a release for this project/version/environment
-      existing_release = create(
-        :release,
-        project: project,
-        account: account,
-        version: 'v1.0.1',
-        environment: 'staging'
-      )
+      existing_release = ActsAsTenant.with_tenant(account) do
+        create(
+          :release,
+          project: project,
+          account: account,
+          version: 'v1.0.1',
+          environment: 'staging'
+        )
+      end
 
       body = {
         project_slug: project.slug,
@@ -54,8 +60,8 @@ RSpec.describe 'API::V1::Deploys', type: :request, api: true do
         finished_at: Time.current.iso8601
       }.to_json
 
-      deploy_count_before  = Deploy.count
-      release_count_before = Release.count
+      deploy_count_before  = ActsAsTenant.with_tenant(account) { Deploy.count }
+      release_count_before = ActsAsTenant.with_tenant(account) { Release.count }
 
       post '/api/v1/deploys', params: body, headers: headers
 
@@ -63,8 +69,8 @@ RSpec.describe 'API::V1::Deploys', type: :request, api: true do
       json = JSON.parse(response.body)
       expect(json['ok']).to eq(true)
 
-      expect(Deploy.count).to eq(deploy_count_before + 1)
-      expect(Release.count).to eq(release_count_before)
+      expect(ActsAsTenant.with_tenant(account) { Deploy.count }).to eq(deploy_count_before + 1)
+      expect(ActsAsTenant.with_tenant(account) { Release.count }).to eq(release_count_before)
     end
 
     it 'returns not_found for unknown project slug' do
