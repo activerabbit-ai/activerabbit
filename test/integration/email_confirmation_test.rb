@@ -193,7 +193,7 @@ class EmailConfirmationTest < ActionDispatch::IntegrationTest
   test "confirmation banner does not appear for OAuth user" do
     # OAuth users are auto-confirmed via provider
     assert @oauth_user.email_confirmed?, "OAuth user should be considered confirmed"
-    
+
     sign_in @oauth_user
 
     get dashboard_path
