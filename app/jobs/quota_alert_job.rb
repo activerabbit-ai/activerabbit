@@ -3,8 +3,15 @@
 class QuotaAlertJob < ApplicationJob
   queue_as :default
 
-  # Check all accounts and send quota alerts where appropriate
-  # Runs daily via Sidekiq Cron
+  # How often to re-send the same level alert. Set to 1 so when cron runs daily (e.g. 10:00 AM PST),
+  # users get a reminder every day until they upgrade or usage drops.
+  REMIND_80_PERCENT_AFTER_DAYS = 1
+  REMIND_90_PERCENT_AFTER_DAYS = 1
+  EXCEEDED_REMINDER_FREE_DAYS = 1
+  EXCEEDED_REMINDER_PAID_DAYS = 1
+
+  # Check all accounts and send quota alerts where appropriate.
+  # Runs daily via Sidekiq Cron (e.g. 10:00 AM PST); each account/resource is throttled by last_quota_alert_sent_at.
   #
   # IMPORTANT: Quota alerts are ALWAYS sent regardless of user notification settings.
   # These are critical billing/usage emails that cannot be disabled.
@@ -77,20 +84,24 @@ class QuotaAlertJob < ApplicationJob
     # If usage has escalated to a higher level, send immediately
     return true if level_escalated?(last_level, level)
 
-    # For exceeded quota, send reminders
+    days_since_last = (Time.current - last_sent_at) / 1.day
+
+    # For exceeded quota, send reminders periodically
     if level == "exceeded" && percentage >= 100
-      days_since_last = (Time.current - last_sent_at) / 1.day
-
-      # Free plan: send reminder every 2 days to encourage upgrade
       if account.effective_plan_name.downcase == "free"
-        return days_since_last >= 2
+        return days_since_last >= EXCEEDED_REMINDER_FREE_DAYS
       end
-
-      # Other plans: send reminder every 3 days
-      return days_since_last >= 3
+      return days_since_last >= EXCEEDED_REMINDER_PAID_DAYS
     end
 
-    # For 80% and 90% warnings, only send once per level
+    # For 80% and 90% warnings, re-send after interval so user doesn't miss it
+    if level == "80_percent"
+      return days_since_last >= REMIND_80_PERCENT_AFTER_DAYS
+    end
+    if level == "90_percent"
+      return days_since_last >= REMIND_90_PERCENT_AFTER_DAYS
+    end
+
     false
   end
 
