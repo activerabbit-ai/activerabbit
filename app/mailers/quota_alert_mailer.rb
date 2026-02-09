@@ -25,7 +25,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
+      subject: "#{@percentage.round}% of plan – #{@resource_name.downcase} quota - #{@account.name}"
     )
   end
 
@@ -47,7 +47,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
+      subject: "#{@percentage.round}% of plan – #{@resource_name.downcase} quota - #{@account.name}"
     )
   end
 
@@ -69,7 +69,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
+      subject: "#{@percentage.round}% of plan – #{@resource_name.downcase} quota - #{@account.name}"
     )
   end
 
@@ -92,7 +92,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "You have reached #{@percentage.round}% of your #{@resource_name.downcase} quota for the team #{@account.name}"
+      subject: "#{@percentage.round}% of plan – #{@resource_name.downcase} quota - #{@account.name}"
     )
   end
 
@@ -115,7 +115,7 @@ class QuotaAlertMailer < ApplicationMailer
 
     mail(
       to: @primary_user.email,
-      subject: "Upgrade your plan to continue using #{@resource_name.downcase} - #{@account.name}"
+      subject: "#{@percentage.round}% of plan – Upgrade to continue (#{@resource_name.downcase}) - #{@account.name}"
     )
   end
 

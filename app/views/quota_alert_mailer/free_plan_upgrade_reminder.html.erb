@@ -158,7 +158,7 @@
 
           <div style="text-align:left;">
             <div style="font-weight:700;font-size:16px;line-height:1.25;">
-              Free Plan Limit Reached
+              Free Plan Limit Reached – <%= @percentage.round %>% of plan
             </div>
             <div style="font-size:13px;opacity:0.9;margin-top:2px;">
               ActiveRabbit Quota Alert
@@ -169,12 +169,12 @@
     </div>
 
     <div class="content">
-      <h2>Your Free Plan Has Reached Its Limit</h2>
+      <h2>Your Free Plan Has Reached Its Limit (<%= @percentage.round %>% of plan)</h2>
 
       <div class="alert-box">
         <p>
-          Your <strong><%= @resource_name.downcase %></strong> quota has been exceeded for <strong><%= @days_over_quota %></strong> days.
-          New data may not be tracked until you upgrade.
+          Your <strong><%= @resource_name.downcase %></strong> quota has been exceeded for <strong><%= @days_over_quota %></strong> days
+          (<strong><%= @percentage.round %>%</strong> of plan). New data may not be tracked until you upgrade.
         </p>
       </div>
 
