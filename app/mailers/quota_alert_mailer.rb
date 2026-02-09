@@ -17,6 +17,7 @@ class QuotaAlertMailer < ApplicationMailer
     @remaining = [@quota - @used, 0].max
     @percentage = @account.usage_percentage(resource_type)
     @upgrade_url = pricing_url
+    @usage_url = usage_url
 
     # Only send to confirmed users
     @primary_user = @account.users.find(&:email_confirmed?)
@@ -38,6 +39,7 @@ class QuotaAlertMailer < ApplicationMailer
     @remaining = [@quota - @used, 0].max
     @percentage = @account.usage_percentage(resource_type)
     @upgrade_url = pricing_url
+    @usage_url = usage_url
 
     # Only send to confirmed users
     @primary_user = @account.users.find(&:email_confirmed?)
@@ -59,6 +61,7 @@ class QuotaAlertMailer < ApplicationMailer
     @over_by = @used - @quota
     @percentage = @account.usage_percentage(resource_type)
     @upgrade_url = pricing_url
+    @usage_url = usage_url
 
     # Only send to confirmed users
     @primary_user = @account.users.find(&:email_confirmed?)
@@ -81,6 +84,7 @@ class QuotaAlertMailer < ApplicationMailer
     @percentage = @account.usage_percentage(resource_type)
     @days_over_quota = days_over_quota
     @upgrade_url = pricing_url
+    @usage_url = usage_url
 
     # Only send to confirmed users
     @primary_user = @account.users.find(&:email_confirmed?)
@@ -103,6 +107,7 @@ class QuotaAlertMailer < ApplicationMailer
     @percentage = @account.usage_percentage(resource_type)
     @days_over_quota = days_over_quota
     @upgrade_url = pricing_url
+    @usage_url = usage_url
 
     # Only send to confirmed users
     @primary_user = @account.users.find(&:email_confirmed?)
@@ -152,6 +157,13 @@ class QuotaAlertMailer < ApplicationMailer
 
   def pricing_url
     Rails.application.routes.url_helpers.plan_url(
+      host: ENV.fetch("APP_HOST", "localhost:3000"),
+      protocol: Rails.env.production? ? "https" : "http"
+    )
+  end
+
+  def usage_url
+    Rails.application.routes.url_helpers.usage_url(
       host: ENV.fetch("APP_HOST", "localhost:3000"),
       protocol: Rails.env.production? ? "https" : "http"
     )

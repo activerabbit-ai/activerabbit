@@ -124,6 +124,19 @@
       font-weight: 600;
     }
 
+    .button-secondary {
+      display: inline-block;
+      padding: 12px 20px;
+      background: transparent;
+      color: #667eea !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid #667eea;
+      margin-left: 12px;
+    }
+
     .footer {
       text-align: center;
       padding: 16px;
@@ -180,18 +193,8 @@
         </tr>
       </table>
 
-      <p>Upgrade to the <strong>Team plan</strong> to unlock:</p>
-
-      <ul class="benefits">
-        <li>50,000 events per month (10x more)</li>
-        <li>300 AI summaries per month</li>
-        <li>100 automated pull requests</li>
-        <li>Uptime monitoring</li>
-        <li>Status pages</li>
-        <li>Up to 10 projects</li>
-      </ul>
-
       <div class="button-wrapper">
+        <a href="<%= @usage_url %>" class="button-secondary">View Usage</a>
         <a href="<%= @upgrade_url %>" class="button">Upgrade to Team Plan</a>
       </div>
     </div>

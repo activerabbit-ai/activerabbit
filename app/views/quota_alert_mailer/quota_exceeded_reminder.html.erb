@@ -62,6 +62,19 @@
       font-weight: 600;
     }
 
+    .button-secondary {
+      display: inline-block;
+      padding: 12px 20px;
+      background: transparent;
+      color: #667eea !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid #667eea;
+      margin-left: 12px;
+    }
+
     .footer {
       text-align: center;
       padding: 16px;
@@ -101,6 +114,7 @@
       </p>
 
       <div class="button-wrapper">
+        <a href="<%= @usage_url %>" class="button-secondary">View Usage</a>
         <a href="<%= @upgrade_url %>" class="button">Upgrade Now</a>
       </div>
     </div>
