@@ -507,6 +507,42 @@ end %>
                     </dl>
                   </div>
 
+                  <% if @selected_event.from_job_failure? && @selected_event.job_context.present? %>
+                  <div class="border-t border-gray-200 pt-4 mt-4">
+                    <div class="text-sm font-medium text-amber-800 mb-2">Background job (Sidekiq / Solid Queue)</div>
+                    <dl class="grid grid-cols-1 gap-1 text-sm">
+                      <% jc = @selected_event.job_context.is_a?(Hash) ? @selected_event.job_context : {} %>
+                      <% worker = jc['worker_class'] || jc[:worker_class] || jc['job_class'] || jc[:job_class] || jc['class'] || jc[:class] %>
+                      <% if worker.present? %>
+                        <div class="py-1"><span class="text-gray-500">Worker/Job:</span> <span class="font-mono text-gray-900"><%= worker %></span></div>
+                      <% end %>
+                      <% queue = jc['queue'] || jc[:queue] || jc['queue_name'] || jc[:queue_name] %>
+                      <% if queue == "[FILTERED]" && (tags = @selected_event.context&.dig("tags")).present? %>
+                        <% queue = tags["queue"] || tags[:queue] || queue %>
+                      <% end %>
+                      <% if queue.present? && queue != "[FILTERED]" %>
+                        <div class="py-1"><span class="text-gray-500">Queue:</span> <span class="font-mono text-gray-900"><%= queue %></span></div>
+                      <% end %>
+                      <% job_id = jc['job_id'] || jc[:job_id] || jc['jid'] || jc[:jid] %>
+                      <% if job_id.present? %>
+                        <div class="py-1"><span class="text-gray-500">Job ID:</span> <span class="font-mono text-gray-600 text-xs"><%= job_id %></span></div>
+                      <% end %>
+                      <% retry_count = jc['retry_count'] || jc[:retry_count] %>
+                      <% if retry_count.present? %>
+                        <div class="py-1"><span class="text-gray-500">Retry count:</span> <span class="text-gray-900"><%= retry_count %></span></div>
+                      <% end %>
+                      <% enq = jc['enqueued_at'] || jc[:enqueued_at] %>
+                      <% if enq.present? %>
+                        <div class="py-1"><span class="text-gray-500">Enqueued at:</span> <span class="text-gray-900"><%= enq.is_a?(Time) ? enq.strftime('%Y-%m-%d %H:%M:%S %Z') : (enq.is_a?(Numeric) ? Time.at(enq).strftime('%Y-%m-%d %H:%M:%S %Z') : enq) %></span></div>
+                      <% end %>
+                      <% if jc.present? && worker.blank? && queue.blank? && job_id.blank? %>
+                        <div class="py-1 text-gray-500 text-xs">Raw job context:</div>
+                        <pre class="bg-gray-50 rounded p-2 text-xs overflow-x-auto"><%= JSON.pretty_generate(jc.to_h.stringify_keys) rescue jc.inspect %></pre>
+                      <% end %>
+                    </dl>
+                  </div>
+                  <% end %>
+
                   <!-- Parameters / Session / Environment -->
                   <div>
                     <% ctx = @selected_event.context || {} %>
