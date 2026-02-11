@@ -70,6 +70,86 @@ class PerfRollupTest < ActiveSupport::TestCase
     assert rollup.p99_duration_ms.between?(95.0, 100.0), "p99 should be around 99"
   end
 
+  test "rollup_minute_data counts related errors from Event table" do
+    project = projects(:default)
+    now = Time.current.change(sec: 0)
+    t1 = (now - 90.seconds).beginning_of_minute + 5.seconds
+    unique_target = "TestController#error_count_#{SecureRandom.hex(4)}"
+
+    # Create a performance event for this target
+    PerformanceEvent.create!(
+      account: project.account,
+      project: project,
+      target: unique_target,
+      occurred_at: t1,
+      duration_ms: 150,
+      environment: "production"
+    )
+
+    # Create matching error events (via Issue + Event) for the same target & time window
+    issue = Issue.create!(
+      account: project.account,
+      project: project,
+      fingerprint: SecureRandom.hex(32),
+      exception_class: "RuntimeError",
+      top_frame: "app/controllers/test_controller.rb:10:in `error_count'",
+      controller_action: unique_target,
+      status: "open",
+      count: 2,
+      first_seen_at: t1,
+      last_seen_at: t1
+    )
+
+    Event.create!(
+      account: project.account,
+      project: project,
+      issue: issue,
+      exception_class: "RuntimeError",
+      message: "test error 1",
+      controller_action: unique_target,
+      environment: "production",
+      occurred_at: t1 + 2.seconds
+    )
+    Event.create!(
+      account: project.account,
+      project: project,
+      issue: issue,
+      exception_class: "RuntimeError",
+      message: "test error 2",
+      controller_action: unique_target,
+      environment: "production",
+      occurred_at: t1 + 4.seconds
+    )
+
+    PerfRollup.rollup_minute_data!
+
+    rollup = PerfRollup.where(project: project, target: unique_target, timeframe: "minute").last
+    assert rollup.present?, "Rollup should be created"
+    assert_equal 2, rollup.error_count, "error_count should reflect 2 related errors from the Event table"
+  end
+
+  test "rollup_minute_data sets error_count to 0 when no matching errors exist" do
+    project = projects(:default)
+    now = Time.current.change(sec: 0)
+    t1 = (now - 90.seconds).beginning_of_minute + 5.seconds
+    unique_target = "TestController#no_errors_#{SecureRandom.hex(4)}"
+
+    PerformanceEvent.create!(
+      account: project.account,
+      project: project,
+      target: unique_target,
+      occurred_at: t1,
+      duration_ms: 100,
+      environment: "production"
+    )
+
+    PerfRollup.rollup_minute_data!
+
+    rollup = PerfRollup.where(project: project, target: unique_target, timeframe: "minute").last
+    assert rollup.present?, "Rollup should be created"
+    assert_equal 0, rollup.error_count, "error_count should be 0 when no errors exist"
+  end
+
   test "rollup_minute_data ignores events outside the 2-minute window" do
     project = projects(:default)
     unique_target = "TestController#old_#{SecureRandom.hex(4)}"

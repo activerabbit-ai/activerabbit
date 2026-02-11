@@ -120,12 +120,12 @@
 
             if menu_project
               base_deploys_path = "/#{menu_project.slug}/deploys"
-              base_errors_path = "/#{menu_project.slug}/errors"
+              base_errors_path = "/#{menu_project.slug}/errors?period=7d"
               base_performance_path = "/#{menu_project.slug}/performance"
             else
               # Fallback to global paths if no projects exist
               base_deploys_path = deploys_path
-              base_errors_path = errors_path
+              base_errors_path = errors_path(period: "7d")
               base_performance_path = performance_path
             end
           %>
@@ -144,7 +144,7 @@
 
 
           <%= link_to base_errors_path,
-              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(base_errors_path)}" do %>
+              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if controller_name == 'errors'}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
             </svg>
@@ -357,7 +357,7 @@
                         Switch Project
                       </div>
                       <% current_account.projects.order(:name).each do |project| %>
-                        <%= link_to project_slug_errors_path(project.slug),
+                        <%= link_to project_slug_errors_path(project.slug, period: "7d"),
                             class: "flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 #{'bg-indigo-50 text-indigo-700' if (defined?(@current_project) && @current_project&.id == project.id) || (selected_project_for_menu&.id == project.id && !@current_project)}" do %>
                           <div class="w-2 h-2 bg-<%= project.active? ? 'green' : 'gray' %>-400 rounded-full mr-3"></div>
                           <div class="flex-1">

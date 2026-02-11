@@ -48,8 +48,6 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
     get errors_path
     assert_response :success
 
-    # Fixtures: open_issue(open), closed_issue(closed), wip_issue(wip),
-    #           record_not_found(open), job_failure_issue(open), old_issue(open)
     total = assigns(:total_errors)
     wip_count = assigns(:open_errors)
     closed_count = assigns(:resolved_errors)
@@ -62,23 +60,26 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, wip_count
     # closed_issue is status="closed"
     assert_equal 1, closed_count
-    # total should be sum of all statuses
-    assert_equal total, wip_count + closed_count + Issue.where(account_id: @account.id).open.count
+    # total should be sum of all statuses (excluding issues seen <1 minute ago)
+    cutoff = 1.minute.ago
+    expected_open = Issue.where(account_id: @account.id).open.where("last_seen_at < ?", cutoff).count
+    assert_equal total, wip_count + closed_count + expected_open
   end
 
   # === Recent errors count ===
 
-  test "recent errors counts issues seen in last 24h" do
+  test "recent errors counts issues seen in last 24h but older than 1 minute" do
     get errors_path
     assert_response :success
 
     recent = assigns(:recent_errors)
     assert recent.is_a?(Integer)
 
-    # open_issue has last_seen_at=Time.current, wip_issue=1.hour.ago,
-    # record_not_found=30.minutes.ago, job_failure_issue=1.hour.ago
-    # old_issue=3.days.ago, closed_issue=2.days.ago
-    expected = Issue.where(account_id: @account.id).where("last_seen_at > ?", 24.hours.ago).count
+    # Counts issues with last_seen_at between 24h ago and 1 minute ago
+    expected = Issue.where(account_id: @account.id)
+                    .where("last_seen_at > ?", 24.hours.ago)
+                    .where("last_seen_at < ?", 1.minute.ago)
+                    .count
     assert_equal expected, recent
   end
 
@@ -116,13 +117,14 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
   # === Events 24h impact metrics ===
 
   test "calculates events_24h_by_issue_id" do
-    get errors_path
+    # Pass period=all to ensure all issues show up in the list
+    get errors_path, params: { period: "all" }
     assert_response :success
 
     events_24h = assigns(:events_24h_by_issue_id)
     assert events_24h.is_a?(Hash)
 
-    # open_issue has 3 events: default(now), recent(5min ago),
+    # open_issue has events: default(now), recent(5min ago),
     #   recent_event_for_open(2h ago) = all within 24h
     #   very_old_event_for_open(3 days ago) = outside 24h
     open_issue = issues(:open_issue)
@@ -144,6 +146,25 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
   end
 
   # === Filters ===
+
+  test "defaults to showing all errors" do
+    get errors_path
+    assert_response :success
+
+    assert_equal "all", assigns(:current_period)
+
+    # All issues (older than 1 minute) should be visible by default
+    issues = assigns(:issues)
+    old_issue = issues(:old_issue)
+    assert_includes issues.map(&:id), old_issue.id
+  end
+
+  test "period=all shows all issues" do
+    get errors_path, params: { period: "all" }
+    assert_response :success
+
+    assert_equal "all", assigns(:current_period)
+  end
 
   test "filters by period=1d" do
     get errors_path, params: { period: "1d" }

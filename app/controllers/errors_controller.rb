@@ -10,6 +10,10 @@ class ErrorsController < ApplicationController
     # Get all issues (errors) ordered by most recent, including resolved ones
     base_scope = project_scope ? project_scope.issues : Issue
 
+    # Always exclude errors from the last minute to avoid showing realtime
+    # noise that hasn't been fully processed / grouped yet.
+    base_scope = base_scope.where("last_seen_at < ?", 1.minute.ago)
+
     # Quick filters from summary cards
     case params[:filter]
     when "open"
@@ -22,8 +26,9 @@ class ErrorsController < ApplicationController
       base_scope = base_scope.from_job_failures
     end
 
-    # Time period filter from header buttons
-    case params[:period]
+    # Time period filter from header buttons — default to show all
+    @current_period = params[:period].presence || "all"
+    case @current_period
     when "1h"
       base_scope = base_scope.where("last_seen_at > ?", 1.hour.ago)
     when "1d"
@@ -32,43 +37,58 @@ class ErrorsController < ApplicationController
       base_scope = base_scope.where("last_seen_at > ?", 7.days.ago)
     when "30d"
       base_scope = base_scope.where("last_seen_at > ?", 30.days.ago)
+    when "all"
+      # No time filter — show everything
     end
 
     @q = base_scope.ransack(params[:q])
     scoped_issues = @q.result.includes(:project).recent
 
-    # Show the last 25 issues by default (was 50)
-    @pagy, @issues = pagy(scoped_issues, limit: 25)
+    # Use pagy_countless to skip the expensive SELECT COUNT(*) on millions of rows.
+    # Trade-off: we don't show "Page X of Y" or total count in pagination.
+    @pagy, @issues = pagy_countless(scoped_issues, limit: 25)
 
-    # Get summary stats scoped to current project or global
-    # Use grouped count (1 query) instead of 5 separate COUNT queries
-    issues_base = project_scope ? project_scope.issues : Issue
-    status_counts = issues_base.group(:status).count
-    @total_errors = status_counts.values.sum
-    @open_errors = status_counts.fetch("wip", 0)
-    @resolved_errors = status_counts.fetch("closed", 0)
-    @recent_errors = issues_base.where("last_seen_at > ?", 24.hours.ago).count
-
-    # from_job_failures is extremely expensive (full events table scan with JSON cast).
-    # Cache it with a short TTL so the page loads fast.
-    cache_key = "failed_jobs_count/#{project_scope&.id || 'global'}/#{current_account&.id}"
-    @failed_jobs_count = Rails.cache.fetch(cache_key, expires_in: 5.minutes) do
-      issues_base.from_job_failures.count
+    # ── Summary stats (cached 2 min) ──────────────────────────────────
+    # These run on all issues (no period filter) but are cached so they
+    # only hit the DB once every 2 minutes per project.
+    stats_cache_key = "errors_stats/#{project_scope&.id || 'global'}/#{current_account&.id}"
+    stats = Rails.cache.fetch(stats_cache_key, expires_in: 2.minutes) do
+      issues_base = project_scope ? project_scope.issues : Issue
+      issues_base = issues_base.where("last_seen_at < ?", 1.minute.ago)
+      status_counts = issues_base.group(:status).count
+      {
+        total: status_counts.values.sum,
+        wip: status_counts.fetch("wip", 0),
+        closed: status_counts.fetch("closed", 0),
+        recent: issues_base.where("last_seen_at > ?", 24.hours.ago).count,
+        failed_jobs: issues_base.from_job_failures.count
+      }
     end
 
-    # Calculate impact metrics for the issues list
+    @total_errors = stats[:total]
+    @open_errors = stats[:wip]
+    @resolved_errors = stats[:closed]
+    @recent_errors = stats[:recent]
+    @failed_jobs_count = stats[:failed_jobs]
+
+    # ── Impact metrics (scoped to the 25 issues on this page) ─────────
     issue_ids = @issues.map(&:id)
     if issue_ids.any?
       events_scope = project_scope ? project_scope.events : Event
       cutoff_24h = 24.hours.ago
-      @total_events_24h = events_scope.where("occurred_at > ?", cutoff_24h).count
+
+      # Only count events for the 25 issues on this page (NOT a global count).
+      # This uses the composite index (issue_id, occurred_at) — fast even at millions.
       @events_24h_by_issue_id = events_scope
         .where(issue_id: issue_ids)
         .where("occurred_at > ?", cutoff_24h)
         .group(:issue_id)
         .count
-      # Skip expensive JSON-based job failure detection per issue.
-      # Instead, check if each event's issue already has job-related controller_action.
+
+      # Approximate total from the page's issues instead of scanning all events
+      @total_events_24h = @events_24h_by_issue_id.values.sum
+
+      # Job failure detection — simple WHERE on 25 IDs, no scan needed
       @issue_ids_with_job_failures = Issue.where(id: issue_ids)
         .where("controller_action NOT LIKE '%Controller#%'")
         .pluck(:id)
@@ -109,12 +129,20 @@ class ErrorsController < ApplicationController
       counts = Array.new(bucket_count, 0)
       labels = Array.new(bucket_count) { |i| start_time + i * bucket_seconds }
 
+      # Use SQL date_trunc + GROUP BY to count events per bucket in the DB.
+      # This returns ~7-300 rows instead of loading millions of timestamps into Ruby.
       events_scope = project_scope ? project_scope.events : Event
-      event_times = events_scope.where("occurred_at >= ? AND occurred_at <= ?", start_time, end_time).pluck(:occurred_at)
-      event_times.each do |ts|
-        idx = (((ts - start_time) / bucket_seconds).floor).to_i
+      trunc_unit = bucket_seconds <= 5.minutes ? "minute" : (bucket_seconds <= 1.hour ? "hour" : "day")
+      bucketed = events_scope
+        .where(occurred_at: start_time..end_time)
+        .group("date_trunc('#{trunc_unit}', occurred_at)")
+        .count
+
+      bucketed.each do |truncated_ts, cnt|
+        next unless truncated_ts
+        idx = ((truncated_ts - start_time) / bucket_seconds).floor.to_i
         next if idx.negative? || idx >= bucket_count
-        counts[idx] += 1
+        counts[idx] += cnt
       end
 
       @graph_labels = labels

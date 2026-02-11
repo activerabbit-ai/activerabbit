@@ -39,8 +39,24 @@ class PerfRollup < ApplicationRecord
 
     return if aggregated.empty?
 
+    # Batch-count related errors in a single query for the same time window.
+    # Groups by (project_id, controller_action, environment, minute) so we
+    # can look up the count per rollup row without N+1 queries.
+    error_counts = Event.joins(:issue)
+      .where(occurred_at: start_time..end_time)
+      .group(
+        :project_id,
+        :controller_action,
+        :environment,
+        "date_trunc('minute', occurred_at)"
+      )
+      .count
+
     # Bulk upsert rollups
     aggregated.each do |row|
+      # Look up the pre-computed error count for this (project, target, env, minute)
+      ec = error_counts[[row.project_id, row.target, row.environment, row.truncated_ts]] || 0
+
       rollup = find_or_initialize_by(
         project_id: row.project_id,
         timeframe: "minute",
@@ -57,7 +73,7 @@ class PerfRollup < ApplicationRecord
         p99_duration_ms: row.p99_dur,
         min_duration_ms: row.min_dur,
         max_duration_ms: row.max_dur,
-        error_count: 0,
+        error_count: ec,
         hdr_histogram: nil
       )
 

@@ -10,7 +10,7 @@ open_issue:
   status: "open"
   count: 5
   first_seen_at: <%= 1.day.ago %>
-  last_seen_at: <%= Time.current %>
+  last_seen_at: <%= 5.minutes.ago %>
   closed_at: nil
 
 closed_issue:
