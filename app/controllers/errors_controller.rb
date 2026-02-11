@@ -40,14 +40,23 @@ class ErrorsController < ApplicationController
     # Show the last 25 issues by default (was 50)
     @pagy, @issues = pagy(scoped_issues, limit: 25)
 
-    # Get summary stats scoped to current project or global
-    # Use grouped count (1 query) instead of 5 separate COUNT queries
+    # Get summary stats scoped to current project or global (cached to avoid 504 on heavy projects)
     issues_base = project_scope ? project_scope.issues : Issue
-    status_counts = issues_base.group(:status).count
-    @total_errors = status_counts.values.sum
-    @open_errors = status_counts.fetch("wip", 0)
-    @resolved_errors = status_counts.fetch("closed", 0)
-    @recent_errors = issues_base.where("last_seen_at > ?", 24.hours.ago).count
+    summary_cache_key = "errors_index/summary/#{project_scope&.id || 'global'}/#{current_account&.id}"
+    summary = Rails.cache.fetch(summary_cache_key, expires_in: 1.minute) do
+      status_counts = issues_base.group(:status).count
+      recent_count = issues_base.where("last_seen_at > ?", 24.hours.ago).count
+      {
+        total: status_counts.values.sum,
+        open: status_counts.fetch("wip", 0),
+        resolved: status_counts.fetch("closed", 0),
+        recent: recent_count
+      }
+    end
+    @total_errors = summary[:total]
+    @open_errors = summary[:open]
+    @resolved_errors = summary[:resolved]
+    @recent_errors = summary[:recent]
 
     # from_job_failures is extremely expensive (full events table scan with JSON cast).
     # Cache it with a short TTL so the page loads fast.
@@ -58,10 +67,16 @@ class ErrorsController < ApplicationController
 
     # Calculate impact metrics for the issues list
     issue_ids = @issues.map(&:id)
+    events_scope = project_scope ? project_scope.events : Event
+    cutoff_24h = 24.hours.ago
+
+    # Heavy count on large events table — cache to prevent 504 Gateway Timeout
+    events_24h_cache_key = "errors_index/events_24h/#{project_scope&.id || 'global'}/#{current_account&.id}"
+    @total_events_24h = Rails.cache.fetch(events_24h_cache_key, expires_in: 2.minutes) do
+      events_scope.where("occurred_at > ?", cutoff_24h).count
+    end
+
     if issue_ids.any?
-      events_scope = project_scope ? project_scope.events : Event
-      cutoff_24h = 24.hours.ago
-      @total_events_24h = events_scope.where("occurred_at > ?", cutoff_24h).count
       @events_24h_by_issue_id = events_scope
         .where(issue_id: issue_ids)
         .where("occurred_at > ?", cutoff_24h)
@@ -74,7 +89,6 @@ class ErrorsController < ApplicationController
         .pluck(:id)
         .to_set
     else
-      @total_events_24h = 0
       @events_24h_by_issue_id = {}
       @issue_ids_with_job_failures = Set.new
     end
