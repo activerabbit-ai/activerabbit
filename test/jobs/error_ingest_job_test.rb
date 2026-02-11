@@ -17,15 +17,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       environment: "production"
     }
 
-    # Stub the AI summary to avoid external calls
-    AiSummaryService.stub(:new, ->(*args) {
-      mock = Minitest::Mock.new
-      mock.expect(:call, { summary: "Test summary" })
-      mock
-    }) do
-      assert_changes -> { Event.count } do
-        ErrorIngestJob.new.perform(@project.id, payload)
-      end
+    assert_changes -> { Event.count } do
+      ErrorIngestJob.new.perform(@project.id, payload)
     end
   end
 
@@ -40,11 +33,7 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
 
     original_time = @project.last_event_at
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      ErrorIngestJob.new.perform(@project.id, payload)
-    end
+    ErrorIngestJob.new.perform(@project.id, payload)
 
     @project.reload
     if original_time.present?
@@ -75,12 +64,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       ]
     }
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      assert_difference "SqlFingerprint.count", 2 do
-        ErrorIngestJob.new.perform(@project.id, payload)
-      end
+    assert_difference "SqlFingerprint.count", 2 do
+      ErrorIngestJob.new.perform(@project.id, payload)
     end
   end
 
@@ -93,12 +78,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       "environment" => "production"
     }
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      assert_nothing_raised do
-        ErrorIngestJob.new.perform(@project.id, payload)
-      end
+    assert_nothing_raised do
+      ErrorIngestJob.new.perform(@project.id, payload)
     end
   end
 
@@ -141,11 +122,7 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       environment: "production"
     }
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      ErrorIngestJob.new.perform(@project.id, payload)
-    end
+    ErrorIngestJob.new.perform(@project.id, payload)
 
     # Verify the issue was created with count 1
     issue = Issue.find_by(exception_class: "NewFatalError")
