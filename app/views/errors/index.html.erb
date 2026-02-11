@@ -3,7 +3,7 @@
 <% end %>
 
 <!-- Errors List / Graph Toggle -->
-<div class="bg-white rounded-lg shadow">
+<div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
     <% if params[:tab] == 'graph' %>
       <div class="border-t border-gray-200 px-6 py-6">
         <!-- Compact Stats Row -->
@@ -92,22 +92,16 @@
         <% end %>
       </div>
     <% elsif @issues.any? %>
-    <!-- Filter pills: All, Open, Closed, Recent, Failed jobs -->
-    <div class="px-6 py-3 border-b border-gray-200 flex flex-wrap gap-2 items-center">
-      <span class="text-xs font-medium text-gray-500 uppercase tracking-wider mr-1">Filter:</span>
-      <%= link_to "All", url_for(params.permit!.to_h.merge(filter: nil, page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter].blank? ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
-      <%= link_to "Open", url_for(params.permit!.to_h.merge(filter: "open", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'open' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
-      <%= link_to "Closed", url_for(params.permit!.to_h.merge(filter: "closed", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'closed' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
-      <%= link_to "Recent 24h", url_for(params.permit!.to_h.merge(filter: "recent", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'recent' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
-      <%= link_to "Failed jobs", url_for(params.permit!.to_h.merge(filter: "jobs", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'jobs' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
-    </div>
     <!-- Proper HTML Table -->
-    <div class="overflow-x-auto border-t border-gray-200">
+    <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200" style="position: relative;">
         <thead class="bg-white border-b border-gray-200">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="max-width: 420px;">
-              <%= sort_link(@q, :exception_class, "🐰 Error & Action", class: "inline-flex items-center") %>
+              <%= sort_link(@q, :exception_class, class: "inline-flex items-center gap-2") do %>
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-indigo-50 text-sm leading-none">🐰</span>
+                <span>Error & Action</span>
+              <% end %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>

@@ -5,12 +5,15 @@ export default class extends Controller {
   static targets = ["sidebar", "content", "toggleButton", "toggleTooltip", "brandText", "navText", "promoBox", "trialBox"]
 
   connect() {
-    // Load saved state from localStorage
+    // The inline <script> in admin.html.erb already applies collapsed classes
+    // before this controller connects (via turbo:before-render and DOMContentLoaded).
+    // We just need to ensure internal state is consistent.
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true'
-    if (isCollapsed) {
-      this.collapse(false) // false = no animation on initial load
+    if (isCollapsed && !this.sidebarTarget.classList.contains('sidebar-collapsed')) {
+      // Fallback: apply collapsed state if the inline script didn't run
+      this.collapse(false)
     }
-    
+
     // Setup tooltip hover events
     this.setupTooltips()
   }

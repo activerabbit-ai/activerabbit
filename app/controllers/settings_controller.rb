@@ -16,6 +16,27 @@ class SettingsController < ApplicationController
     @user_preferences = @account&.user_notification_preferences(current_user)
   end
 
+  def update_account_name
+    @account = current_account
+
+    unless current_user.role == "owner"
+      redirect_to settings_path, alert: "Only account owners can change the account name."
+      return
+    end
+
+    new_name = params[:account_name].to_s.strip
+    if new_name.blank?
+      redirect_to settings_path, alert: "Account name can't be blank."
+      return
+    end
+
+    if @account.update(name: new_name)
+      redirect_to settings_path, notice: "Account name updated to \"#{@account.name}\"."
+    else
+      redirect_to settings_path, alert: @account.errors.full_messages.join(", ")
+    end
+  end
+
   def update_slack_settings
     @account = current_account
 

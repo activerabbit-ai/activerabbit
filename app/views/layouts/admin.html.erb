@@ -23,6 +23,39 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
     <%= javascript_importmap_tags %>
 
+    <script>
+      // Prevent sidebar flash on Turbo Drive navigation.
+      // Applies the collapsed state to the incoming body BEFORE Turbo paints it.
+      (function() {
+        function applySidebarState(root) {
+          if (localStorage.getItem('sidebarCollapsed') !== 'true') return;
+          var sidebar = root.querySelector('[data-sidebar-target="sidebar"]');
+          if (!sidebar) return;
+          sidebar.classList.add('sidebar-collapsed', 'w-16', 'p-2');
+          sidebar.classList.remove('w-64', 'p-4');
+          var content = root.querySelector('[data-sidebar-target="content"]');
+          if (content) { content.classList.remove('ml-64'); content.classList.add('ml-16'); }
+          root.querySelectorAll('[data-sidebar-target="navText"], [data-sidebar-target="brandText"], [data-sidebar-target="promoBox"], [data-sidebar-target="trialBox"]').forEach(function(el) { el.classList.add('hidden'); });
+          root.querySelectorAll('.sidebar-nav-item').forEach(function(link) {
+            link.classList.add('justify-center', 'px-2');
+            link.classList.remove('px-4');
+            var icon = link.querySelector('svg');
+            if (icon) { icon.classList.remove('mr-3'); icon.classList.add('mr-0'); }
+          });
+          var brandLink = sidebar.querySelector('.flex.items-center.mb-6 a') || sidebar.querySelector('a[href="/"]');
+          if (brandLink) brandLink.classList.add('justify-center');
+        }
+        // Fix flash on Turbo navigations
+        document.addEventListener('turbo:before-render', function(e) {
+          applySidebarState(e.detail.newBody);
+        });
+        // Fix flash on initial page load
+        document.addEventListener('DOMContentLoaded', function() {
+          applySidebarState(document.body);
+        });
+      })();
+    </script>
+
     <style>
       /* Hide the inline tooltip spans - we'll use JS tooltips instead */
       .sidebar-tooltip {
@@ -156,7 +189,7 @@
           <div class="border-t border-gray-700 my-4"></div>
 
           <% if menu_project %>
-            <%= link_to project_settings_path(menu_project, anchor: "slack-integration"),
+            <%= link_to project_settings_path(menu_project),
                 class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(project_settings_path(menu_project))}" do %>
 
               <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,8 +204,8 @@
                     m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 />
               </svg>
-              <span data-sidebar-target="navText">Alerts</span>
-              <span class="sidebar-tooltip">Alerts</span>
+              <span data-sidebar-target="navText">App Settings</span>
+              <span class="sidebar-tooltip">App Settings</span>
             <% end %>
           <% end %>
 
@@ -413,7 +446,7 @@
 
               <!-- Global Search (Sentry-style) -->
               <div class="flex-1 min-w-0" data-controller="global-search">
-                <div class="relative group max-w-xl">
+                <div class="relative group">
                   <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -555,7 +588,7 @@
         </div>
 
         <!-- Page Content -->
-        <main class="flex-1 p-6">
+        <main class="flex-1 px-6 pb-6 pt-3">
           <%= yield %>
         </main>
       </div>

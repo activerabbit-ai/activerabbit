@@ -11,21 +11,40 @@
     <div class="p-6">
       <div class="space-y-6">
         <% @settings.each do |key, value| %>
-          <div class="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
-            <div>
-              <p class="text-sm font-medium text-gray-900 capitalize"><%= key.to_s.humanize %></p>
-              <p class="text-sm text-gray-500">Configure <%= key.to_s.humanize.downcase %></p>
+          <% if key == :account_name %>
+            <div class="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
+              <div>
+                <p class="text-sm font-medium text-gray-900 capitalize">Account name</p>
+                <p class="text-sm text-gray-500">Configure account name</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <%= form_with(url: update_account_name_settings_path, method: :patch, local: true, class: "flex items-center gap-2") do |form| %>
+                  <%= form.text_field :account_name,
+                        value: @account&.name,
+                        class: "px-3 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-900 font-medium w-48",
+                        placeholder: "Your organization name" %>
+                  <%= form.submit "Save",
+                        class: "inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer" %>
+                <% end %>
+              </div>
             </div>
-            <div class="flex items-center">
-              <% if value.is_a?(TrueClass) || value.is_a?(FalseClass) %>
-                <button class="relative inline-flex h-6 w-11 items-center rounded-full <%= value ? 'bg-blue-600' : 'bg-gray-200' %> transition-colors">
-                  <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform <%= value ? 'translate-x-6' : 'translate-x-1' %>"></span>
-                </button>
-              <% else %>
-                <span class="text-sm text-gray-900 font-medium"><%= value %></span>
-              <% end %>
+          <% else %>
+            <div class="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
+              <div>
+                <p class="text-sm font-medium text-gray-900 capitalize"><%= key.to_s.humanize %></p>
+                <p class="text-sm text-gray-500">Configure <%= key.to_s.humanize.downcase %></p>
+              </div>
+              <div class="flex items-center">
+                <% if value.is_a?(TrueClass) || value.is_a?(FalseClass) %>
+                  <button class="relative inline-flex h-6 w-11 items-center rounded-full <%= value ? 'bg-blue-600' : 'bg-gray-200' %> transition-colors">
+                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform <%= value ? 'translate-x-6' : 'translate-x-1' %>"></span>
+                  </button>
+                <% else %>
+                  <span class="text-sm text-gray-900 font-medium"><%= value %></span>
+                <% end %>
+              </div>
             </div>
-          </div>
+          <% end %>
         <% end %>
       </div>
     </div>

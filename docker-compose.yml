@@ -35,6 +35,7 @@ services:
       dockerfile: Dockerfile.dev
     command: >
       bash -c "
+        rm -f tmp/pids/server.pid &&
         bundle exec rails db:prepare &&
         bundle exec rails tailwindcss:build &&
         bundle exec rails server -b 0.0.0.0
