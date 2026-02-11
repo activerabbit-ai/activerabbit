@@ -24,37 +24,39 @@
     <%= javascript_importmap_tags %>
 
     <script>
-      // Prevent sidebar flash on Turbo Drive navigation.
-      // Applies the collapsed state to the incoming body BEFORE Turbo paints it.
-      (function() {
-        function applySidebarState(root) {
-          if (localStorage.getItem('sidebarCollapsed') !== 'true') return;
-          var sidebar = root.querySelector('[data-sidebar-target="sidebar"]');
-          if (!sidebar) return;
-          sidebar.classList.add('sidebar-collapsed', 'w-16', 'p-2');
-          sidebar.classList.remove('w-64', 'p-4');
-          var content = root.querySelector('[data-sidebar-target="content"]');
-          if (content) { content.classList.remove('ml-64'); content.classList.add('ml-16'); }
-          root.querySelectorAll('[data-sidebar-target="navText"], [data-sidebar-target="brandText"], [data-sidebar-target="promoBox"], [data-sidebar-target="trialBox"]').forEach(function(el) { el.classList.add('hidden'); });
-          root.querySelectorAll('.sidebar-nav-item').forEach(function(link) {
-            link.classList.add('justify-center', 'px-2');
-            link.classList.remove('px-4');
-            var icon = link.querySelector('svg');
-            if (icon) { icon.classList.remove('mr-3'); icon.classList.add('mr-0'); }
-          });
-          var brandLink = sidebar.querySelector('.flex.items-center.mb-6 a') || sidebar.querySelector('a[href="/"]');
-          if (brandLink) brandLink.classList.add('justify-center');
-        }
-        // Fix flash on Turbo navigations
-        document.addEventListener('turbo:before-render', function(e) {
-          applySidebarState(e.detail.newBody);
-        });
-        // Fix flash on initial page load
-        document.addEventListener('DOMContentLoaded', function() {
-          applySidebarState(document.body);
-        });
-      })();
+      // Set sidebar collapsed class on <html> IMMEDIATELY so CSS takes effect before paint.
+      if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        document.documentElement.classList.add('sidebar-is-collapsed');
+      }
     </script>
+
+    <style>
+      /* CSS-driven collapsed sidebar state — applied instantly, no JS flash */
+      html.sidebar-is-collapsed [data-sidebar-target="sidebar"] {
+        width: 4rem !important;
+        padding: 0.5rem !important;
+      }
+      html.sidebar-is-collapsed [data-sidebar-target="content"] {
+        margin-left: 4rem !important;
+      }
+      html.sidebar-is-collapsed [data-sidebar-target="navText"],
+      html.sidebar-is-collapsed [data-sidebar-target="brandText"],
+      html.sidebar-is-collapsed [data-sidebar-target="promoBox"],
+      html.sidebar-is-collapsed [data-sidebar-target="trialBox"] {
+        display: none !important;
+      }
+      html.sidebar-is-collapsed .sidebar-nav-item {
+        justify-content: center !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+      }
+      html.sidebar-is-collapsed .sidebar-nav-item svg {
+        margin-right: 0 !important;
+      }
+      html.sidebar-is-collapsed .flex.items-center.mb-6 a {
+        justify-content: center !important;
+      }
+    </style>
 
     <style>
       /* Hide the inline tooltip spans - we'll use JS tooltips instead */

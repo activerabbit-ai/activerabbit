@@ -116,8 +116,9 @@ export default class extends Controller {
     // Update toggle button icon and tooltip
     this.updateToggleButton(true)
     
-    // Save state
+    // Save state and sync CSS class on <html>
     localStorage.setItem('sidebarCollapsed', 'true')
+    document.documentElement.classList.add('sidebar-is-collapsed')
   }
 
   expand() {
@@ -158,8 +159,9 @@ export default class extends Controller {
     // Update toggle button icon and tooltip
     this.updateToggleButton(false)
     
-    // Save state
+    // Save state and sync CSS class on <html>
     localStorage.setItem('sidebarCollapsed', 'false')
+    document.documentElement.classList.remove('sidebar-is-collapsed')
   }
 
   centerNavIcons(collapsed) {
