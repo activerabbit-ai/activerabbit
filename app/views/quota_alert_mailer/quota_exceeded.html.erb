@@ -96,7 +96,7 @@
 
           <div style="text-align:left;">
             <div style="font-weight:700;font-size:16px;line-height:1.25;">
-              <%= @percentage.round %>% of plan – <%= @resource_name %> quota exceeded
+              <%= @display_percentage %>% of plan – <%= @resource_name %> quota exceeded
             </div>
             <div style="font-size:13px;opacity:0.9;margin-top:2px;">
               ActiveRabbit Quota Alert
@@ -107,10 +107,10 @@
     </div>
 
     <div class="content">
-      <h2><%= @percentage.round %>% of plan – quota exceeded</h2>
+      <h2><%= @display_percentage %>% of plan – quota exceeded</h2>
 
       <p>
-        You have reached <strong><%= @percentage.round %>%</strong> of your monthly quota for the team <strong><%= @account.name %></strong>. Upgrade your plan to increase your limits and continue using all features.
+        You have reached <strong><%= @display_percentage %>%</strong> of your monthly quota for the team <strong><%= @account.name %></strong>. Upgrade your plan to increase your limits and continue using all features.
       </p>
 
       <div class="button-wrapper">
