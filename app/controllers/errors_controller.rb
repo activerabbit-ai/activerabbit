@@ -77,6 +77,11 @@ class ErrorsController < ApplicationController
     end
 
     if issue_ids.any?
+      @events_24h_by_issue_id = events_scope
+        .where(issue_id: issue_ids)
+        .where("occurred_at > ?", cutoff_24h)
+        .group(:issue_id)
+        .count
       # Skip expensive JSON-based job failure detection per issue.
       # Instead, check if each event's issue already has job-related controller_action.
       @issue_ids_with_job_failures = Issue.where(id: issue_ids)
