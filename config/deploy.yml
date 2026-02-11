@@ -20,6 +20,12 @@ servers:
 proxy:
   ssl: true
   host: app.activerabbit.ai
+  # Allow up to 3 minutes for db:prepare (migrations) + Rails boot before health check fails.
+  # Default is 30s which is too short when migrations run on large tables.
+  deploy_timeout: 180
+  healthcheck:
+    path: /up
+    interval: 1
 
 # Credentials for your image host.
 registry:

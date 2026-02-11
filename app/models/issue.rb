@@ -17,8 +17,17 @@ class Issue < ApplicationRecord
   scope :closed, -> { where(status: "closed") }
   scope :recent, -> { order(last_seen_at: :desc) }
   scope :by_frequency, -> { order(count: :desc) }
-  # Issues that include at least one event from failed background jobs (Sidekiq / Solid Queue)
-  scope :from_job_failures, -> { where(id: Event.from_job_failures.distinct.select(:issue_id)) }
+  # Fast job-failure filter using the denormalized boolean flag on issues.
+  # Falls back to the expensive Event subquery only if the column hasn't been migrated yet.
+  scope :from_job_failures, -> {
+    if column_names.include?("is_job_failure")
+      where(is_job_failure: true)
+    else
+      where(id: Event.from_job_failures.distinct.select(:issue_id))
+    end
+  }
+
+  before_save :detect_job_failure
 
   def github_pr_url
     read_attribute(:github_pr_url).presence || project&.settings&.dig("issue_pr_urls", id.to_s)
@@ -166,6 +175,15 @@ class Issue < ApplicationRecord
   end
 
   private
+
+  # Auto-detect whether this issue comes from a background job.
+  # Workers / job classes don't follow the "SomeController#action" pattern.
+  def detect_job_failure
+    return unless respond_to?(:is_job_failure) && has_attribute?(:is_job_failure)
+    return unless controller_action_changed? || new_record?
+
+    self.is_job_failure = controller_action.present? && !controller_action.include?("Controller#")
+  end
 
   # Exception classes that should be grouped by originating code location
   # These are common errors where the controller action is just the entry point,
