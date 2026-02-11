@@ -76,7 +76,7 @@ class Api::V1::EventsController < Api::BaseController
       return
     end
 
-    if events.size > 500 # Batch size limit (raised from 100 for high-throughput clients)
+    if events.size > 500 # Batch size limit
       render json: {
         error: "validation_failed",
         message: "Batch size exceeds maximum of 500 events"
@@ -85,11 +85,11 @@ class Api::V1::EventsController < Api::BaseController
     end
 
     batch_id = SecureRandom.uuid
-    processed_count = 0
+    error_payloads = []
+    perf_payloads = []
 
     events.each do |event_data|
       next if event_data.nil?
-      # Extract the actual payload from the data field first
       actual_data = event_data[:data] || event_data["data"] || event_data
       next if actual_data.nil?
 
@@ -101,7 +101,6 @@ class Api::V1::EventsController < Api::BaseController
                    actual_data[:event_type] || actual_data["event_type"] ||
                    event_data[:type] || event_data["type"]
 
-      # Auto-detect type from data name when type is nil
       if event_type.blank?
         data_name = actual_data[:name] || actual_data["name"]
         event_type = infer_event_type(data_name)
@@ -112,20 +111,23 @@ class Api::V1::EventsController < Api::BaseController
         payload = sanitize_error_payload(actual_data)
         if valid_error_payload?(payload)
           serializable_payload = JSON.parse(payload.to_h.to_json)
-          enqueue_error_ingest(@current_project.id, serializable_payload, batch_id)
-          processed_count += 1
+          error_payloads << serializable_payload
         end
       when "performance"
         payload = sanitize_performance_payload(actual_data)
         next unless valid_performance_payload?(payload)
+        # Skip self-monitoring of API endpoints to prevent feedback loops.
+        # Without this, each batch request generates performance events about
+        # itself, which get batched and sent back, creating infinite amplification.
+        next if self_monitoring_event?(payload)
         serializable_payload = JSON.parse(payload.to_h.to_json)
-        enqueue_performance_ingest(@current_project.id, serializable_payload, batch_id)
-        processed_count += 1
-      else
-        # Skip unknown event types silently (metrics, logs, etc.)
-        next
+        perf_payloads << serializable_payload
       end
     end
+
+    # Bulk-enqueue to Sidekiq in 1 Redis round-trip per job class
+    # (instead of N individual perform_async calls)
+    processed_count = bulk_enqueue_jobs(error_payloads, perf_payloads, batch_id)
 
     render_created(
       {
@@ -138,7 +140,7 @@ class Api::V1::EventsController < Api::BaseController
     )
   rescue => e
     Rails.logger.error "ERROR in create_batch: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
+    Rails.logger.error e.backtrace.first(5).join("\n")
     render json: { error: "processing_error", message: e.message }, status: :internal_server_error
   end
 
@@ -359,19 +361,71 @@ class Api::V1::EventsController < Api::BaseController
     end
   end
 
-  # If Sidekiq/Redis is down (or queue push fails), fall back to synchronous ingest so
-  # customers still see new errors/performance data in the UI.
+  # Paths that should not be recorded as performance data when the app
+  # monitors itself.  Without this filter, each batch POST generates ~30
+  # performance events about itself → infinite amplification loop.
+  SELF_MONITORING_PATHS = %w[
+    /api/v1/events/batch
+    /api/v1/events/errors
+    /api/v1/events/performance
+    /api/v1/test/connection
+  ].freeze
+
+  SELF_MONITORING_CONTROLLERS = %w[
+    Api::V1::EventsController
+  ].freeze
+
+  def self_monitoring_event?(payload)
+    path = payload[:request_path].to_s
+    return true if SELF_MONITORING_PATHS.include?(path)
+
+    ctrl = payload[:controller_action].to_s
+    SELF_MONITORING_CONTROLLERS.any? { |c| ctrl.start_with?(c) }
+  end
+
+  # Bulk-enqueue jobs via Sidekiq::Client.push_bulk (1 Redis call per job class).
+  # Falls back to individual perform_async if push_bulk is unavailable.
+  def bulk_enqueue_jobs(error_payloads, perf_payloads, batch_id)
+    count = 0
+    project_id = @current_project.id
+
+    if error_payloads.any?
+      Sidekiq::Client.push_bulk(
+        "class" => ErrorIngestJob,
+        "args" => error_payloads.map { |p| [project_id, p, batch_id] }
+      )
+      count += error_payloads.size
+    end
+
+    if perf_payloads.any?
+      Sidekiq::Client.push_bulk(
+        "class" => PerformanceIngestJob,
+        "args" => perf_payloads.map { |p| [project_id, p, batch_id] }
+      )
+      count += perf_payloads.size
+    end
+
+    count
+  rescue => e
+    Rails.logger.error("[ActiveRabbit] push_bulk failed (#{e.class}): #{e.message}")
+    # Fallback: enqueue individually (still better than inline processing)
+    error_payloads.each { |p| ErrorIngestJob.perform_async(project_id, p, batch_id) rescue nil }
+    perf_payloads.each { |p| PerformanceIngestJob.perform_async(project_id, p, batch_id) rescue nil }
+    error_payloads.size + perf_payloads.size
+  end
+
+  # For single-event endpoints, keep inline fallback (1 event won't kill perf)
   def enqueue_error_ingest(project_id, payload, batch_id = nil)
     ErrorIngestJob.perform_async(project_id, payload, batch_id)
   rescue => e
-    Rails.logger.error("[ActiveRabbit] ErrorIngestJob.perform_async failed, falling back to inline perform: #{e.class}: #{e.message}")
+    Rails.logger.error("[ActiveRabbit] ErrorIngestJob.perform_async failed, falling back to inline: #{e.class}: #{e.message}")
     ErrorIngestJob.new.perform(project_id, payload, batch_id)
   end
 
   def enqueue_performance_ingest(project_id, payload, batch_id = nil)
     PerformanceIngestJob.perform_async(project_id, payload, batch_id)
   rescue => e
-    Rails.logger.error("[ActiveRabbit] PerformanceIngestJob.perform_async failed, falling back to inline perform: #{e.class}: #{e.message}")
+    Rails.logger.error("[ActiveRabbit] PerformanceIngestJob.perform_async failed, falling back to inline: #{e.class}: #{e.message}")
     PerformanceIngestJob.new.perform(project_id, payload, batch_id)
   end
 end

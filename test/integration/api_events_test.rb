@@ -286,6 +286,71 @@ class ApiEventsTest < ActionDispatch::IntegrationTest
     assert_equal 1, json["data"]["processed_count"]
   end
 
+  # Self-monitoring filter
+
+  test "POST /api/v1/events/batch filters out self-monitoring API events" do
+    body = {
+      events: [
+        {
+          type: "performance",
+          data: {
+            name: "controller.action",
+            controller_action: "Api::V1::EventsController#create_batch",
+            request_path: "/api/v1/events/batch",
+            request_method: "POST",
+            duration_ms: 750.0,
+            timestamp: Time.current.iso8601,
+            environment: "production"
+          }
+        },
+        {
+          type: "performance",
+          data: {
+            name: "controller.action",
+            controller_action: "HomeController#index",
+            request_path: "/home",
+            request_method: "GET",
+            duration_ms: 50.0,
+            timestamp: Time.current.iso8601,
+            environment: "production"
+          }
+        }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 1, json["data"]["processed_count"], "Self-monitoring API events should be filtered out"
+    assert_equal 2, json["data"]["total_count"]
+  end
+
+  test "POST /api/v1/events/batch filters out events by API request_path" do
+    body = {
+      events: [
+        {
+          type: "performance",
+          data: {
+            name: "controller.action",
+            controller_action: "Api::V1::EventsController#create_error",
+            request_path: "/api/v1/events/errors",
+            request_method: "POST",
+            duration_ms: 100.0,
+            timestamp: Time.current.iso8601,
+            environment: "production"
+          }
+        }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 0, json["data"]["processed_count"], "Events about API endpoints should be filtered"
+  end
+
   # POST /api/v1/test/connection
 
   test "POST /api/v1/test/connection returns project context" do
