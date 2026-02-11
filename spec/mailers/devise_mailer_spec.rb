@@ -5,13 +5,19 @@ require 'rails_helper'
 RSpec.describe Devise::Mailer, type: :mailer do
   describe "#confirmation_instructions" do
     let(:account) { create(:account) }
-    let(:user) { create(:user, :unconfirmed, account: account, email: "test@example.com") }
+    let(:user) { create(:user, :unconfirmed, account: account) }
     let(:token) { "test_confirmation_token_123" }
+
+    before do
+      # Ensure routes and Devise mappings are properly loaded
+      Rails.application.reload_routes!
+      Rails.application.routes.default_url_options[:host] = 'localhost'
+    end
 
     subject(:mail) { described_class.confirmation_instructions(user, token) }
 
     it "renders the headers" do
-      expect(mail.to).to eq(["test@example.com"])
+      expect(mail.to).to eq([user.email])
       expect(mail.from.first).to include("activerabbit")
     end
 
@@ -28,7 +34,7 @@ RSpec.describe Devise::Mailer, type: :mailer do
     end
 
     it "includes user email" do
-      expect(mail.body.encoded).to include("test@example.com")
+      expect(mail.body.encoded).to include(user.email)
     end
 
     it "includes confirm button" do
