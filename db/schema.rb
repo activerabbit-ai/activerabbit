@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_11_130100) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_11_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -415,6 +415,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_11_130100) do
     t.index ["environment"], name: "index_performance_events_on_environment"
     t.index ["occurred_at"], name: "index_performance_events_on_occurred_at"
     t.index ["project_id", "occurred_at"], name: "index_performance_events_on_project_id_and_occurred_at"
+    t.index ["project_id", "target", "environment", "occurred_at"], name: "idx_perf_events_rollup"
     t.index ["project_id", "target", "occurred_at"], name: "idx_on_project_id_target_occurred_at_2f7b1bed68"
     t.index ["project_id"], name: "index_performance_events_on_project_id"
     t.index ["release_id"], name: "index_performance_events_on_release_id"

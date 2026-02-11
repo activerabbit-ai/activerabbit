@@ -1,20 +1,12 @@
 class Api::V1::EventsController < Api::BaseController
   # POST /api/v1/events/errors
   def create_error
-    Rails.logger.info "=== DEBUG: create_error called ==="
-    Rails.logger.info "Raw params: #{params.inspect}"
-    Rails.logger.info "Current project: #{@current_project.inspect}"
-    Rails.logger.info "Current API token: #{@current_api_token.inspect}"
-
-    # Check if project exists
     unless @current_project
-      Rails.logger.error "ERROR: @current_project is nil!"
       render json: { error: "project_not_found", message: "Project not found" }, status: :not_found
       return
     end
 
     payload = sanitize_error_payload(params)
-    Rails.logger.info "Sanitized payload: #{payload.inspect}"
 
     # Validate required fields; return 422 on failure
     unless validate_error_payload!(payload)
@@ -22,10 +14,7 @@ class Api::V1::EventsController < Api::BaseController
     end
 
     # Process in background for better performance
-    # Ensure payload is JSON-serializable by converting to hash and stringifying
     serializable_payload = JSON.parse(payload.to_h.to_json)
-    Rails.logger.info "Serializable payload: #{serializable_payload.inspect}"
-    Rails.logger.info "Calling ErrorIngestJob.perform_async(#{@current_project.id}, payload)"
     enqueue_error_ingest(@current_project.id, serializable_payload)
 
     render_created(
@@ -43,28 +32,18 @@ class Api::V1::EventsController < Api::BaseController
 
   # POST /api/v1/events/performance
   def create_performance
-    Rails.logger.info "=== DEBUG: create_performance called ==="
-    Rails.logger.info "Raw params: #{params.inspect}"
-    Rails.logger.info "Current project: #{@current_project.inspect}"
-
-    # Check if project exists
     unless @current_project
-      Rails.logger.error "ERROR: @current_project is nil!"
       render json: { error: "project_not_found", message: "Project not found" }, status: :not_found
       return
     end
 
     payload = sanitize_performance_payload(params)
-    Rails.logger.info "Sanitized payload: #{payload.inspect}"
 
     # Validate required fields
     return unless validate_performance_payload!(payload)
 
     # Process in background
-    # Ensure payload is JSON-serializable by converting to hash and stringifying
     serializable_payload = JSON.parse(payload.to_h.to_json)
-    Rails.logger.info "Serializable payload: #{serializable_payload.inspect}"
-    Rails.logger.info "Calling PerformanceIngestJob.perform_async(#{@current_project.id}, payload)"
     enqueue_performance_ingest(@current_project.id, serializable_payload)
 
     render_created(
@@ -82,17 +61,12 @@ class Api::V1::EventsController < Api::BaseController
 
   # POST /api/v1/events/batch
   def create_batch
-    Rails.logger.info "=== DEBUG: create_batch called ==="
-    Rails.logger.info "Raw params: #{params.inspect}"
-
     unless @current_project
-      Rails.logger.error "ERROR: @current_project is nil!"
       render json: { error: "project_not_found", message: "Project not found" }, status: :not_found
       return
     end
 
     events = params[:events] || []
-    Rails.logger.info "Events array: #{events.inspect}"
 
     if events.empty?
       render json: {
@@ -102,10 +76,10 @@ class Api::V1::EventsController < Api::BaseController
       return
     end
 
-    if events.size > 100 # Batch size limit
+    if events.size > 500 # Batch size limit (raised from 100 for high-throughput clients)
       render json: {
         error: "validation_failed",
-        message: "Batch size exceeds maximum of 100 events"
+        message: "Batch size exceeds maximum of 500 events"
       }, status: :unprocessable_entity
       return
     end
@@ -119,27 +93,27 @@ class Api::V1::EventsController < Api::BaseController
       actual_data = event_data[:data] || event_data["data"] || event_data
       next if actual_data.nil?
 
-      # Event type can be at top level or inside the data
+      # Detect event type from multiple sources:
+      # 1. event_type field (explicit)
+      # 2. type field at top level (client convention)
+      # 3. Infer from the data name field (slow_query, sidekiq.job, etc.)
       event_type = event_data[:event_type] || event_data["event_type"] ||
-                   actual_data[:event_type] || actual_data["event_type"]
-      Rails.logger.info "Processing event with type: #{event_type.inspect}"
-      Rails.logger.info "Event data structure: #{event_data.keys.inspect}"
-      Rails.logger.info "Actual data structure: #{actual_data.keys.inspect if actual_data.respond_to?(:keys)}"
+                   actual_data[:event_type] || actual_data["event_type"] ||
+                   event_data[:type] || event_data["type"]
+
+      # Auto-detect type from data name when type is nil
+      if event_type.blank?
+        data_name = actual_data[:name] || actual_data["name"]
+        event_type = infer_event_type(data_name)
+      end
 
       case event_type
       when "error"
-        Rails.logger.info "Processing error event. actual_data: #{actual_data.inspect}"
         payload = sanitize_error_payload(actual_data)
-        Rails.logger.info "Error payload after sanitization: #{payload.inspect}"
-
         if valid_error_payload?(payload)
-          Rails.logger.info "Payload is valid, queuing job"
           serializable_payload = JSON.parse(payload.to_h.to_json)
-          Rails.logger.info "Calling ErrorIngestJob.perform_async(#{@current_project.id}, payload, #{batch_id})"
           enqueue_error_ingest(@current_project.id, serializable_payload, batch_id)
           processed_count += 1
-        else
-          Rails.logger.info "Payload validation failed, skipping"
         end
       when "performance"
         payload = sanitize_performance_payload(actual_data)
@@ -147,6 +121,9 @@ class Api::V1::EventsController < Api::BaseController
         serializable_payload = JSON.parse(payload.to_h.to_json)
         enqueue_performance_ingest(@current_project.id, serializable_payload, batch_id)
         processed_count += 1
+      else
+        # Skip unknown event types silently (metrics, logs, etc.)
+        next
       end
     end
 
@@ -215,6 +192,9 @@ class Api::V1::EventsController < Api::BaseController
 
   def sanitize_performance_payload(params)
     md = params[:metadata] || params["metadata"] || {}
+    # Self-monitoring events (slow_query, sidekiq_job_completed, etc.) nest
+    # duration_ms and other fields inside a "properties" hash.
+    props = params[:properties] || params["properties"] || {}
 
     # Derive controller_action from metadata if not explicitly provided
     ctrl_action = params[:controller_action] || params["controller_action"]
@@ -224,12 +204,19 @@ class Api::V1::EventsController < Api::BaseController
       ctrl_action = "#{c}##{a}" if c && a
     end
 
+    # Also try to derive from job context
+    if ctrl_action.blank?
+      ctx = params[:context] || params["context"] || {}
+      job = ctx[:job] || ctx["job"] || {}
+      ctrl_action = (job[:worker_class] || job["worker_class"]).to_s.presence
+    end
+
     {
       controller_action: ctrl_action || params[:name] || params["name"],
-      job_class: params[:job_class] || params["job_class"],
+      job_class: params[:job_class] || params["job_class"] || (props[:worker_class] || props["worker_class"]),
       request_path: params[:request_path] || params["request_path"] || md[:path] || md["path"],
       request_method: params[:request_method] || params["request_method"] || md[:method] || md["method"],
-      duration_ms: parse_float(params[:duration_ms] || params["duration_ms"]),
+      duration_ms: parse_float(params[:duration_ms] || params["duration_ms"] || props[:duration_ms] || props["duration_ms"]),
       db_duration_ms: parse_float(params[:db_duration_ms] || params["db_duration_ms"] || md[:db_runtime] || md["db_runtime"]),
       view_duration_ms: parse_float(params[:view_duration_ms] || params["view_duration_ms"] || md[:view_runtime] || md["view_runtime"]),
       allocations: parse_int(params[:allocations] || params["allocations"] || md[:allocations] || md["allocations"]),
@@ -237,7 +224,7 @@ class Api::V1::EventsController < Api::BaseController
       user_id: params[:user_id] || params["user_id"],
       environment: params[:environment] || params["environment"] || "production",
       release_version: params[:release_version] || params["release_version"],
-      occurred_at: parse_timestamp(params[:occurred_at] || params["occurred_at"]),
+      occurred_at: parse_timestamp(params[:occurred_at] || params["occurred_at"] || params[:timestamp] || params["timestamp"]),
       context: (params[:context] || params["context"] || {}).presence || md, # fallback to metadata for visibility
       server_name: params[:server_name] || params["server_name"],
       request_id: params[:request_id] || params["request_id"]
@@ -323,6 +310,31 @@ class Api::V1::EventsController < Api::BaseController
     else
       "unknown"
     end
+  end
+
+  # Infer event type from the data name field when type is nil.
+  # The activerabbit-ai gem sends self-monitoring events with type=nil
+  # but with descriptive names like "slow_query", "sidekiq.job", etc.
+  PERFORMANCE_EVENT_NAMES = %w[
+    controller.action sidekiq.job sidekiq_job_completed
+    slow_query slow_template_render slow_partial_render
+    memory_snapshot
+  ].freeze
+
+  ERROR_EVENT_NAMES = %w[
+    exception unhandled_error sidekiq_job_failed
+  ].freeze
+
+  def infer_event_type(name)
+    return nil if name.blank?
+
+    name_str = name.to_s.downcase
+    return "performance" if PERFORMANCE_EVENT_NAMES.include?(name_str)
+    return "performance" if name_str.start_with?("slow_", "sidekiq")
+    return "error" if ERROR_EVENT_NAMES.include?(name_str)
+    return "error" if name_str.include?("error") || name_str.include?("exception")
+
+    nil # Unknown — skip
   end
 
   def normalize_backtrace(backtrace)

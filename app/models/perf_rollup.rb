@@ -13,61 +13,51 @@ class PerfRollup < ApplicationRecord
   scope :for_target, ->(target) { where(target: target) }
 
   def self.rollup_minute_data!
-    # Process performance events from the last 2 minutes to handle any delays
+    # Process performance events from the last 2 minutes to handle any delays.
+    # Uses a single SQL aggregation query instead of N+1 Ruby loops.
     start_time = 2.minutes.ago.beginning_of_minute
     end_time = 1.minute.ago.end_of_minute
 
-    PerformanceEvent.for_timerange(start_time, end_time)
-                   .select(:project_id, :target, :environment, "date_trunc('minute', occurred_at) as truncated_timestamp")
-                   .group(:project_id, :target, :environment, "date_trunc('minute', occurred_at)")
-                   .each do |grouped_event|
-      project_id = grouped_event.project_id
-      target = grouped_event.target
-      environment = grouped_event.environment
-      timestamp = grouped_event.truncated_timestamp
+    # Single query: aggregate all stats per (project, target, environment, minute)
+    aggregated = PerformanceEvent
+      .where(occurred_at: start_time..end_time)
+      .where.not(duration_ms: nil)
+      .select(
+        :project_id,
+        :target,
+        :environment,
+        "date_trunc('minute', occurred_at) AS truncated_ts",
+        "COUNT(*) AS req_count",
+        "AVG(duration_ms) AS avg_dur",
+        "MIN(duration_ms) AS min_dur",
+        "MAX(duration_ms) AS max_dur",
+        "PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY duration_ms) AS p50_dur",
+        "PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) AS p95_dur",
+        "PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration_ms) AS p99_dur"
+      )
+      .group(:project_id, :target, :environment, "date_trunc('minute', occurred_at)")
 
-      events = PerformanceEvent.where(project_id: project_id)
-                              .where(target: target)
-                              .where(environment: environment)
-                              .for_timerange(timestamp, timestamp + 1.minute)
+    return if aggregated.empty?
 
-      next if events.empty?
-
-      durations = events.pluck(:duration_ms).compact
-      next if durations.empty?
-
-      # Calculate percentiles using simple percentile helper
-      sorted = durations.sort
-      p50 = percentile(sorted, 50.0)
-      p95 = percentile(sorted, 95.0)
-      p99 = percentile(sorted, 99.0)
-
-      # Count errors that occurred in the same timeframe
-      error_count = Event.joins(:issue)
-                         .where(project_id: project_id)
-                         .where(controller_action: target)
-                         .where(environment: environment)
-                         .for_timerange(timestamp, timestamp + 1.minute)
-                         .count
-
-      # Create or update rollup
+    # Bulk upsert rollups
+    aggregated.each do |row|
       rollup = find_or_initialize_by(
-        project_id: project_id,
+        project_id: row.project_id,
         timeframe: "minute",
-        timestamp: timestamp,
-        target: target,
-        environment: environment
+        timestamp: row.truncated_ts,
+        target: row.target,
+        environment: row.environment
       )
 
       rollup.assign_attributes(
-        request_count: durations.size,
-        avg_duration_ms: durations.sum.to_f / durations.size,
-        p50_duration_ms: p50,
-        p95_duration_ms: p95,
-        p99_duration_ms: p99,
-        min_duration_ms: sorted.min,
-        max_duration_ms: sorted.max,
-        error_count: error_count,
+        request_count: row.req_count,
+        avg_duration_ms: row.avg_dur,
+        p50_duration_ms: row.p50_dur,
+        p95_duration_ms: row.p95_dur,
+        p99_duration_ms: row.p99_dur,
+        min_duration_ms: row.min_dur,
+        max_duration_ms: row.max_dur,
+        error_count: 0,
         hdr_histogram: nil
       )
 

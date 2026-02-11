@@ -147,6 +147,145 @@ class ApiEventsTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "POST /api/v1/events/batch infers performance type from slow_query name when type is nil" do
+    body = {
+      events: [
+        {
+          type: nil,
+          data: {
+            name: "slow_query",
+            properties: { sql: "SELECT 1", duration_ms: 150.3, name: "test" },
+            timestamp: Time.current.iso8601,
+            environment: "production",
+            server_name: "test-server",
+            context: { runtime: { name: "ruby", version: "3.4.8" } }
+          }
+        }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 1, json["data"]["processed_count"], "slow_query with type:nil should be inferred as performance"
+  end
+
+  test "POST /api/v1/events/batch infers performance type from sidekiq_job_completed name" do
+    body = {
+      events: [
+        {
+          type: nil,
+          data: {
+            name: "sidekiq_job_completed",
+            properties: { worker_class: "MyJob", queue: "default", duration_ms: 500.0 },
+            timestamp: Time.current.iso8601,
+            environment: "production"
+          }
+        }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 1, json["data"]["processed_count"]
+  end
+
+  test "POST /api/v1/events/batch infers performance type from slow_template_render name" do
+    body = {
+      events: [
+        {
+          type: nil,
+          data: {
+            name: "slow_template_render",
+            properties: { template: "users/show.html.erb", duration_ms: 200.0 },
+            timestamp: Time.current.iso8601,
+            environment: "production"
+          }
+        }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 1, json["data"]["processed_count"]
+  end
+
+  test "POST /api/v1/events/batch handles mixed nil-type and explicit-type events" do
+    body = {
+      events: [
+        { event_type: "error", data: { exception_class: "RuntimeError", message: "boom" } },
+        { type: nil, data: { name: "slow_query", properties: { sql: "SELECT 1", duration_ms: 100.0 }, timestamp: Time.current.iso8601, environment: "production" } },
+        { event_type: "performance", data: { controller_action: "UsersController#index", duration_ms: 50.0 } }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 3, json["data"]["processed_count"], "All 3 events should be processed"
+    assert_equal 3, json["data"]["total_count"]
+  end
+
+  test "POST /api/v1/events/batch accepts up to 500 events" do
+    body = {
+      events: [
+        { event_type: "error", data: { exception_class: "RuntimeError", message: "test" } }
+      ] * 500
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 500, json["data"]["total_count"]
+  end
+
+  test "POST /api/v1/events/batch rejects more than 500 events" do
+    body = {
+      events: [
+        { event_type: "error", data: { exception_class: "RuntimeError", message: "test" } }
+      ] * 501
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :unprocessable_entity
+  end
+
+  test "POST /api/v1/events/batch skips events with completely unknown type" do
+    body = {
+      events: [
+        { type: nil, data: { name: "some_unknown_metric", properties: { value: 42 } } }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 0, json["data"]["processed_count"], "Unknown event type should be skipped"
+  end
+
+  test "POST /api/v1/events/batch reads type field from top level" do
+    body = {
+      events: [
+        { type: "error", data: { exception_class: "RuntimeError", message: "from type field" } }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 1, json["data"]["processed_count"]
+  end
+
   # POST /api/v1/test/connection
 
   test "POST /api/v1/test/connection returns project context" do
