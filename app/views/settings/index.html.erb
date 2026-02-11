@@ -50,6 +50,163 @@
     </div>
   </div>
 
+    <!-- Recent Deploys -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900">Recent Deploys</h3>
+      <p class="text-sm text-gray-500">Last 10 deployments across all projects</p>
+    </div>
+    <div class="p-6">
+      <% if @recent_deploys.present? %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead>
+              <tr>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deployed</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">By</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <% @recent_deploys.each do |deploy| %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2 font-mono text-xs text-indigo-600">
+                    <%= deploy.release&.version || "unknown" %>
+                  </td>
+                  <td class="px-3 py-2 text-gray-700">
+                    <%= deploy.project&.name || "–" %>
+                  </td>
+                  <td class="px-3 py-2">
+                    <% status = deploy.status || "completed" %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                      <%= status == 'completed' ? 'bg-green-100 text-green-800' : status == 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' %>">
+                      <%= status %>
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 text-gray-500 whitespace-nowrap">
+                    <%= time_ago_in_words(deploy.started_at) %> ago
+                  </td>
+                  <td class="px-3 py-2 text-gray-500">
+                    <%= deploy.user&.email&.split("@")&.first || "system" %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="text-gray-400 text-sm">No deploys recorded yet. Deploy tracking starts when you send releases via the API.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Background Jobs (Sidekiq) -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-medium text-gray-900">Background Jobs</h3>
+        <p class="text-sm text-gray-500">Sidekiq worker status and recent failures</p>
+      </div>
+      <a href="/sidekiq" target="_blank" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+        Open Sidekiq Dashboard &rarr;
+      </a>
+    </div>
+    <div class="p-6">
+      <% if @sidekiq_stats[:error].present? %>
+        <p class="text-sm text-red-600">Could not connect to Sidekiq: <%= @sidekiq_stats[:error] %></p>
+      <% else %>
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-50 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@sidekiq_stats[:processed]) %></p>
+            <p class="text-xs text-gray-500">Processed</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold <%= @sidekiq_stats[:failed].to_i > 0 ? 'text-red-600' : 'text-gray-900' %>"><%= number_with_delimiter(@sidekiq_stats[:failed]) %></p>
+            <p class="text-xs text-gray-500">Failed</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold text-gray-900"><%= @sidekiq_stats[:enqueued] %></p>
+            <p class="text-xs text-gray-500">Enqueued</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3 text-center">
+            <p class="text-2xl font-bold text-gray-900"><%= @sidekiq_stats[:workers_busy] %>/<%= @sidekiq_stats[:workers_total] %></p>
+            <p class="text-xs text-gray-500">Workers Busy</p>
+          </div>
+        </div>
+
+        <!-- Queue breakdown -->
+        <% if @sidekiq_stats[:queues].present? %>
+          <div class="mb-6">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Queues</h4>
+            <div class="flex flex-wrap gap-2">
+              <% @sidekiq_stats[:queues].each do |queue_name, size| %>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                  <%= queue_name %>
+                  <span class="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-bold
+                    <%= size > 0 ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800' %>">
+                    <%= size %>
+                  </span>
+                </span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Retry / Dead counters -->
+        <% if @sidekiq_stats[:retries].to_i > 0 || @sidekiq_stats[:dead].to_i > 0 %>
+          <div class="flex items-center gap-4 mb-6 text-sm">
+            <% if @sidekiq_stats[:retries].to_i > 0 %>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-yellow-50 text-yellow-800 font-medium">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <%= @sidekiq_stats[:retries] %> retrying
+              </span>
+            <% end %>
+            <% if @sidekiq_stats[:dead].to_i > 0 %>
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-red-50 text-red-800 font-medium">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <%= @sidekiq_stats[:dead] %> dead
+              </span>
+            <% end %>
+          </div>
+        <% end %>
+
+        <!-- Recent Failures -->
+        <% if @sidekiq_stats[:recent_failures].present? %>
+          <div>
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Recent Failed Jobs</h4>
+            <div class="space-y-2">
+              <% @sidekiq_stats[:recent_failures].each do |failure| %>
+                <div class="border border-red-100 rounded-lg p-3 bg-red-50/50">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-mono font-medium text-red-700"><%= failure[:job_class] %></span>
+                    <span class="text-xs text-gray-400">
+                      <% if failure[:failed_at] %>
+                        <%= time_ago_in_words(failure[:failed_at]) %> ago
+                      <% end %>
+                    </span>
+                  </div>
+                  <p class="text-xs text-red-600">
+                    <span class="font-medium"><%= failure[:error_class] %>:</span>
+                    <%= failure[:error_message] %>
+                  </p>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs text-gray-400">queue: <%= failure[:queue] %></span>
+                    <% if failure[:retry_count].to_i > 0 %>
+                      <span class="text-xs text-gray-400">retries: <%= failure[:retry_count] %></span>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
   <% if @account %>
     <!-- Slack Integration Settings -->
     <div class="bg-white rounded-lg shadow">

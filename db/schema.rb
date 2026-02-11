@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_11_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_11_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -202,6 +202,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_11_120000) do
     t.string "request_id"
     t.bigint "account_id", null: false
     t.bigint "deploy_id"
+    t.index "((context)::jsonb)", name: "idx_events_context_gin", using: :gin
     t.index ["account_id", "project_id", "controller_action", "occurred_at"], name: "idx_on_account_id_project_id_controller_action_occu_3cbe313ccb"
     t.index ["account_id", "project_id", "occurred_at"], name: "index_events_on_account_id_and_project_id_and_occurred_at"
     t.index ["account_id", "project_id"], name: "index_events_on_account_id_and_project_id"

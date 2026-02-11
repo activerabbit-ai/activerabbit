@@ -14,6 +14,16 @@ class SettingsController < ApplicationController
 
     @account = current_account
     @user_preferences = @account&.user_notification_preferences(current_user)
+
+    # Recent deploys (last 10 across all projects)
+    @recent_deploys = Deploy.includes(:project, :release, :user)
+                            .where(account_id: current_account&.id)
+                            .recent
+                            .limit(10)
+                            .to_a
+
+    # Background jobs stats (Sidekiq)
+    @sidekiq_stats = fetch_sidekiq_stats
   end
 
   def update_account_name
@@ -97,6 +107,39 @@ class SettingsController < ApplicationController
   end
 
   private
+
+  def fetch_sidekiq_stats
+    stats = Sidekiq::Stats.new
+    processes = Sidekiq::ProcessSet.new
+    retry_set = Sidekiq::RetrySet.new
+    dead_set = Sidekiq::DeadSet.new
+
+    {
+      processed: stats.processed,
+      failed: stats.failed,
+      enqueued: stats.enqueued,
+      scheduled: stats.scheduled_size,
+      retries: retry_set.size,
+      dead: dead_set.size,
+      workers_busy: processes.sum { |p| p["busy"] },
+      workers_total: processes.sum { |p| p["concurrency"] },
+      processes: processes.size,
+      queues: stats.queues,
+      recent_failures: dead_set.first(10).map do |entry|
+        {
+          job_class: entry.item["class"],
+          error_class: entry.item["error_class"],
+          error_message: entry.item["error_message"]&.truncate(120),
+          failed_at: entry.item["failed_at"] ? Time.at(entry.item["failed_at"]) : nil,
+          queue: entry.item["queue"],
+          retry_count: entry.item["retry_count"]
+        }
+      end
+    }
+  rescue => e
+    Rails.logger.warn "[Settings] Could not fetch Sidekiq stats: #{e.message}"
+    { error: e.message }
+  end
 
   def update_account_slack_settings
     return false unless @account

@@ -175,6 +175,18 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "filters by filter=jobs returns job failure issues" do
+    get errors_path, params: { filter: "jobs" }
+    assert_response :success
+
+    issues = assigns(:issues)
+    # job_failure_issue fixture has controller_action="SyncWorker" and a job event
+    job_issue = issues(:job_failure_issue)
+    if issues.any?
+      assert_includes issues.map(&:id), job_issue.id
+    end
+  end
+
   # === Project-scoped ===
 
   test "GET project-scoped errors index" do

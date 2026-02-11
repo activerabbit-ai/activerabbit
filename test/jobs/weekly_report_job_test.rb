@@ -70,4 +70,41 @@ class WeeklyReportJobTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "does not send duplicate reports in same week" do
+    # Stub the mailer
+    send_count = 0
+    fake_mailer = Object.new
+    fake_mailer.define_singleton_method(:weekly_report) do
+      fake_mail = Object.new
+      fake_mail.define_singleton_method(:deliver_now) { send_count += 1 }
+      fake_mail
+    end
+
+    WeeklyReportMailer.stub :with, ->(*args) { fake_mailer } do
+      # First call should send
+      WeeklyReportJob.new.perform(@account.id)
+      first_send_count = send_count
+
+      # Second call should be skipped (cache hit)
+      WeeklyReportJob.new.perform(@account.id)
+      assert_equal first_send_count, send_count, "Should not send duplicate report in same week"
+    end
+  end
+
+  test "runs for all accounts when no account_id given" do
+    assert_nothing_raised do
+      # Stub mailer for all accounts
+      fake_mailer = Object.new
+      fake_mailer.define_singleton_method(:weekly_report) do
+        fake_mail = Object.new
+        fake_mail.define_singleton_method(:deliver_now) { true }
+        fake_mail
+      end
+
+      WeeklyReportMailer.stub :with, ->(*args) { fake_mailer } do
+        WeeklyReportJob.new.perform
+      end
+    end
+  end
 end

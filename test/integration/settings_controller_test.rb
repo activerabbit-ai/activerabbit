@@ -68,4 +68,52 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to settings_path
     assert flash[:alert].present?
   end
+
+  # Recent Deploys section
+
+  test "index loads recent deploys" do
+    get settings_path
+    assert_response :success
+    assert_not_nil assigns(:recent_deploys)
+    assert assigns(:recent_deploys).is_a?(Array)
+  end
+
+  test "index shows deploys when present" do
+    release = Release.create!(
+      account: @account,
+      project: projects(:default),
+      version: "v#{SecureRandom.hex(4)}-settings-test",
+      deployed_at: Time.current
+    )
+    Deploy.create!(
+      account: @account,
+      project: projects(:default),
+      release: release,
+      user: @user,
+      started_at: Time.current,
+      status: "completed"
+    )
+
+    get settings_path
+    assert_response :success
+    assert assigns(:recent_deploys).size >= 1
+  end
+
+  # Background Jobs section
+
+  test "index loads sidekiq stats" do
+    get settings_path
+    assert_response :success
+    assert_not_nil assigns(:sidekiq_stats)
+    assert assigns(:sidekiq_stats).is_a?(Hash)
+  end
+
+  test "index handles sidekiq stats gracefully" do
+    get settings_path
+    assert_response :success
+
+    stats = assigns(:sidekiq_stats)
+    # Either has real stats or an error message (if Redis unavailable)
+    assert stats[:processed].is_a?(Integer) || stats[:error].present?
+  end
 end
