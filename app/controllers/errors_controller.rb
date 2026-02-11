@@ -18,6 +18,8 @@ class ErrorsController < ApplicationController
       base_scope = base_scope.closed
     when "recent"
       base_scope = base_scope.where("last_seen_at > ?", 24.hours.ago)
+    when "jobs"
+      base_scope = base_scope.from_job_failures
     end
 
     # Time period filter from header buttons
@@ -44,11 +46,13 @@ class ErrorsController < ApplicationController
       @open_errors = project_scope.issues.wip.count
       @resolved_errors = project_scope.issues.closed.count
       @recent_errors = project_scope.issues.where("last_seen_at > ?", 24.hours.ago).count
+      @failed_jobs_count = project_scope.issues.from_job_failures.count
     else
       @total_errors = Issue.count
       @open_errors = Issue.wip.count
       @resolved_errors = Issue.closed.count
       @recent_errors = Issue.where("last_seen_at > ?", 24.hours.ago).count
+      @failed_jobs_count = Issue.from_job_failures.count
     end
 
     # Calculate impact metrics for the issues list
@@ -61,9 +65,11 @@ class ErrorsController < ApplicationController
         .where("occurred_at > ?", 24.hours.ago)
         .group(:issue_id)
         .count
+      @issue_ids_with_job_failures = Event.from_job_failures.where(issue_id: issue_ids).distinct.pluck(:issue_id).to_set
     else
       @total_events_24h = 0
       @events_24h_by_issue_id = {}
+      @issue_ids_with_job_failures = Set.new
     end
 
     # Optional: build graph data across all errors

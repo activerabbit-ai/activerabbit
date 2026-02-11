@@ -183,6 +183,7 @@ class Api::V1::EventsController < Api::BaseController
     # Extract context data for better field mapping
     context = params[:context] || params["context"] || {}
     request_context = context[:request] || context["request"] || {}
+    tags = params[:tags] || params["tags"] || {}
 
     {
       exception_class: params[:exception_class] || params["exception_class"] || params[:exception_type] || params["exception_type"] || params[:type] || params["type"],
@@ -191,7 +192,7 @@ class Api::V1::EventsController < Api::BaseController
       # NEW: Structured stack trace with source code context (Sentry-style)
       structured_stack_trace: params[:structured_stack_trace] || params["structured_stack_trace"],
       culprit_frame: params[:culprit_frame] || params["culprit_frame"],
-      controller_action: params[:controller_action] || params["controller_action"] || extract_controller_action(request_context),
+      controller_action: params[:controller_action] || params["controller_action"] || extract_controller_action(request_context) || extract_controller_action_from_job(context),
       request_path: params[:request_path] || params["request_path"] || request_context[:path] || request_context["path"],
       request_method: params[:request_method] || params["request_method"] || request_context[:method] || request_context["method"],
       user_id: params[:user_id] || params["user_id"],
@@ -199,9 +200,17 @@ class Api::V1::EventsController < Api::BaseController
       release_version: params[:release_version] || params["release_version"],
       occurred_at: parse_timestamp(params[:occurred_at] || params["occurred_at"] || params[:timestamp] || params["timestamp"]),
       context: context,
+      tags: tags,
       server_name: params[:server_name] || params["server_name"],
       request_id: params[:request_id] || params["request_id"]
     }
+  end
+
+  def extract_controller_action_from_job(context)
+    job = context[:job] || context["job"]
+    return nil unless job.is_a?(Hash)
+
+    (job[:worker_class] || job["worker_class"] || job[:job_class] || job["job_class"]).to_s.presence
   end
 
   def sanitize_performance_payload(params)

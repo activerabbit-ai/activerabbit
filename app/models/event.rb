@@ -13,6 +13,15 @@ class Event < ApplicationRecord
   scope :recent, -> { order(occurred_at: :desc) }
   scope :for_timerange, ->(start_time, end_time) { where(occurred_at: start_time..end_time) }
   scope :last_24h, -> { where("occurred_at > ?", 24.hours.ago) }
+  # Events from failed background jobs (Sidekiq / Solid Queue via ActiveJob)
+  # Cast to jsonb so PostgreSQL ? (key exists) operator works (it only exists for jsonb, not json)
+  scope :from_job_failures, -> {
+    where(
+      "((context::jsonb) ? :job_key) OR (((context::jsonb)->'tags'->>'component') IN ('sidekiq', 'active_job')) OR ((context::jsonb) ? :ctx_key)",
+      job_key: "job",
+      ctx_key: "job_context"
+    )
+  }
 
   before_create :set_defaults
 
@@ -22,7 +31,10 @@ class Event < ApplicationRecord
     message = payload[:message]
     backtrace = payload[:backtrace] || []
     top_frame = extract_top_frame(backtrace)
-    controller_action = payload[:controller_action] || extract_controller_from_backtrace(backtrace)
+    # Use job worker_class as controller_action when present (Sidekiq/ActiveJob failures)
+    controller_action = payload[:controller_action] ||
+                        extract_controller_action_from_job_context(payload[:context]) ||
+                        extract_controller_from_backtrace(backtrace)
 
     # Find or create issue (grouped problem)
     issue = Issue.find_or_create_by_fingerprint(
@@ -33,8 +45,11 @@ class Event < ApplicationRecord
       sample_message: message
     )
 
-    # Build context with structured stack trace (Sentry-style)
+    # Build context with structured stack trace (Sentry-style) and job/tags from gem
     event_context = scrub_pii(payload[:context] || {})
+    event_context["tags"] = payload[:tags].to_h.stringify_keys if payload[:tags].present?
+    # Preserve job_context from Thread if sent at top level (gem compatibility)
+    event_context["job_context"] = payload[:job_context] if payload[:job_context].present?
 
     # Store structured stack trace in context if provided by client
     if payload[:structured_stack_trace].present?
@@ -90,6 +105,28 @@ class Event < ApplicationRecord
   # Check if this event has structured stack trace data from client
   def has_structured_stack_trace?
     structured_stack_trace.present?
+  end
+
+  # Whether this error came from a failed background job (Sidekiq / Solid Queue)
+  def from_job_failure?
+    ctx = context || {}
+    return true if ctx.key?("job") || ctx.key?(:job)
+    return true if ctx.key?("job_context") || ctx.key?(:job_context)
+    return true if %w[sidekiq active_job].include?((ctx["source"] || ctx[:source]).to_s)
+    comp = ctx.dig("tags", "component") || ctx.dig(:tags, :component)
+    %w[sidekiq active_job].include?(comp.to_s)
+  end
+
+  def job_context
+    ctx = context || {}
+    ctx["job"] || ctx[:job] || ctx["job_context"] || ctx[:job_context]
+  end
+
+  def self.extract_controller_action_from_job_context(ctx)
+    return nil if ctx.blank?
+    job = ctx[:job] || ctx["job"] || ctx[:job_context] || ctx["job_context"]
+    return nil unless job.is_a?(Hash)
+    (job[:worker_class] || job["worker_class"] || job[:job_class] || job["job_class"] || job[:class] || job["class"]).to_s.presence
   end
 
   def event_type

@@ -7,7 +7,7 @@
     <% if params[:tab] == 'graph' %>
       <div class="border-t border-gray-200 px-6 py-6">
         <!-- Compact Stats Row -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <%= link_to errors_index_path, class: "flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors" do %>
             <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center shrink-0">
               <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,6 +55,18 @@
               <p class="text-lg font-semibold text-gray-900"><%= @recent_errors %></p>
             </div>
           <% end %>
+
+          <%= link_to errors_index_path(filter: "jobs"), class: "flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors" do %>
+            <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6v6h6v6H4V6zm10 0v6h6v6h-6V6z"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-xs text-gray-500">Failed jobs</p>
+              <p class="text-lg font-semibold text-gray-900"><%= @failed_jobs_count %></p>
+            </div>
+          <% end %>
         </div>
 
         <div class="flex items-center justify-between mb-4">
@@ -80,6 +92,15 @@
         <% end %>
       </div>
     <% elsif @issues.any? %>
+    <!-- Filter pills: All, Open, Closed, Recent, Failed jobs -->
+    <div class="px-6 py-3 border-b border-gray-200 flex flex-wrap gap-2 items-center">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wider mr-1">Filter:</span>
+      <%= link_to "All", url_for(params.permit!.to_h.merge(filter: nil, page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter].blank? ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <%= link_to "Open", url_for(params.permit!.to_h.merge(filter: "open", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'open' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <%= link_to "Closed", url_for(params.permit!.to_h.merge(filter: "closed", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'closed' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <%= link_to "Recent 24h", url_for(params.permit!.to_h.merge(filter: "recent", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'recent' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <%= link_to "Failed jobs", url_for(params.permit!.to_h.merge(filter: "jobs", page: nil)), class: "px-3 py-1.5 rounded-full text-xs font-medium #{params[:filter] == 'jobs' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+    </div>
     <!-- Proper HTML Table -->
     <div class="overflow-x-auto border-t border-gray-200">
       <table class="min-w-full divide-y divide-gray-200" style="position: relative;">
@@ -125,13 +146,16 @@
                     <div class="w-2 h-2 rounded-full <%= issue.status == 'open' ? 'bg-red-400' : issue.status == 'wip' ? 'bg-yellow-400' : 'bg-green-400' %>"></div>
                   </div>
                   <div class="ml-3 min-w-0">
-                    <div class="flex items-center space-x-2 mb-1">
+                    <div class="flex items-center space-x-2 mb-1 flex-wrap gap-1">
                       <span class="text-sm font-medium text-indigo-600">
                         <%= issue.exception_class %>
                       </span>
                       <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
                         <%= truncate(issue.project&.name || 'Unknown', length: 15) %>
                       </span>
+                      <% if (@issue_ids_with_job_failures || Set.new).include?(issue.id) %>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800" title="From Sidekiq/Solid Queue job">Job</span>
+                      <% end %>
                     </div>
                     <% if issue.sample_message.present? %>
                       <div class="text-xs text-gray-600">
