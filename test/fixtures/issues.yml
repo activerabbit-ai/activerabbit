@@ -51,3 +51,29 @@ record_not_found:
   first_seen_at: <%= 12.hours.ago %>
   last_seen_at: <%= 30.minutes.ago %>
   closed_at: nil
+
+job_failure_issue:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("fp-job-1") %>
+  exception_class: "RuntimeError"
+  top_frame: "/app/workers/sync_worker.rb:15:in `perform'"
+  controller_action: "SyncWorker"
+  status: "open"
+  count: 3
+  first_seen_at: <%= 2.days.ago %>
+  last_seen_at: <%= 1.hour.ago %>
+  closed_at: nil
+
+old_issue:
+  account: default
+  project: default
+  fingerprint: <%= Digest::SHA256.hexdigest("fp-old-1") %>
+  exception_class: "TimeoutError"
+  top_frame: "/app/services/api_client.rb:50:in `call'"
+  controller_action: "ApiController#proxy"
+  status: "open"
+  count: 1
+  first_seen_at: <%= 5.days.ago %>
+  last_seen_at: <%= 3.days.ago %>
+  closed_at: nil

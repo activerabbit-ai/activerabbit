@@ -41,3 +41,45 @@ old_event:
   occurred_at: <%= 2.days.ago %>
   environment: "production"
   context: {}
+
+job_event:
+  account: default
+  project: default
+  issue: job_failure_issue
+  exception_class: "RuntimeError"
+  message: "job failed"
+  backtrace: "[\"app/workers/sync_worker.rb:15:in `perform'\"]"
+  controller_action: "SyncWorker"
+  request_path: ~
+  request_method: ~
+  occurred_at: <%= 1.hour.ago %>
+  environment: "production"
+  context: '{"job": {"worker_class": "SyncWorker"}}'
+
+recent_event_for_open:
+  account: default
+  project: default
+  issue: open_issue
+  exception_class: "RuntimeError"
+  message: "Another recent error"
+  backtrace: "[\"app/controllers/home_controller.rb:10:in `index'\"]"
+  controller_action: "HomeController#index"
+  request_path: "/"
+  request_method: "GET"
+  occurred_at: <%= 2.hours.ago %>
+  environment: "production"
+  context: {}
+
+very_old_event_for_open:
+  account: default
+  project: default
+  issue: open_issue
+  exception_class: "RuntimeError"
+  message: "Old error"
+  backtrace: "[\"app/controllers/home_controller.rb:10:in `index'\"]"
+  controller_action: "HomeController#index"
+  request_path: "/"
+  request_method: "GET"
+  occurred_at: <%= 3.days.ago %>
+  environment: "production"
+  context: {}

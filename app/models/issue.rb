@@ -78,7 +78,7 @@ class Issue < ApplicationRecord
   end
 
   def events_last_24h
-    events.where("created_at > ?", 24.hours.ago).count
+    events.where("occurred_at > ?", 24.hours.ago).count
   end
 
   # Unique users affected (last 24h)

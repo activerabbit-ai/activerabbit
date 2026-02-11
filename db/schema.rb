@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_05_094128) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_11_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -209,6 +209,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_05_094128) do
     t.index ["deploy_id"], name: "index_events_on_deploy_id"
     t.index ["environment"], name: "index_events_on_environment"
     t.index ["exception_class"], name: "index_events_on_exception_class"
+    t.index ["issue_id", "occurred_at"], name: "index_events_on_issue_id_and_occurred_at"
     t.index ["issue_id"], name: "index_events_on_issue_id"
     t.index ["occurred_at"], name: "index_events_on_occurred_at"
     t.index ["project_id", "occurred_at"], name: "index_events_on_project_id_and_occurred_at"

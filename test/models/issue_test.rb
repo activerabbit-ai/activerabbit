@@ -75,4 +75,37 @@ class IssueTest < ActiveSupport::TestCase
     issue.reopen!
     assert_equal "open", issue.status
   end
+
+  # events_last_24h uses occurred_at (not created_at)
+
+  test "events_last_24h counts events by occurred_at" do
+    issue = issues(:open_issue)
+
+    # Fixture events for open_issue:
+    #   default: occurred_at=now, recent: 5min ago,
+    #   recent_event_for_open: 2h ago (all within 24h)
+    #   very_old_event_for_open: 3 days ago (outside 24h)
+    count = issue.events_last_24h
+    assert count >= 2, "Expected at least 2 recent events, got #{count}"
+
+    # The 3-day old event should NOT be counted
+    total = issue.events.count
+    assert count < total, "events_last_24h should exclude old events"
+  end
+
+  test "events_last_24h returns 0 when no recent events" do
+    issue = issues(:old_issue)
+    # old_issue has no events in fixtures, so count should be 0
+    assert_equal 0, issue.events_last_24h
+  end
+
+  # Job failure detection heuristic
+
+  test "job failure issue has non-controller controller_action" do
+    job_issue = issues(:job_failure_issue)
+    refute_match(/Controller#/, job_issue.controller_action)
+
+    regular_issue = issues(:open_issue)
+    assert_match(/Controller#/, regular_issue.controller_action)
+  end
 end

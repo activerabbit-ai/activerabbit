@@ -41,31 +41,38 @@ class ErrorsController < ApplicationController
     @pagy, @issues = pagy(scoped_issues, limit: 25)
 
     # Get summary stats scoped to current project or global
-    if project_scope
-      @total_errors = project_scope.issues.count
-      @open_errors = project_scope.issues.wip.count
-      @resolved_errors = project_scope.issues.closed.count
-      @recent_errors = project_scope.issues.where("last_seen_at > ?", 24.hours.ago).count
-      @failed_jobs_count = project_scope.issues.from_job_failures.count
-    else
-      @total_errors = Issue.count
-      @open_errors = Issue.wip.count
-      @resolved_errors = Issue.closed.count
-      @recent_errors = Issue.where("last_seen_at > ?", 24.hours.ago).count
-      @failed_jobs_count = Issue.from_job_failures.count
+    # Use grouped count (1 query) instead of 5 separate COUNT queries
+    issues_base = project_scope ? project_scope.issues : Issue
+    status_counts = issues_base.group(:status).count
+    @total_errors = status_counts.values.sum
+    @open_errors = status_counts.fetch("wip", 0)
+    @resolved_errors = status_counts.fetch("closed", 0)
+    @recent_errors = issues_base.where("last_seen_at > ?", 24.hours.ago).count
+
+    # from_job_failures is extremely expensive (full events table scan with JSON cast).
+    # Cache it with a short TTL so the page loads fast.
+    cache_key = "failed_jobs_count/#{project_scope&.id || 'global'}/#{current_account&.id}"
+    @failed_jobs_count = Rails.cache.fetch(cache_key, expires_in: 5.minutes) do
+      issues_base.from_job_failures.count
     end
 
     # Calculate impact metrics for the issues list
     issue_ids = @issues.map(&:id)
     if issue_ids.any?
       events_scope = project_scope ? project_scope.events : Event
-      @total_events_24h = events_scope.where("occurred_at > ?", 24.hours.ago).count
+      cutoff_24h = 24.hours.ago
+      @total_events_24h = events_scope.where("occurred_at > ?", cutoff_24h).count
       @events_24h_by_issue_id = events_scope
         .where(issue_id: issue_ids)
-        .where("occurred_at > ?", 24.hours.ago)
+        .where("occurred_at > ?", cutoff_24h)
         .group(:issue_id)
         .count
-      @issue_ids_with_job_failures = Event.from_job_failures.where(issue_id: issue_ids).distinct.pluck(:issue_id).to_set
+      # Skip expensive JSON-based job failure detection per issue.
+      # Instead, check if each event's issue already has job-related controller_action.
+      @issue_ids_with_job_failures = Issue.where(id: issue_ids)
+        .where("controller_action NOT LIKE '%Controller#%'")
+        .pluck(:id)
+        .to_set
     else
       @total_events_24h = 0
       @events_24h_by_issue_id = {}
