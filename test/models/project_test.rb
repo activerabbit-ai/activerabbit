@@ -101,4 +101,113 @@ class ProjectTest < ActiveSupport::TestCase
     end
     assert project.api_token.present?
   end
+
+  # ---- Notifications: defaults ----
+
+  test "notifications_enabled? defaults to true when settings are empty" do
+    project = projects(:default)
+    project.settings = {}
+    assert project.notifications_enabled?
+  end
+
+  test "notifications_enabled? returns false when explicitly disabled" do
+    project = projects(:default)
+    project.settings = { "notifications" => { "enabled" => false } }
+    refute project.notifications_enabled?
+  end
+
+  test "notifications_enabled? returns true when explicitly enabled" do
+    project = projects(:default)
+    project.settings = { "notifications" => { "enabled" => true } }
+    assert project.notifications_enabled?
+  end
+
+  # ---- notify_via_email? ----
+
+  test "notify_via_email? defaults to true when no channel settings exist" do
+    project = projects(:default)
+    project.settings = {}
+    assert project.notify_via_email?
+  end
+
+  test "notify_via_email? returns true when explicitly enabled" do
+    project = projects(:default)
+    project.settings = { "notifications" => { "channels" => { "email" => true } } }
+    assert project.notify_via_email?
+  end
+
+  test "notify_via_email? returns false when explicitly disabled" do
+    project = projects(:default)
+    project.settings = { "notifications" => { "channels" => { "email" => false } } }
+    refute project.notify_via_email?
+  end
+
+  test "notify_via_email? returns false when notifications globally disabled" do
+    project = projects(:default)
+    project.settings = { "notifications" => { "enabled" => false, "channels" => { "email" => true } } }
+    refute project.notify_via_email?
+  end
+
+  # ---- notify_via_slack? ----
+
+  test "notify_via_slack? defaults to true when project has slack token and no channel settings" do
+    project = projects(:with_slack)
+    project.settings = {}
+    assert project.notify_via_slack?
+  end
+
+  test "notify_via_slack? returns true when explicitly enabled" do
+    project = projects(:with_slack)
+    project.settings = { "notifications" => { "channels" => { "slack" => true } } }
+    assert project.notify_via_slack?
+  end
+
+  test "notify_via_slack? returns false when explicitly disabled" do
+    project = projects(:with_slack)
+    project.settings = { "notifications" => { "channels" => { "slack" => false } } }
+    refute project.notify_via_slack?
+  end
+
+  test "notify_via_slack? returns false when notifications globally disabled" do
+    project = projects(:with_slack)
+    project.settings = { "notifications" => { "enabled" => false, "channels" => { "slack" => true } } }
+    refute project.notify_via_slack?
+  end
+
+  test "notify_via_slack? returns false when slack is not configured at all" do
+    project = projects(:default)
+    project.slack_access_token = nil
+    # Also ensure account has no slack webhook
+    project.account.settings = {}
+    refute project.notify_via_slack?
+  end
+
+  # ---- slack_configured? checks account fallback ----
+
+  test "slack_configured? returns true when project has slack token" do
+    project = projects(:with_slack)
+    assert project.slack_configured?
+  end
+
+  test "slack_configured? returns false when neither project nor account has slack" do
+    project = projects(:default)
+    project.slack_access_token = nil
+    project.account.settings = {}
+    refute project.slack_configured?
+  end
+
+  test "slack_configured? returns true when account has slack webhook even if project has no token" do
+    project = projects(:default)
+    project.slack_access_token = nil
+    project.account.settings = { "slack_webhook_url" => "https://hooks.slack.com/services/test" }
+    assert project.slack_configured?
+  end
+
+  test "notify_via_slack? works via account-level slack when project has no token" do
+    project = projects(:default)
+    project.slack_access_token = nil
+    project.settings = {}
+    project.account.settings = { "slack_webhook_url" => "https://hooks.slack.com/services/test" }
+    assert project.notify_via_slack?
+  end
 end

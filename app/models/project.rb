@@ -132,7 +132,8 @@ class Project < ApplicationRecord
 
   # ---- Notifications ----
   def slack_configured?
-    slack_access_token.present?
+    # Check project-level Slack token OR account-level Slack webhook
+    slack_access_token.present? || account&.slack_configured?
   end
 
   def notifications_enabled?
@@ -143,13 +144,15 @@ class Project < ApplicationRecord
     return false unless notifications_enabled?
     return false unless slack_configured?
 
-    settings.dig("notifications", "channels", "slack") == true
+    # Default to true - only disabled if explicitly set to false
+    settings.dig("notifications", "channels", "slack") != false
   end
 
   def notify_via_email?
     return false unless notifications_enabled?
 
-    settings.dig("notifications", "channels", "email") == true
+    # Default to true - only disabled if explicitly set to false
+    settings.dig("notifications", "channels", "email") != false
   end
 
   def notification_pref_for(alert_type)
