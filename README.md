@@ -377,6 +377,152 @@ COVERAGE=true bundle exec rspec
 
 ---
 
+## Architecture — Full Error Flow
+
+How errors travel from your app to the ActiveRabbit dashboard.
+
+```
+YOUR RAILS APP                          ACTIVERABBIT PLATFORM
+─────────────                          ────────────────────
+
+┌──────────────────────┐
+│  Rails App + Gem     │
+│  activerabbit-ai     │
+│                      │
+│  ErrorCaptureMiddle- │    POST /api/v1/events/errors
+│  ware intercepts     │──────────────────────────────────┐
+│  unhandled exceptions│    POST /api/v1/events/batch     │
+│                      │    Header: X-Project-Token       │
+│  ExceptionTracker    │                                  │
+│  builds payload:     │                                  │
+│  • exception_class   │                                  │
+│  • message           │                                  │
+│  • backtrace         │                                  │
+│  • structured_stack  │                                  │
+│  • request context   │                                  │
+└──────────────────────┘                                  │
+                                                          ▼
+                                  ┌───────────────────────────────────┐
+                                  │  API Layer                        │
+                                  │  Api::V1::EventsController        │
+                                  │                                   │
+                                  │  1. authenticate_api_token!       │
+                                  │     → Validate X-Project-Token    │
+                                  │     → Set tenant (ActsAsTenant)   │
+                                  │                                   │
+                                  │  2. sanitize_error_payload()      │
+                                  │  3. validate_error_payload!()     │
+                                  │  4. Filter self-monitoring events │
+                                  │                                   │
+                                  │  5. Sidekiq::Client.push_bulk     │
+                                  │     → Enqueue ErrorIngestJob      │
+                                  │                                   │
+                                  │  Returns: 201 Created             │
+                                  └──────────────┬────────────────────┘
+                                                 │
+                                                 │ Sidekiq (async)
+                                                 ▼
+                                  ┌───────────────────────────────────┐
+                                  │  ErrorIngestJob                   │
+                                  │                                   │
+                                  │  Event.ingest_error()             │
+                                  │                                   │
+                                  │  ┌─ Fingerprinting ────────────┐  │
+                                  │  │ SHA256(exception_class       │  │
+                                  │  │      + top_frame             │  │
+                                  │  │      + controller_action)    │  │
+                                  │  └─────────────────────────────┘  │
+                                  │                                   │
+                                  │  Issue.find_or_create_by_         │
+                                  │        fingerprint()              │
+                                  │  ┌─ Existing → increment count   │
+                                  │  │            update last_seen_at │
+                                  │  │            reopen if closed    │
+                                  │  └─ New → create, status="open"  │
+                                  │                                   │
+                                  │  Create Event record              │
+                                  │  Detect N+1 queries               │
+                                  │  Generate AI summary (new only)   │
+                                  │  Check should_alert_for_issue?()  │
+                                  └──────────────┬────────────────────┘
+                                                 │
+                                                 │ if alert needed
+                                                 ▼
+                                  ┌───────────────────────────────────┐
+                                  │  IssueAlertJob                    │
+                                  │                                   │
+                                  │  Rate limiting (Redis SET NX)     │
+                                  │  Per-fingerprint dedup            │
+                                  │  Respect user preferences         │
+                                  │  → immediate / every_30_min / etc │
+                                  │                                   │
+                                  │  Find matching AlertRules         │
+                                  │  Enqueue AlertJob per rule        │
+                                  └──────────────┬────────────────────┘
+                                                 │
+                                                 ▼
+                                  ┌───────────────────────────────────┐
+                                  │  AlertJob                         │
+                                  │                                   │
+                                  │  Create AlertNotification record  │
+                                  │  Dispatch to channels:            │
+                                  │                                   │
+                                  │  ┌────────┐ ┌───────┐ ┌───────┐  │
+                                  │  │ Slack  │ │ Email │ │Webhook│  │
+                                  │  │Web API │ │Resend │ │ URL   │  │
+                                  │  └────────┘ └───────┘ └───────┘  │
+                                  └───────────────────────────────────┘
+```
+
+### Data Model
+
+```
+Event (individual occurrence)
+  │  exception_class, message, backtrace
+  │  context, occurred_at, structured_stack_trace
+  │
+  └──▶ Issue (grouped by fingerprint)
+         │  fingerprint, exception_class, top_frame
+         │  controller_action, count, status
+         │  first_seen_at, last_seen_at, is_job_failure
+         │
+         └──▶ AlertRule (per-project thresholds)
+                │  alert_type: error_frequency | new_issue |
+                │              performance_regression | n_plus_one
+                │  threshold_value, time_window_minutes, cooldown_minutes
+                │
+                └──▶ AlertNotification (delivery log)
+                       notification_type: slack / email
+                       status: pending / sent / failed
+```
+
+### Alert Conditions
+
+| Trigger | Condition |
+|---------|-----------|
+| **New issue** | First occurrence (count == 1) |
+| **Reopened** | Was closed, now recurring |
+| **High frequency** | >10 occurrences in last hour |
+| **Performance** | P95 latency exceeds threshold |
+| **N+1 detected** | Repeated query pattern found |
+
+### Key Files
+
+| Layer | File |
+|-------|------|
+| **Client SDK** | `activerabbit-ai/lib/active_rabbit/middleware/error_capture_middleware.rb` |
+| **Client HTTP** | `activerabbit-ai/lib/active_rabbit/client/http_client.rb` |
+| **API endpoint** | `app/controllers/api/v1/events_controller.rb` |
+| **Auth** | `app/controllers/concerns/api_authentication.rb` |
+| **Error ingest** | `app/jobs/error_ingest_job.rb` |
+| **Alert check** | `app/jobs/issue_alert_job.rb` |
+| **Alert deliver** | `app/jobs/alert_job.rb` |
+| **Event model** | `app/models/event.rb` → `Event.ingest_error` |
+| **Issue model** | `app/models/issue.rb` → `find_or_create_by_fingerprint` |
+| **Slack** | `app/services/slack_notification_service.rb` |
+| **Email** | `app/mailers/alert_mailer.rb` |
+| **Display** | `app/controllers/errors_controller.rb` |
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENCE](./LICENCE) file for details.

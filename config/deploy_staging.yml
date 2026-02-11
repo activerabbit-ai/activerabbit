@@ -8,7 +8,7 @@ servers:
   job:
     hosts:
       - 65.108.93.69
-    cmd: bundle exec sidekiq -q default -q ingest
+    cmd: bundle exec sidekiq -q default -q ingest -q alerts -q analysis -q mailers
 
 registry:
   server: ghcr.io

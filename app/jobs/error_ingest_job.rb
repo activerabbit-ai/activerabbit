@@ -38,26 +38,21 @@ class ErrorIngestJob
       end
     end
 
-    # Update project last event timestamp
-    project.update!(last_event_at: Time.current)
+    # Debounce project last_event_at updates (at most once per minute per project)
+    cache_key = "project_last_event:#{project.id}"
+    unless Rails.cache.read(cache_key)
+      project.update_column(:last_event_at, Time.current)
+      Rails.cache.write(cache_key, true, expires_in: 1.minute)
+    end
 
     # Check if this error should trigger an alert
     issue = event.issue
-    # Generate AI summary once for a new issue (check quota first)
-    if issue && issue.ai_summary.blank? && issue.count <= 1
-      account = issue.account
 
-      # Check if account is within quota (or log warning if over)
-      if account && !account.within_quota?(:ai_summaries)
-        Rails.logger.warn("[Quota] AI summary skipped for issue #{issue.id} - account #{account.id} over quota")
-      elsif account
-        github_client = build_github_client(project)
-        ai = AiSummaryService.new(issue: issue, sample_event: event, github_client: github_client).call
-        if ai[:summary].present?
-          issue.update(ai_summary: ai[:summary], ai_summary_generated_at: Time.current)
-        end
-      end
+    # Generate AI summary asynchronously for new issues (don't block ingest pipeline)
+    if issue && issue.ai_summary.blank? && issue.count <= 1
+      AiSummaryJob.perform_async(issue.id, event.id, project.id)
     end
+
     if issue && should_alert_for_issue?(issue)
       IssueAlertJob.perform_async(issue.id, issue.project.account_id)
     end
@@ -97,31 +92,4 @@ class ErrorIngestJob
     false
   end
 
-  # Build GitHub API client for a project (for enhanced AI context)
-  def build_github_client(project)
-    return nil unless project&.github_repo_full_name.present?
-
-    settings = project.settings || {}
-    installation_id = settings["github_installation_id"]
-    project_pat = settings["github_pat"]
-    env_pat = ENV["GITHUB_TOKEN"]
-
-    token_manager = Github::TokenManager.new(
-      project_pat: project_pat,
-      installation_id: installation_id,
-      env_pat: env_pat,
-      project_app_id: settings["github_app_id"],
-      project_app_pk: settings["github_app_pk"],
-      env_app_id: ENV["AR_GH_APP_ID"],
-      env_app_pk: ENV["AR_GH_APP_PK"]
-    )
-
-    token = token_manager.get_token
-    return nil unless token.present?
-
-    Github::ApiClient.new(token)
-  rescue => e
-    Rails.logger.warn "[ErrorIngestJob] Could not create GitHub client: #{e.message}"
-    nil
-  end
 end

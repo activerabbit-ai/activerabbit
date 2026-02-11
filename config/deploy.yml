@@ -11,7 +11,7 @@ servers:
   job:
     hosts:
       - 5.78.134.55
-    cmd: bundle exec sidekiq -c 10 -q default -q ingest -q alerts
+    cmd: bundle exec sidekiq -c 25 -q default -q ingest -q alerts -q analysis -q mailers
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
 # Remove this section when using multiple web servers and ensure you terminate SSL at your load balancer.
@@ -84,9 +84,9 @@ env:
     WEB_CONCURRENCY: 2
     RAILS_MAX_THREADS: 5
 
-    # Sidekiq configuration
-    SIDEKIQ_CONCURRENCY: 10
-    DB_POOL: 25
+    # Sidekiq configuration (8 vCPU / 16GB RAM — IO-bound jobs)
+    SIDEKIQ_CONCURRENCY: 25
+    DB_POOL: 30
 
     # Security
     FORCE_SSL: true
@@ -141,5 +141,5 @@ accessories:
       - data:/data
     env:
       clear:
-        REDIS_MAXMEMORY: 256mb
-        REDIS_MAXMEMORY_POLICY: allkeys-lru
+        REDIS_MAXMEMORY: 512mb
+        REDIS_MAXMEMORY_POLICY: noeviction
