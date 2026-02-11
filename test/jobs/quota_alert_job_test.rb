@@ -19,16 +19,12 @@ class QuotaAlertJobTest < ActiveSupport::TestCase
   end
 
   test "handles account with no confirmed users gracefully" do
-    # Create account with only unconfirmed user
     new_account = Account.create!(
       name: "Test No Users",
       current_plan: "free",
       cached_events_used: 6000,
       usage_cached_at: Time.current
     )
-
-    # No confirmed users
-
     assert_nothing_raised do
       QuotaAlertJob.new.perform
     end
@@ -41,8 +37,48 @@ class QuotaAlertJobTest < ActiveSupport::TestCase
       cached_pull_requests_used: 0,
       usage_cached_at: Time.current
     )
-
     assert_nothing_raised do
+      QuotaAlertJob.new.perform
+    end
+  end
+
+  # Throttle: re-send only when last_sent_at >= 1 day ago (REMIND_*_AFTER_DAYS = 1)
+  test "does not re-send when last alert was less than 1 day ago" do
+    @account.update!(
+      cached_events_used: 4200,
+      usage_cached_at: Time.current,
+      current_plan: "free",
+      trial_ends_at: 1.day.ago,
+      last_quota_alert_sent_at: {
+        "events" => {
+          "sent_at" => 12.hours.ago.iso8601,
+          "level" => "80_percent",
+          "percentage" => 84.0
+        }
+      }
+    )
+
+    assert_no_difference "ActionMailer::Base.deliveries.size" do
+      QuotaAlertJob.new.perform
+    end
+  end
+
+  test "re-sends when last alert was 1+ day ago" do
+    @account.update!(
+      cached_events_used: 4200,
+      usage_cached_at: Time.current,
+      current_plan: "free",
+      trial_ends_at: 1.day.ago,
+      last_quota_alert_sent_at: {
+        "events" => {
+          "sent_at" => 2.days.ago.iso8601,
+          "level" => "80_percent",
+          "percentage" => 84.0
+        }
+      }
+    )
+
+    assert_difference "ActionMailer::Base.deliveries.size", 1 do
       QuotaAlertJob.new.perform
     end
   end

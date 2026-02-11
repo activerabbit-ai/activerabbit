@@ -3,75 +3,124 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ActiveRabbit – Almost at Quota</title>
+
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: 1.5;
-      color: #374151;
-      background-color: #f9fafb;
+      color: #333;
+      background-color: #f4f6f8;
       margin: 0;
-      padding: 40px 20px;
+      padding: 16px;
     }
+
     .container {
-      max-width: 480px;
+      max-width: 600px;
       margin: 0 auto;
-      background: white;
+      background: #ffffff;
       border-radius: 8px;
-      padding: 40px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
     }
-    .logo {
-      font-size: 20px;
-      font-weight: 700;
-      color: #111827;
-      margin-bottom: 32px;
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
     }
-    h1 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #111827;
-      margin: 0 0 16px 0;
+
+    .content {
+      padding: 24px 20px;
     }
+
+    h2 {
+      margin: 24px 0 12px;
+      font-size: 16px;
+    }
+
     p {
       margin: 0 0 16px 0;
-      color: #4b5563;
+      color: #333;
       font-size: 14px;
     }
+
+    .button-wrapper {
+      text-align: center;
+      margin: 24px 0 8px;
+    }
+
     .button {
       display: inline-block;
-      background: #000;
-      color: #fff !important;
-      padding: 12px 24px;
+      padding: 12px 20px;
+      background: #667eea;
+      color: #ffffff !important;
       text-decoration: none;
       border-radius: 6px;
-      font-weight: 500;
       font-size: 14px;
-      margin: 8px 0 24px 0;
+      font-weight: 600;
     }
+
+    .button-secondary {
+      display: inline-block;
+      padding: 12px 20px;
+      background: transparent;
+      color: #667eea !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid #667eea;
+      margin-left: 12px;
+    }
+
     .footer {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 12px;
-      color: #9ca3af;
+      text-align: center;
+      padding: 16px;
+      font-size: 13px;
+      color: #777;
+      border-top: 1px solid #e5e5e5;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">ActiveRabbit</div>
+    <div class="header">
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;">
+          <%= image_tag "faviicons/favicon-512.png",
+            width: 48,
+            height: 48,
+            style: "display:block;margin-right:16px;" %>
 
-    <h1>You're almost at your <%= @resource_name.downcase %> limit</h1>
+          <div style="text-align:left;">
+            <div style="font-weight:700;font-size:16px;line-height:1.25;">
+              <%= @percentage.round %>% of plan – almost at <%= @resource_name.downcase %> limit
+            </div>
+            <div style="font-size:13px;opacity:0.9;margin-top:2px;">
+              ActiveRabbit Quota Alert
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <p>
-      You have reached <strong><%= @percentage.round %>%</strong> of your monthly quota for the team <strong><%= @account.name %></strong>. Upgrade your plan now to avoid hitting your limit.
-    </p>
+    <div class="content">
+      <h2><%= @percentage.round %>% of plan – almost at <%= @resource_name.downcase %> limit</h2>
 
-    <a href="<%= @upgrade_url %>" class="button">Upgrade Now</a>
+      <p>
+        You have reached <strong><%= @percentage.round %>%</strong> of your monthly quota for the team <strong><%= @account.name %></strong>. Upgrade your plan now to avoid hitting your limit.
+      </p>
+
+      <div class="button-wrapper">
+        <a href="<%= @usage_url %>" class="button-secondary">View Usage</a>
+        <a href="<%= @upgrade_url %>" class="button">Upgrade Now</a>
+      </div>
+    </div>
 
     <div class="footer">
-      ActiveRabbit<br>
-      AI-Powered Error Tracking for Rails
+      ActiveRabbit – AI-Powered Error Tracking for Rails
     </div>
   </div>
 </body>

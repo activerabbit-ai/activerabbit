@@ -3,40 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ActiveRabbit – Free Plan Limit</title>
+
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: 1.5;
-      color: #374151;
-      background-color: #f9fafb;
+      color: #333;
+      background-color: #f4f6f8;
       margin: 0;
-      padding: 40px 20px;
+      padding: 16px;
     }
+
     .container {
-      max-width: 480px;
+      max-width: 600px;
       margin: 0 auto;
-      background: white;
+      background: #ffffff;
       border-radius: 8px;
-      padding: 40px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
     }
-    .logo {
-      font-size: 20px;
-      font-weight: 700;
-      color: #111827;
-      margin-bottom: 32px;
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
     }
-    h1 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #111827;
-      margin: 0 0 16px 0;
+
+    .content {
+      padding: 24px 20px;
     }
+
+    h2 {
+      margin: 24px 0 12px;
+      font-size: 16px;
+    }
+
     p {
       margin: 0 0 16px 0;
-      color: #4b5563;
+      color: #333;
       font-size: 14px;
     }
+
     .alert-box {
       background: #fef2f2;
       border: 1px solid #fecaca;
@@ -44,52 +53,53 @@
       padding: 16px;
       margin: 16px 0;
     }
+
     .alert-box p {
       color: #991b1b;
       margin: 0;
+      font-size: 14px;
     }
-    .stats {
-      background: #f3f4f6;
-      border-radius: 6px;
-      padding: 16px;
+
+    table.stats {
+      width: 100%;
+      border-collapse: collapse;
       margin: 16px 0;
     }
-    .stats-row {
-      display: flex;
-      justify-content: space-between;
+
+    table.stats th {
+      text-align: left;
+      font-size: 13px;
+      color: #666;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 8px 4px;
+    }
+
+    table.stats td {
+      padding: 8px 4px;
       font-size: 14px;
-      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
     }
-    .stats-label {
-      color: #6b7280;
-    }
-    .stats-value {
-      color: #111827;
+
+    table.stats .right {
+      text-align: right;
       font-weight: 600;
+      color: #333;
     }
-    .button {
-      display: inline-block;
-      background: #000;
-      color: #fff !important;
-      padding: 12px 24px;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 500;
-      font-size: 14px;
-      margin: 8px 0 24px 0;
-    }
+
     .benefits {
       margin: 24px 0;
       padding: 0;
       list-style: none;
     }
+
     .benefits li {
       font-size: 14px;
-      color: #4b5563;
+      color: #333;
       padding: 8px 0;
       padding-left: 24px;
       position: relative;
     }
+
     .benefits li::before {
       content: "✓";
       position: absolute;
@@ -97,59 +107,100 @@
       color: #10b981;
       font-weight: 600;
     }
+
+    .button-wrapper {
+      text-align: center;
+      margin: 24px 0 8px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #667eea;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .button-secondary {
+      display: inline-block;
+      padding: 12px 20px;
+      background: transparent;
+      color: #667eea !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid #667eea;
+      margin-left: 12px;
+    }
+
     .footer {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 12px;
-      color: #9ca3af;
+      text-align: center;
+      padding: 16px;
+      font-size: 13px;
+      color: #777;
+      border-top: 1px solid #e5e5e5;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">ActiveRabbit</div>
+    <div class="header">
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;">
+          <%= image_tag "faviicons/favicon-512.png",
+            width: 48,
+            height: 48,
+            style: "display:block;margin-right:16px;" %>
 
-    <h1>Your Free Plan Has Reached Its Limit</h1>
-
-    <div class="alert-box">
-      <p>
-        Your <strong><%= @resource_name.downcase %></strong> quota has been exceeded for <strong><%= @days_over_quota %></strong> days.
-        New data may not be tracked until you upgrade.
-      </p>
-    </div>
-
-    <div class="stats">
-      <div class="stats-row">
-        <span class="stats-label">Current Plan</span>
-        <span class="stats-value">Free</span>
-      </div>
-      <div class="stats-row">
-        <span class="stats-label"><%= @resource_name %> Used</span>
-        <span class="stats-value"><%= number_with_delimiter(@used) %> / <%= number_with_delimiter(@quota) %></span>
-      </div>
-      <div class="stats-row">
-        <span class="stats-label">Over Limit By</span>
-        <span class="stats-value"><%= number_with_delimiter(@over_by) %></span>
+          <div style="text-align:left;">
+            <div style="font-weight:700;font-size:16px;line-height:1.25;">
+              Free Plan Limit Reached – <%= @percentage.round %>% of plan
+            </div>
+            <div style="font-size:13px;opacity:0.9;margin-top:2px;">
+              ActiveRabbit Quota Alert
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <p>Upgrade to the <strong>Team plan</strong> to unlock:</p>
+    <div class="content">
+      <h2>Your Free Plan Has Reached Its Limit (<%= @percentage.round %>% of plan)</h2>
 
-    <ul class="benefits">
-      <li>50,000 events per month (10x more)</li>
-      <li>300 AI summaries per month</li>
-      <li>100 automated pull requests</li>
-      <li>Uptime monitoring</li>
-      <li>Status pages</li>
-      <li>Up to 10 projects</li>
-    </ul>
+      <div class="alert-box">
+        <p>
+          Your <strong><%= @resource_name.downcase %></strong> quota has been exceeded for <strong><%= @days_over_quota %></strong> days
+          (<strong><%= @percentage.round %>%</strong> of plan). New data may not be tracked until you upgrade.
+        </p>
+      </div>
 
-    <a href="<%= @upgrade_url %>" class="button">Upgrade to Team Plan</a>
+      <table class="stats" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <th>Current Plan</th>
+          <td class="right">Free</td>
+        </tr>
+        <tr>
+          <th><%= @resource_name %> Used</th>
+          <td class="right"><%= number_with_delimiter(@used) %> / <%= number_with_delimiter(@quota) %></td>
+        </tr>
+        <tr>
+          <th>Over Limit By</th>
+          <td class="right"><%= number_with_delimiter(@over_by) %></td>
+        </tr>
+      </table>
+
+      <div class="button-wrapper">
+        <a href="<%= @usage_url %>" class="button-secondary">View Usage</a>
+        <a href="<%= @upgrade_url %>" class="button">Upgrade to Team Plan</a>
+      </div>
+    </div>
 
     <div class="footer">
-      ActiveRabbit<br>
-      AI-Powered Error Tracking for Rails
+      ActiveRabbit – AI-Powered Error Tracking for Rails
     </div>
   </div>
 </body>
