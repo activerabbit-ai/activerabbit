@@ -280,33 +280,13 @@ class ErrorsController < ApplicationController
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
     @selected_event = @issue.events.order(occurred_at: :desc).first
 
-    # Check quota before generating
+    # Check quota before generating (ERB handles all quota UI on page reload)
     account = current_user&.account || @issue.account
     if account && !account.within_quota?(:ai_summaries)
       respond_to do |format|
-        format.json do
-          plan_key = account.send(:effective_plan_key) rescue :free
-          is_paid_plan = %i[team business].include?(plan_key)
-          upgrade_path = plan_path rescue "/plan"
-          billing_path = billing_portal_index_path rescue upgrade_path
-          quota_limit = account.ai_summaries_quota
-          msg = if is_paid_plan
-                  "You've used all #{quota_limit} AI analyses on the #{account.effective_plan_name} plan this month."
-                elsif quota_limit == 0
-                  "AI analysis is not available on the #{account.effective_plan_name} plan. Upgrade to unlock it."
-                else
-                  "You've used all #{quota_limit} AI analyses on the #{account.effective_plan_name} plan. Upgrade to get more."
-                end
-          render json: {
-            success: false,
-            quota_exceeded: true,
-            can_buy_more: is_paid_plan,
-            message: msg,
-            upgrade_url: is_paid_plan ? billing_path : upgrade_path
-          }
-        end
+        format.json { render json: { success: false, quota_exceeded: true } }
         format.html do
-          flash[:alert] = "AI analysis quota reached. Please upgrade your plan."
+          flash[:alert] = "AI analysis quota reached."
           redirect_to redirect_path_for_issue(@issue)
         end
       end

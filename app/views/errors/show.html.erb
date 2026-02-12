@@ -275,17 +275,17 @@ end %>
                   </span>
                 </a>
               <% end %>
-              <p class="mt-1.5 text-xs text-gray-400 pl-1">
-                <%= account&.ai_summaries_used_in_period || 0 %>/<%= account&.ai_summaries_quota || 0 %> used on <%= account&.effective_plan_name || "Free" %>
-              </p>
+              <% if _is_paid_plan %>
+                <p class="mt-1.5 text-xs text-gray-400 pl-1">
+                  <%= account&.ai_summaries_used_in_period || 0 %>/<%= account&.ai_summaries_quota || 0 %> used on <%= account&.effective_plan_name || "Free" %>
+                </p>
+              <% end %>
             </div>
           <% else %>
             <%# Normal generate AI button %>
             <div id="ai-analysis"
                  data-controller="generate-ai"
                  data-generate-ai-url-value="<%= regenerate_url %>"
-                 data-generate-ai-quota-exceeded-value="<%= quota_exceeded %>"
-                 data-generate-ai-upgrade-url-value="<%= upgrade_url %>"
                  class="inline-flex flex-col items-start">
               <div class="inline-flex items-center">
                 <button type="button"
@@ -307,14 +307,6 @@ end %>
                 <span data-generate-ai-target="waitText" class="hidden ml-3 text-xs text-gray-500">
                   Analyzing code... Please wait 10-20 seconds
                 </span>
-              </div>
-              <!-- Dynamic quota message (shown if quota runs out mid-session) -->
-              <div data-generate-ai-target="quotaMessage" class="hidden mt-2 inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-800">
-                <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-                <span>AI analysis quota reached.</span>
-                <a href="<%= upgrade_url %>" class="font-semibold text-indigo-600 hover:text-indigo-700 underline ml-1">Upgrade to get more</a>
               </div>
             </div>
           <% end %>

@@ -228,4 +228,107 @@ class ErrorsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_not_nil assigns(:events_24h)
   end
+
+  # === AI Quota — ERB-only checks (no JS quota card) ===
+
+  test "show page does NOT contain hidden JS quota message text" do
+    issue = issues(:open_issue)
+    get error_path(issue)
+    assert_response :success
+    assert_no_match(/AI analysis quota reached\.\s*<\/span>/, response.body,
+      "The old hidden JS quota message div should not exist in the page")
+  end
+
+  test "show page renders Generate AI button when within quota" do
+    @account.update_columns(cached_ai_summaries_used: 2, current_plan: "team")
+    issue = issues(:open_issue)
+    issue.update_columns(ai_summary: nil)
+
+    get error_path(issue)
+    assert_response :success
+    assert_match(/Generate AI/, response.body,
+      "Should show 'Generate AI' button when within quota")
+  end
+
+  test "show page renders quota exceeded UI when over quota" do
+    @account.update_columns(cached_ai_summaries_used: 100, current_plan: "team")
+    issue = issues(:open_issue)
+    issue.update_columns(ai_summary: nil)
+
+    get error_path(issue)
+    assert_response :success
+    assert_match(/AI Analysis Limit Reached|Buy More|Upgrade/, response.body,
+      "Should show quota exceeded UI when over quota")
+    assert_no_match(/Generate AI/, response.body,
+      "Should NOT show Generate AI button when over quota")
+  end
+
+  test "show page does NOT have quota-exceeded or upgrade-url data attributes on generate button" do
+    @account.update_columns(cached_ai_summaries_used: 0, current_plan: "team")
+    issue = issues(:open_issue)
+    issue.update_columns(ai_summary: nil)
+
+    get error_path(issue)
+    assert_response :success
+    assert_no_match(/data-generate-ai-quota-exceeded-value/, response.body,
+      "Should not have quota-exceeded data attribute")
+    assert_no_match(/data-generate-ai-upgrade-url-value/, response.body,
+      "Should not have upgrade-url data attribute")
+  end
+
+  # === regenerate_ai_summary — quota exceeded returns simple JSON ===
+
+  test "regenerate_ai_summary returns simple JSON on quota exceeded" do
+    @account.update_columns(cached_ai_summaries_used: 100, current_plan: "team")
+    issue = issues(:open_issue)
+
+    post regenerate_ai_summary_error_path(issue),
+         headers: { "Accept" => "application/json", "X-Requested-With" => "XMLHttpRequest" }
+
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert_equal false, json["success"]
+    assert_equal true, json["quota_exceeded"]
+    # Should NOT contain the old JS-specific fields
+    assert_nil json["can_buy_more"], "Should not include can_buy_more in response"
+    assert_nil json["message"], "Should not include message in response"
+    assert_nil json["upgrade_url"], "Should not include upgrade_url in response"
+  end
+
+  test "regenerate_ai_summary redirects with flash on HTML quota exceeded" do
+    @account.update_columns(cached_ai_summaries_used: 100, current_plan: "team")
+    issue = issues(:open_issue)
+
+    post regenerate_ai_summary_error_path(issue)
+
+    assert_response :redirect
+    assert_equal "AI analysis quota reached.", flash[:alert]
+  end
+
+  # === index page — quota badges are ERB only ===
+
+  test "index shows gray AI badge when within quota and no summary" do
+    @account.update_columns(cached_ai_summaries_used: 2, current_plan: "team")
+    issue = issues(:open_issue)
+    issue.update_columns(ai_summary: nil)
+
+    get errors_path
+    assert_response :success
+    # Should not show upgrade/buy more badges
+    assert_no_match(/AI quota reached/, response.body)
+  end
+
+  test "index shows upgrade badge when over quota on free plan" do
+    @account.update_columns(
+      cached_ai_summaries_used: 5,
+      current_plan: "free",
+      trial_ends_at: 1.day.ago
+    )
+    issue = issues(:open_issue)
+    issue.update_columns(ai_summary: nil)
+
+    get errors_path
+    assert_response :success
+    assert_match(/Upgrade/, response.body)
+  end
 end
