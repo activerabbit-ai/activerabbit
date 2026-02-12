@@ -105,5 +105,4 @@ class ErrorIngestJob
 
     false
   end
-
 end
