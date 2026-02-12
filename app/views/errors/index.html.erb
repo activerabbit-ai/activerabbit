@@ -135,32 +135,32 @@
       </div>
     <% else %>
     <!-- Proper HTML Table -->
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200" style="position: relative;">
+    <div class="overflow-hidden">
+      <table class="w-full divide-y divide-gray-200 table-fixed" style="position: relative;">
         <thead class="bg-white border-b border-gray-200">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="max-width: 420px;">
+            <th class="w-[40%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :exception_class, class: "inline-flex items-center gap-2") do %>
                 <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-indigo-50 text-sm leading-none">🐰</span>
                 <span>Error & Action</span>
               <% end %>
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :count, "Total", class: "inline-flex items-center") %>
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Impact %
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               PR
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :ai_summary, "AI", class: "inline-flex items-center") %>
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :status, "Status", class: "inline-flex items-center") %>
             </th>
           </tr>
@@ -176,7 +176,7 @@
                 error_path(issue)
               end %>'">
               <!-- Error & Action -->
-              <td class="px-6 py-4" style="max-width: 420px;">
+              <td class="px-4 py-4 overflow-hidden">
                 <div class="flex items-start">
                   <div class="flex-shrink-0 mt-1">
                     <div class="w-2 h-2 rounded-full <%= issue.status == 'open' ? 'bg-red-400' : issue.status == 'wip' ? 'bg-yellow-400' : 'bg-green-400' %>"></div>
@@ -203,7 +203,7 @@
               </td>
 
               <!-- Last Seen -->
-              <td class="px-6 py-4">
+              <td class="px-4 py-4">
                 <div class="relative group">
                   <div class="text-sm text-gray-900 cursor-default"><%= time_ago_in_words(issue.last_seen_at).gsub('about ', '') %> ago</div>
                   <div class="absolute bottom-full left-0 mb-2 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 shadow-lg z-50">
@@ -214,12 +214,12 @@
               </td>
 
               <!-- Total Count -->
-              <td class="px-6 py-4">
+              <td class="px-4 py-4">
                 <div class="text-sm font-semibold text-gray-900"><%= number_with_delimiter(issue.count || 0) %></div>
               </td>
 
               <!-- Impact % (24h) -->
-              <td class="px-6 py-4">
+              <td class="px-4 py-4">
                 <% issue_24h = (@events_24h_by_issue_id || {})[issue.id].to_i %>
                 <% impact = (@total_events_24h.to_i > 0 && issue_24h > 0) ? ((issue_24h.to_f / @total_events_24h.to_f) * 100).round(2) : 0.0 %>
                 <% if issue_24h > 0 %>
@@ -232,7 +232,7 @@
               </td>
 
               <!-- PR -->
-              <td class="px-6 py-4" onclick="event.stopPropagation();">
+              <td class="px-4 py-4" onclick="event.stopPropagation();">
                 <% if (pr_url = issue.github_pr_url).present? %>
                   <%= link_to pr_url, target: "_blank", rel: "noopener", class: "inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 focus:outline-none" do %>
                     <svg class="w-4 h-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -246,7 +246,7 @@
               </td>
 
               <!-- AI -->
-              <td class="px-6 py-4" onclick="event.stopPropagation();">
+              <td class="px-4 py-4" onclick="event.stopPropagation();">
                 <% _ai_link = if @current_project
                                 "/#{@current_project.slug}/errors/#{issue.id}#ai-analysis"
                               elsif @project
@@ -276,14 +276,19 @@
                       <span class="hidden group-hover:inline">Buy More</span>
                     <% end %>
                   <% else %>
-                    <%# No summary + quota exceeded on free/trial — upgrade badge %>
-                    <%= link_to (plan_path rescue "/plan"), class: "group inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full shadow-sm focus:outline-none border border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-colors", title: "AI quota reached — upgrade for more" do %>
-                      <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                      <span class="group-hover:hidden">AI</span>
-                      <span class="hidden group-hover:inline">Upgrade</span>
-                    <% end %>
+                    <%# No summary + quota exceeded on free/trial — upgrade badge with tooltip %>
+                    <div class="relative group">
+                      <%= link_to (plan_path rescue "/plan"), class: "inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full shadow-sm focus:outline-none border border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-colors" do %>
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        AI
+                      <% end %>
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 rounded-md bg-gray-900 text-white text-xs font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 shadow-lg z-50 pointer-events-none">
+                        Upgrade
+                        <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
                   <% end %>
                 <% else %>
                   <%# No summary, quota OK — gray generate badge %>
@@ -297,7 +302,7 @@
               </td>
 
               <!-- Status -->
-              <td class="px-6 py-4" onclick="event.stopPropagation();">
+              <td class="px-4 py-4" onclick="event.stopPropagation();">
                 <%= render "errors/status_dropdown_list", issue: issue, project: @project %>
               </td>
             </tr>
