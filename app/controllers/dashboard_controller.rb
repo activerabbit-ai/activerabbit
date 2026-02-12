@@ -15,9 +15,31 @@ class DashboardController < ApplicationController
       total_events: Event.count, # Automatically scoped by acts_as_tenant
       events_today: Event.where("occurred_at > ?", 24.hours.ago).count,
       events_last_30_days: Event.where("occurred_at > ?", 30.days.ago).count,
+      ai_summaries: Issue.where.not(ai_summary: [nil, ""]).count,
       account_users: account_users.count,
       active_users: account_users.where("current_sign_in_at > ?", 7.days.ago).count
     }
+
+    # Sidekiq queue stats for the dashboard health widget
+    @sidekiq_stats = begin
+      stats = Sidekiq::Stats.new
+      queues = Sidekiq::Queue.all.map { |q| { name: q.name, size: q.size, latency: q.latency.round(1) } }
+      queues.sort_by! { |q| -q[:size] }
+      {
+        enqueued: stats.enqueued,
+        processed: stats.processed,
+        failed: stats.failed,
+        busy: Sidekiq::WorkSet.new.size,
+        retry_size: stats.retry_size,
+        dead_size: stats.dead_size,
+        scheduled_size: stats.scheduled_size,
+        processes: stats.processes_size,
+        queues: queues
+      }
+    rescue => e
+      Rails.logger.warn "[Dashboard] Sidekiq stats unavailable: #{e.message}"
+      nil
+    end
 
     # Recent activity (account-scoped) - keeping recent_events for potential future use
     @recent_events = Event.recent.limit(10)
@@ -34,6 +56,7 @@ class DashboardController < ApplicationController
                                    .where("occurred_at > ?", 24.hours.ago)
                                    .group(:project_id).count
     events_total_by_project = Event.where(project_id: project_ids).group(:project_id).count
+    ai_summaries_by_project = Issue.where(project_id: project_ids).where.not(ai_summary: [nil, ""]).group(:project_id).count
 
     # Stats for each project
     @project_stats = {}
@@ -45,6 +68,7 @@ class DashboardController < ApplicationController
         issues_count: issues_counts_by_project[project.id].to_i,
         events_today: events_today_by_project[project.id].to_i,
         events_total: events_total_by_project[project.id].to_i,
+        ai_summaries: ai_summaries_by_project[project.id].to_i,
         health_status: project.health_status,
         issue_pr_urls: issue_pr_urls,
         perf_pr_urls: perf_pr_urls

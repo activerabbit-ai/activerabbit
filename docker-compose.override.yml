@@ -26,11 +26,18 @@ services:
         bundle exec rails server -b 0.0.0.0 -p 3000
       "
 
-  sidekiq:
+  sidekiq-ingest:
     environment:
       RAILS_ENV: development
       RACK_ENV: development
-      # ActiveRabbit Self-Monitoring Configuration
+      RAILS_LOG_LEVEL: debug
+      ACTIVERABBIT_SELF_MONITOR_TOKEN: 5b39d8f621e18ff2c67e55c5b6d1aadcc5d9131ebb9be874ef4adbffcc6ce550
+      ACTIVERABBIT_SELF_MONITOR_PROJECT_ID: 32
+
+  sidekiq-secondary:
+    environment:
+      RAILS_ENV: development
+      RACK_ENV: development
       RAILS_LOG_LEVEL: debug
       ACTIVERABBIT_SELF_MONITOR_TOKEN: 5b39d8f621e18ff2c67e55c5b6d1aadcc5d9131ebb9be874ef4adbffcc6ce550
       ACTIVERABBIT_SELF_MONITOR_PROJECT_ID: 32

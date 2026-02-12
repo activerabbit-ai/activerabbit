@@ -1,8 +1,7 @@
 class WeeklyReportJob
   include Sidekiq::Job
 
-  # Prevent duplicate job execution within the same week
-  sidekiq_options lock: :until_executed if respond_to?(:sidekiq_options)
+  sidekiq_options queue: :mailers, retry: 2
 
   def perform(account_id = nil)
     week_key = Date.current.beginning_of_week.to_s

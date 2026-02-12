@@ -24,7 +24,7 @@ class Account < ApplicationRecord
         JOIN pay_customers pc ON ps.customer_id = pc.id
         WHERE pc.owner_type = 'User'
         AND pc.owner_id IN (SELECT id FROM users WHERE account_id = accounts.id)
-        AND ps.status = 'active'
+        AND ps.status IN ('active', 'trialing')
       )")
   }
 
@@ -73,8 +73,14 @@ class Account < ApplicationRecord
     @_has_payment_method = result
   rescue Timeout::Error
     Rails.logger.warn "[Account#has_payment_method?] Stripe API timeout for account #{id}"
-    # Don't cache timeout - try again next request
-    @_has_payment_method = false
+    # Don't cache timeout - try again next request.
+    # Return true (benefit of the doubt) to avoid incorrectly downgrading
+    # users to the free plan when Stripe is slow.
+    @_has_payment_method = true
+  rescue Stripe::StripeError => e
+    Rails.logger.warn "[Account#has_payment_method?] Stripe error for account #{id}: #{e.message}"
+    # Same rationale: don't penalize users for Stripe outages.
+    @_has_payment_method = true
   end
 
   # Check if account needs a payment method warning (during trial)
@@ -102,7 +108,7 @@ class Account < ApplicationRecord
     user_ids_relation = users.select(:id)
     @_active_subscription_record = Pay::Subscription
                                     .joins(:customer)
-                                    .where(status: "active")
+                                    .where(status: %w[active trialing])
                                     .where(pay_customers: { owner_type: "User", owner_id: user_ids_relation })
                                     .order(updated_at: :desc)
                                     .first
@@ -186,6 +192,26 @@ class Account < ApplicationRecord
 
   def to_s
     name
+  end
+
+  # Check if this account is eligible for automatic AI summary generation
+  # on new issues. Rules:
+  #   - Free plan:  auto-generate within quota (first 5)
+  #   - Trial plan: auto-generate within quota (first 20)
+  #   - Team/Business: auto-generate within quota (first 100) BUT only
+  #     if the user has an active subscription (actually paying)
+  def eligible_for_auto_ai_summary?
+    return false unless within_quota?(:ai_summaries)
+
+    plan_key = send(:effective_plan_key)
+    case plan_key
+    when :free, :trial
+      true
+    when :team, :business
+      active_subscription?
+    else
+      false
+    end
   end
 
   # Check if the account has any usage stats (events, performance events, etc.)

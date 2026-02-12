@@ -1,7 +1,7 @@
 class PerformanceIngestJob
   include Sidekiq::Job
 
-  sidekiq_options queue: :default, retry: 3
+  sidekiq_options queue: :ingest, retry: 3
 
   def perform(project_id, payload, batch_id = nil)
     # Project is multi-tenant; fetch it without tenant, then set tenant for the rest
@@ -46,8 +46,12 @@ class PerformanceIngestJob
     # Ingest the performance event
     event = PerformanceEvent.ingest_performance(project: project, payload: payload)
 
-    # Update project last event timestamp
-    project.update!(last_event_at: Time.current)
+    # Debounce project last_event_at updates (at most once per minute per project)
+    cache_key = "project_last_perf_event:#{project.id}"
+    unless Rails.cache.read(cache_key)
+      project.update_column(:last_event_at, Time.current)
+      Rails.cache.write(cache_key, true, expires_in: 1.minute)
+    end
 
     # Check for performance alerts
     if should_alert_for_performance?(event)

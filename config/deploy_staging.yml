@@ -5,10 +5,16 @@ image: nextsoft-io/activerabbit
 servers:
   web:
     - 65.108.93.69
+  # High-volume ingest worker
   job:
     hosts:
       - 65.108.93.69
-    cmd: bundle exec sidekiq -q default -q ingest -q alerts -q analysis -q mailers
+    cmd: bundle exec sidekiq -c 3 -q ingest
+  # Low-volume worker — alerts, analysis, mailers, default
+  job-secondary:
+    hosts:
+      - 65.108.93.69
+    cmd: bundle exec sidekiq -c 3 -q alerts,3 -q default,2 -q analysis -q mailers
 
 registry:
   server: ghcr.io
@@ -33,8 +39,8 @@ env:
 
     WEB_CONCURRENCY: 1
     RAILS_MAX_THREADS: 5
-    SIDEKIQ_CONCURRENCY: 5
-    DB_POOL: 7
+    SIDEKIQ_CONCURRENCY: 3
+    DB_POOL: 12
 
     FORCE_SSL: false
     RACK_ATTACK_ENABLED: false

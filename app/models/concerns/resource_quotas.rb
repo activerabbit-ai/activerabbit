@@ -13,6 +13,12 @@ module ResourceQuotas
   extend ActiveSupport::Concern
 
   # Plan-based quota definitions
+  #
+  # AI summaries (Generate AI):
+  #   free  → 5   (first 5 unique errors)
+  #   trial → 20  (14-day trial period)
+  #   team  → 100 (first 100 unique errors, then "Buy more")
+  #   business → 100
   PLAN_QUOTAS = {
     free: {
       events: 5_000,
@@ -22,9 +28,17 @@ module ResourceQuotas
       status_pages: 0,
       projects: 1
     },
+    trial: {
+      events: 50_000,
+      ai_summaries: 20,
+      pull_requests: 100,
+      uptime_monitors: 20,
+      status_pages: 5,
+      projects: 10
+    },
     team: {
       events: 50_000,
-      ai_summaries: 300,
+      ai_summaries: 100,
       pull_requests: 100,
       uptime_monitors: 20,
       status_pages: 5,
@@ -32,7 +46,7 @@ module ResourceQuotas
     },
     business: {
       events: 100_000,
-      ai_summaries: 500,
+      ai_summaries: 100,
       pull_requests: 250,
       uptime_monitors: 5,
       status_pages: 1,
@@ -74,9 +88,10 @@ module ResourceQuotas
   # Human-readable effective plan name, taking trials into account.
   #
   # Example:
-  #   account.effective_plan_name # => "Team"
+  #   account.effective_plan_name # => "Free Trial"
   def effective_plan_name
-    effective_plan_key.to_s.titleize
+    key = effective_plan_key
+    key == :trial ? "Free Trial" : key.to_s.titleize
   end
 
   # ============================================================================
@@ -159,7 +174,7 @@ module ResourceQuotas
   #   account.usage_summary
   #   # => {
   #   #   events: { quota: 3000, used: 150, remaining: 2850, percentage: 5.0 },
-  #   #   ai_summaries: { quota: 5, used: 2, remaining: 3, percentage: 40.0 },
+  #   #   ai_summaries: { quota: 100, used: 2, remaining: 98, percentage: 2.0 },
   #   #   ...
   #   # }
   def usage_summary
@@ -242,10 +257,9 @@ module ResourceQuotas
 
   def effective_plan_key
     # Note: Not memoized because current_plan can change within a request
-    # During trial we treat the account as on the Team plan, regardless of
-    # what current_plan string is stored. This ensures quotas and messaging
-    # match the product behavior: "14‑day Team trial".
-    return :team if on_trial?
+    # During trial we use the :trial plan which has limited AI summaries (5)
+    # but team-level quotas for everything else.
+    return :trial if on_trial?
 
     # After trial expires without payment method → Free plan
     # (only if they don't have an active subscription)

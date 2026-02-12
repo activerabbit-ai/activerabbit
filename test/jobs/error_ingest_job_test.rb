@@ -17,15 +17,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       environment: "production"
     }
 
-    # Stub the AI summary to avoid external calls
-    AiSummaryService.stub(:new, ->(*args) {
-      mock = Minitest::Mock.new
-      mock.expect(:call, { summary: "Test summary" })
-      mock
-    }) do
-      assert_changes -> { Event.count } do
-        ErrorIngestJob.new.perform(@project.id, payload)
-      end
+    assert_changes -> { Event.count } do
+      ErrorIngestJob.new.perform(@project.id, payload)
     end
   end
 
@@ -40,11 +33,7 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
 
     original_time = @project.last_event_at
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      ErrorIngestJob.new.perform(@project.id, payload)
-    end
+    ErrorIngestJob.new.perform(@project.id, payload)
 
     @project.reload
     if original_time.present?
@@ -75,12 +64,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       ]
     }
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      assert_difference "SqlFingerprint.count", 2 do
-        ErrorIngestJob.new.perform(@project.id, payload)
-      end
+    assert_difference "SqlFingerprint.count", 2 do
+      ErrorIngestJob.new.perform(@project.id, payload)
     end
   end
 
@@ -93,12 +78,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       "environment" => "production"
     }
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      assert_nothing_raised do
-        ErrorIngestJob.new.perform(@project.id, payload)
-      end
+    assert_nothing_raised do
+      ErrorIngestJob.new.perform(@project.id, payload)
     end
   end
 
@@ -141,15 +122,114 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       environment: "production"
     }
 
-    AiSummaryService.stub(:new, ->(*args) {
-      OpenStruct.new(call: { summary: nil })
-    }) do
-      ErrorIngestJob.new.perform(@project.id, payload)
-    end
+    ErrorIngestJob.new.perform(@project.id, payload)
 
     # Verify the issue was created with count 1
     issue = Issue.find_by(exception_class: "NewFatalError")
     assert issue.present?
     assert_equal 1, issue.count
+  end
+
+  # ============================================================================
+  # Auto AI Summary enqueue tests
+  # ============================================================================
+
+  test "auto-enqueues AiSummaryJob for new issue when account is eligible" do
+    Sidekiq::Worker.clear_all
+
+    payload = {
+      exception_class: "BrandNewAutoAIError",
+      message: "AI summary should be auto-generated for new issues",
+      backtrace: ["app/models/foo.rb:1:in `bar'"],
+      controller_action: "FooController#bar",
+      environment: "production"
+    }
+
+    # Default account is on trial (trial_ends_at = 7.days.from_now),
+    # trial plan gets 20 AI summaries, 0 used → eligible
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 1, AiSummaryJob.jobs.size,
+      "AiSummaryJob should be auto-enqueued for new issues within quota"
+  end
+
+  test "does not auto-enqueue AiSummaryJob for duplicate issue (count > 1)" do
+    # First create the issue
+    payload = {
+      exception_class: "DuplicateAutoAIError",
+      message: "Should only auto-generate on first occurrence",
+      backtrace: ["app/models/dup.rb:1:in `run'"],
+      controller_action: "DupController#run",
+      environment: "production"
+    }
+
+    ErrorIngestJob.new.perform(@project.id, payload)
+    Sidekiq::Worker.clear_all
+
+    # Second occurrence of same error
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 0, AiSummaryJob.jobs.size,
+      "AiSummaryJob should not be auto-enqueued for duplicate issues (count > 1)"
+  end
+
+  test "does not auto-enqueue AiSummaryJob when AI quota is exceeded" do
+    Sidekiq::Worker.clear_all
+
+    # Exhaust the trial quota (20)
+    @account.update!(cached_ai_summaries_used: 20)
+
+    payload = {
+      exception_class: "QuotaExceededAutoAIError",
+      message: "Over quota",
+      backtrace: ["app/models/quota.rb:1:in `check'"],
+      controller_action: "QuotaController#check",
+      environment: "production"
+    }
+
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 0, AiSummaryJob.jobs.size,
+      "AiSummaryJob should not be auto-enqueued when AI quota is exceeded"
+  end
+
+  test "does not auto-enqueue AiSummaryJob for team plan without active subscription" do
+    Sidekiq::Worker.clear_all
+
+    # Make the default account look like a team plan with expired trial and no subscription
+    @account.update!(current_plan: "team", trial_ends_at: nil, cached_ai_summaries_used: 0)
+
+    payload = {
+      exception_class: "TeamNoSubAutoAIError",
+      message: "Team plan without subscription should not auto-generate",
+      backtrace: ["app/models/team.rb:1:in `work'"],
+      controller_action: "TeamController#work",
+      environment: "production"
+    }
+
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 0, AiSummaryJob.jobs.size,
+      "AiSummaryJob should not be auto-enqueued for team plan without active subscription"
+  end
+
+  test "auto-enqueues AiSummaryJob for free plan within quota" do
+    Sidekiq::Worker.clear_all
+
+    # Make the default account look like a free plan with expired trial
+    @account.update!(current_plan: "free", trial_ends_at: 1.day.ago, cached_ai_summaries_used: 0)
+
+    payload = {
+      exception_class: "FreeAutoAIError",
+      message: "Free plan first 5 errors get auto AI",
+      backtrace: ["app/models/free.rb:1:in `go'"],
+      controller_action: "FreeController#go",
+      environment: "production"
+    }
+
+    ErrorIngestJob.new.perform(@project.id, payload)
+
+    assert_equal 1, AiSummaryJob.jobs.size,
+      "AiSummaryJob should be auto-enqueued for free plan within quota (first 5)"
   end
 end

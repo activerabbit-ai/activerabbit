@@ -24,6 +24,8 @@ class ErrorsController < ApplicationController
       base_scope = base_scope.where("last_seen_at > ?", 24.hours.ago)
     when "jobs"
       base_scope = base_scope.from_job_failures
+    when "ai"
+      base_scope = base_scope.where.not(ai_summary: [nil, ""])
     end
 
     # Time period filter from header buttons — default to show all
@@ -61,7 +63,8 @@ class ErrorsController < ApplicationController
         wip: status_counts.fetch("wip", 0),
         closed: status_counts.fetch("closed", 0),
         recent: issues_base.where("last_seen_at > ?", 24.hours.ago).count,
-        failed_jobs: issues_base.from_job_failures.count
+        failed_jobs: issues_base.from_job_failures.count,
+        ai_summaries: issues_base.where.not(ai_summary: [nil, ""]).count
       }
     end
 
@@ -70,6 +73,7 @@ class ErrorsController < ApplicationController
     @resolved_errors = stats[:closed]
     @recent_errors = stats[:recent]
     @failed_jobs_count = stats[:failed_jobs]
+    @ai_summaries_count = stats[:ai_summaries]
 
     # ── Impact metrics (scoped to the 25 issues on this page) ─────────
     issue_ids = @issues.map(&:id)
@@ -276,26 +280,64 @@ class ErrorsController < ApplicationController
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
     @selected_event = @issue.events.order(occurred_at: :desc).first
 
+    # Check quota before generating
+    account = current_user&.account || @issue.account
+    if account && !account.within_quota?(:ai_summaries)
+      respond_to do |format|
+        format.json do
+          plan_key = account.send(:effective_plan_key) rescue :free
+          is_paid_plan = %i[team business].include?(plan_key)
+          upgrade_path = plan_path rescue "/plan"
+          billing_path = billing_portal_index_path rescue upgrade_path
+          quota_limit = account.ai_summaries_quota
+          msg = if is_paid_plan
+                  "You've used all #{quota_limit} AI analyses on the #{account.effective_plan_name} plan this month."
+                elsif quota_limit == 0
+                  "AI analysis is not available on the #{account.effective_plan_name} plan. Upgrade to unlock it."
+                else
+                  "You've used all #{quota_limit} AI analyses on the #{account.effective_plan_name} plan. Upgrade to get more."
+                end
+          render json: {
+            success: false,
+            quota_exceeded: true,
+            can_buy_more: is_paid_plan,
+            message: msg,
+            upgrade_url: is_paid_plan ? billing_path : upgrade_path
+          }
+        end
+        format.html do
+          flash[:alert] = "AI analysis quota reached. Please upgrade your plan."
+          redirect_to redirect_path_for_issue(@issue)
+        end
+      end
+      return
+    end
+
     # Force regeneration by clearing the previous summary
     github_client = github_client_for_issue(@issue)
     result = AiSummaryService.new(issue: @issue, sample_event: @selected_event, github_client: github_client).call
 
     if result[:summary].present?
       @issue.update(ai_summary: result[:summary], ai_summary_generated_at: Time.current)
-      flash[:notice] = "AI summary regenerated successfully."
+
+      respond_to do |format|
+        format.json { render json: { success: true } }
+        format.html do
+          flash[:notice] = "AI summary regenerated successfully."
+          redirect_to redirect_path_for_issue(@issue)
+        end
+      end
     else
       @issue.update(ai_summary: nil, ai_summary_generated_at: Time.current)
-      flash[:alert] = result[:message] || "Failed to generate AI summary."
-    end
 
-    redirect_path = if @current_project
-                      project_slug_error_path(@current_project.slug, @issue, tab: "stack")
-    elsif @project
-                      project_error_path(@project, @issue, tab: "stack")
-    else
-                      error_path(@issue, tab: "stack")
+      respond_to do |format|
+        format.json { render json: { success: false, message: result[:message] || "Failed to generate AI analysis. Please try again." } }
+        format.html do
+          flash[:alert] = result[:message] || "Failed to generate AI summary."
+          redirect_to redirect_path_for_issue(@issue)
+        end
+      end
     end
-    redirect_to redirect_path
   end
 
   def update
@@ -452,6 +494,16 @@ class ErrorsController < ApplicationController
   end
 
   private
+
+  def redirect_path_for_issue(issue)
+    if @current_project
+      project_slug_error_path(@current_project.slug, issue, tab: "stack")
+    elsif @project
+      project_error_path(@project, issue, tab: "stack")
+    else
+      error_path(issue, tab: "stack")
+    end
+  end
 
   def issue_params
     params.require(:issue).permit(:status)

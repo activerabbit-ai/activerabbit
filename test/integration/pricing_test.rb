@@ -59,9 +59,9 @@ class PricingTest < ActionDispatch::IntegrationTest
 
     get plan_path
 
-    assert_equal 300, assigns(:ai_summaries_quota)
+    assert_equal 100, assigns(:ai_summaries_quota)
     assert_equal 3, assigns(:ai_summaries_used)
-    assert_equal 297, assigns(:ai_summaries_remaining)
+    assert_equal 97, assigns(:ai_summaries_remaining)
   end
 
   test "assigns pull requests quota and usage" do
@@ -148,7 +148,7 @@ class PricingTest < ActionDispatch::IntegrationTest
     get plan_path
 
     assert_equal 100_000, assigns(:event_quota)
-    assert_equal 500, assigns(:ai_summaries_quota)
+    assert_equal 100, assigns(:ai_summaries_quota)
     assert_equal 250, assigns(:pull_requests_quota)
   end
 
@@ -157,8 +157,8 @@ class PricingTest < ActionDispatch::IntegrationTest
   test "shows usage near limit" do
     skip "UI/integration spec depends on Devise + Tailwind setup that differs in CI"
 
-    # Create usage near quota (290 out of 300 for team plan)
-    290.times do
+    # Create usage near quota (90 out of 100 for team plan)
+    90.times do
       Issue.create!(
         project: @project,
         account: @account,
@@ -170,7 +170,7 @@ class PricingTest < ActionDispatch::IntegrationTest
 
     get plan_path
 
-    assert_equal 290, assigns(:ai_summaries_used)
+    assert_equal 90, assigns(:ai_summaries_used)
     assert_equal 10, assigns(:ai_summaries_remaining)
   end
 
@@ -179,8 +179,8 @@ class PricingTest < ActionDispatch::IntegrationTest
   test "shows remaining as 0 when over quota" do
     skip "UI/integration spec depends on Devise + Tailwind setup that differs in CI"
 
-    # Create usage over quota (305 out of 300)
-    305.times do
+    # Create usage over quota (105 out of 100)
+    105.times do
       Issue.create!(
         project: @project,
         account: @account,
@@ -192,7 +192,7 @@ class PricingTest < ActionDispatch::IntegrationTest
 
     get plan_path
 
-    assert_equal 305, assigns(:ai_summaries_used)
+    assert_equal 105, assigns(:ai_summaries_used)
     assert_equal 0, assigns(:ai_summaries_remaining)
   end
 
@@ -222,12 +222,11 @@ class PricingTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "50K errors/mo"
   end
 
-  test "displays AI summaries limits" do
+  test "displays AI analyses limits" do
     skip "UI/integration spec depends on Devise + Tailwind setup that differs in CI"
     get plan_path
-    assert_includes response.body, "5"   # Free plan
-    assert_includes response.body, "300" # Team plan
-    assert_includes response.body, "500" # Business plan
+    assert_includes response.body, "100"              # Team & Business plan AI analyses
+    assert_includes response.body, "upgrade required" # Free plan messaging
   end
 
   test "displays pull request limits" do

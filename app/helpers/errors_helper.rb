@@ -306,6 +306,9 @@ module ErrorsHelper
       "Net::ReadTimeout" => "HTTP read timed out waiting for server response. The remote endpoint is slow or unresponsive.",
       "Net::OpenTimeout" => "HTTP connection couldn't be established in time. Check network connectivity and target host availability.",
 
+      # ActiveJob Errors
+      "ActiveJob::DeserializationError" => "Job arguments reference a record that no longer exists. The record was likely deleted between when the job was enqueued and when it ran.",
+
       # ActiveRecord Errors
       "ActiveRecord::RecordNotFound" => "No record found with the given ID or conditions. Use find_by (returns nil) instead of find, or rescue the exception.",
       "ActiveRecord::RecordInvalid" => "Model validation failed on save! or create!. Check model validations and the data being submitted.",
@@ -346,6 +349,12 @@ module ErrorsHelper
       "PG::UndefinedTable" => "Table doesn't exist in database. Run migrations or check table name spelling.",
       "PG::UndefinedColumn" => "Column doesn't exist in table. Run migrations or verify column name in query.",
       "Sidekiq::Shutdown" => "Job interrupted by Sidekiq shutdown. Will be retried automatically on restart.",
+      "Sidekiq::JobRetry::Handled" => "Job failed and Sidekiq's retry mechanism caught it. Check the original error in the cause chain for the root issue.",
+      "PG::ConnectionBad" => "PostgreSQL connection lost or couldn't be established. Database may be down, overloaded, or connection pool exhausted.",
+      "Redis::TimeoutError" => "Redis operation timed out. Server may be overloaded, slow query, or network latency issue.",
+      "Redis::CommandError" => "Redis rejected the command — wrong data type, memory limit, or invalid arguments. Check the Redis operation.",
+      "Net::SMTPAuthenticationError" => "SMTP authentication failed. Email credentials are wrong or the mail server rejected the login.",
+      "ActiveRecord::ConnectionTimeoutError" => "Couldn't get a database connection from the pool in time. All connections are busy — increase pool size or optimize slow queries.",
       "SignalException" => "Process received termination signal (SIGTERM/SIGKILL). Normal during deploys — jobs should be idempotent.",
       "Interrupt" => "Process interrupted (SIGINT/Ctrl+C). Expected in development, investigate if happening in production.",
       "StandardError" => "Base exception class — check the specific error message and backtrace for details."

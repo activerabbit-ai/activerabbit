@@ -5,6 +5,7 @@ class ResourceQuotasTest < ActiveSupport::TestCase
 
   test "PLAN_QUOTAS defines quotas for all plans" do
     assert_includes ResourceQuotas::PLAN_QUOTAS.keys, :free
+    assert_includes ResourceQuotas::PLAN_QUOTAS.keys, :trial
     assert_includes ResourceQuotas::PLAN_QUOTAS.keys, :team
     assert_includes ResourceQuotas::PLAN_QUOTAS.keys, :business
   end
@@ -51,19 +52,19 @@ class ResourceQuotasTest < ActiveSupport::TestCase
 
   # ai_summaries_quota
 
-  test "ai_summaries_quota returns correct values for free plan" do
+  test "ai_summaries_quota returns 5 for free plan" do
     account = Account.new(current_plan: "free")
     assert_equal 5, account.ai_summaries_quota
   end
 
-  test "ai_summaries_quota returns correct values for team plan" do
+  test "ai_summaries_quota returns 100 for team plan" do
     account = Account.new(current_plan: "team")
-    assert_equal 300, account.ai_summaries_quota
+    assert_equal 100, account.ai_summaries_quota
   end
 
-  test "ai_summaries_quota returns correct values for business plan" do
+  test "ai_summaries_quota returns 100 for business plan" do
     account = Account.new(current_plan: "business")
-    assert_equal 500, account.ai_summaries_quota
+    assert_equal 100, account.ai_summaries_quota
   end
 
   # pull_requests_quota
@@ -108,8 +109,102 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     summary = account.usage_summary
 
     assert_equal 50_000, summary[:events][:quota]
-    assert_equal 300, summary[:ai_summaries][:quota]
+    assert_equal 100, summary[:ai_summaries][:quota]
     assert_equal 100, summary[:pull_requests][:quota]
+  end
+
+  # ============================================================================
+  # AI Generate quota per plan
+  # ============================================================================
+
+  test "free plan gets 5 AI summaries" do
+    account = accounts(:free_account)
+    account.current_plan = "free"
+    # Ensure trial has expired so effective_plan_key returns :free
+    account.trial_ends_at = 1.day.ago
+    account.cached_ai_summaries_used = 0
+
+    assert_equal 5, account.ai_summaries_quota
+    assert account.within_quota?(:ai_summaries),
+      "Free plan with 0 used should be within AI quota (quota is 5)"
+  end
+
+  test "trial account gets 20 AI summaries" do
+    account = accounts(:trial_account)
+    # trial_ends_at is 14 days from now (on_trial? returns true)
+    account.cached_ai_summaries_used = 0
+
+    assert_equal 20, account.ai_summaries_quota
+    assert account.within_quota?(:ai_summaries),
+      "Trial account with 0 used should be within AI quota"
+  end
+
+  test "trial account with 5 used is within AI quota" do
+    account = accounts(:trial_account)
+    account.cached_ai_summaries_used = 5
+
+    assert_equal 20, account.ai_summaries_quota
+    assert account.within_quota?(:ai_summaries),
+      "Trial account with 5 used should be within AI quota"
+  end
+
+  test "trial account with 20 used is over AI quota" do
+    account = accounts(:trial_account)
+    account.cached_ai_summaries_used = 20
+
+    assert_equal 20, account.ai_summaries_quota
+    assert_not account.within_quota?(:ai_summaries),
+      "Trial account with 20 used should be over AI quota"
+  end
+
+  test "trial account effective plan name is Free Trial" do
+    account = accounts(:trial_account)
+    assert_equal "Free Trial", account.effective_plan_name
+  end
+
+  test "team plan gets 100 AI summaries" do
+    account = accounts(:team_account)
+    account.current_plan = "team"
+    account.cached_ai_summaries_used = 0
+
+    assert_equal 100, account.ai_summaries_quota
+    assert account.within_quota?(:ai_summaries)
+  end
+
+  test "team plan with 99 used is still within AI quota" do
+    account = accounts(:team_account)
+    account.current_plan = "team"
+    account.cached_ai_summaries_used = 99
+
+    assert account.within_quota?(:ai_summaries),
+      "Team plan with 99/100 used should still be within quota"
+  end
+
+  test "team plan with 100 used is over AI quota" do
+    account = accounts(:team_account)
+    account.current_plan = "team"
+    account.cached_ai_summaries_used = 100
+
+    assert_not account.within_quota?(:ai_summaries),
+      "Team plan with 100/100 used should be over quota"
+  end
+
+  test "business plan gets 100 AI summaries" do
+    account = accounts(:other_account)
+    account.current_plan = "business"
+    account.cached_ai_summaries_used = 0
+
+    assert_equal 100, account.ai_summaries_quota
+    assert account.within_quota?(:ai_summaries)
+  end
+
+  test "business plan with 100 used is over AI quota" do
+    account = accounts(:other_account)
+    account.current_plan = "business"
+    account.cached_ai_summaries_used = 100
+
+    assert_not account.within_quota?(:ai_summaries),
+      "Business plan with 100/100 used should be over quota"
   end
 
   # billing period helpers

@@ -3,23 +3,37 @@ class PerformanceIncidentEvaluationJob
 
   sidekiq_options queue: :alerts, retry: 1
 
+  LOCK_KEY = "lock:perf_incident_eval"
+  LOCK_TTL = 90 # seconds — prevents cron pile-up if job takes >1 min
+
   # Evaluate performance metrics for all active projects
   # Called every minute by sidekiq-cron
   def perform
-    Rails.logger.info "[PerformanceIncidentEvaluation] Starting evaluation..."
-
-    # Query projects without tenant scoping since we're processing all accounts
-    ActsAsTenant.without_tenant do
-      Project.active.find_each do |project|
-        ActsAsTenant.with_tenant(project.account) do
-          evaluate_project(project)
-        end
-      rescue => e
-        Rails.logger.error "[PerformanceIncidentEvaluation] Error evaluating project #{project.id}: #{e.message}"
-      end
+    # Skip if a previous run is still in progress
+    locked = Sidekiq.redis { |c| c.set(LOCK_KEY, Process.pid.to_s, nx: true, ex: LOCK_TTL) }
+    unless locked
+      Rails.logger.info "[PerformanceIncidentEvaluation] Skipping — already running"
+      return
     end
 
-    Rails.logger.info "[PerformanceIncidentEvaluation] Evaluation complete"
+    begin
+      Rails.logger.info "[PerformanceIncidentEvaluation] Starting evaluation..."
+
+      # Query projects without tenant scoping since we're processing all accounts
+      ActsAsTenant.without_tenant do
+        Project.active.find_each do |project|
+          ActsAsTenant.with_tenant(project.account) do
+            evaluate_project(project)
+          end
+        rescue => e
+          Rails.logger.error "[PerformanceIncidentEvaluation] Error evaluating project #{project.id}: #{e.message}"
+        end
+      end
+
+      Rails.logger.info "[PerformanceIncidentEvaluation] Evaluation complete"
+    ensure
+      Sidekiq.redis { |c| c.del(LOCK_KEY) }
+    end
   end
 
   private

@@ -50,18 +50,25 @@
     </div>
   </div>
 
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-6 relative overflow-hidden">
     <div class="flex items-center">
-      <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+      <div class="p-3 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-600">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
         </svg>
       </div>
       <div class="ml-4">
-        <p class="text-sm font-medium text-gray-600">Events Total</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:total_events]) %></p>
+        <p class="text-sm font-medium text-gray-600">AI Summaries</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= number_with_delimiter(@stats[:ai_summaries]) %></p>
       </div>
     </div>
+    <% if @stats[:ai_summaries] > 0 %>
+      <div class="absolute top-1 right-1">
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700">
+          AI
+        </span>
+      </div>
+    <% end %>
   </div>
 
   <div class="bg-white rounded-lg shadow p-6">
@@ -81,6 +88,8 @@
   <%# Account Users section - hidden for now %>
 
 </div>
+
+<%# Queue Health section — only visible to admins via /sidekiq %>
 
 <!-- Projects Grid -->
 <div class="mt-6">
@@ -156,6 +165,12 @@
             <span class="text-sm font-medium text-gray-900"><%= number_with_delimiter(stats[:events_total]) %></span>
           </div>
           <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">AI Summaries</span>
+            <span class="text-sm font-medium <%= stats[:ai_summaries] > 0 ? 'text-violet-600' : 'text-gray-900' %>">
+              <%= stats[:ai_summaries] %>
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
             <span class="text-sm text-gray-600">Status</span>
             <span class="text-sm font-medium <%= project.active? ? 'text-green-600' : 'text-red-600' %>">
               <%= project.active? ? 'Active' : 'Inactive' %>
@@ -206,6 +221,16 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                 </svg>
                 Performance
+              </div>
+            <% end %>
+
+            <%= link_to project_slug_errors_path(project.slug, filter: "ai"),
+                class: "flex-1 bg-violet-50 text-violet-700 text-center py-2 px-3 rounded-md text-sm hover:bg-violet-100 transition-colors border border-violet-200" do %>
+              <div class="flex items-center justify-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+                AI Summaries
               </div>
             <% end %>
           </div>

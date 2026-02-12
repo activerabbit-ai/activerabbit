@@ -63,11 +63,12 @@ services:
     stdin_open: true
     tty: true
 
-  sidekiq:
+  # High-volume ingest worker — processes SDK error/performance events
+  sidekiq-ingest:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: bundle exec sidekiq -q default -q ingest -q alerts -q analysis
+    command: bundle exec sidekiq -c 10 -q ingest
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle
@@ -80,7 +81,30 @@ services:
         condition: service_started
     environment:
       DATABASE_URL: postgresql://postgres:password@db:5432/activerabbit_development
-      # Sidekiq must always point at a writable Redis (not a replica)
+      REDIS_URL: redis://redis:6379/0
+      SIDEKIQ_REDIS_URL: redis://redis:6379/0
+      RAILS_ENV: development
+    env_file:
+      - .env
+
+  # Low-volume worker — alerts, analysis, mailers, default jobs
+  sidekiq-secondary:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bundle exec sidekiq -c 5 -q alerts,3 -q default,2 -q analysis -q mailers
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/activerabbit_development
       REDIS_URL: redis://redis:6379/0
       SIDEKIQ_REDIS_URL: redis://redis:6379/0
       RAILS_ENV: development

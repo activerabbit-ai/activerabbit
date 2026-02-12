@@ -1,7 +1,7 @@
 class ErrorIngestJob
   include Sidekiq::Job
 
-  sidekiq_options queue: :default, retry: 3
+  sidekiq_options queue: :ingest, retry: 3
 
   def perform(project_id, payload, batch_id = nil)
     # Find project without tenant scoping, then set the tenant
@@ -48,13 +48,16 @@ class ErrorIngestJob
     # Check if this error should trigger an alert
     issue = event.issue
 
-    # Generate AI summary asynchronously for new issues (don't block ingest pipeline)
-    if issue && issue.ai_summary.blank? && issue.count <= 1
-      AiSummaryJob.perform_async(issue.id, event.id, project.id)
-    end
-
     if issue && should_alert_for_issue?(issue)
       IssueAlertJob.perform_async(issue.id, issue.project.account_id)
+    end
+
+    # Auto-generate AI summary for NEW unique issues within quota
+    if issue && issue.count == 1 && issue.ai_summary.blank?
+      account = project.account
+      if account&.eligible_for_auto_ai_summary?
+        AiSummaryJob.perform_async(issue.id, event.id, project.id)
+      end
     end
 
     Rails.logger.info "Processed error event for project #{project.slug}: #{event.id}"

@@ -20,6 +20,15 @@ class AiSummaryJob
       return
     end
 
+    # Team/Business plans require an active subscription for AI summaries
+    if account
+      plan_key = account.send(:effective_plan_key) rescue :free
+      if %i[team business].include?(plan_key) && !account.active_subscription?
+        Rails.logger.warn("[Quota] AI summary skipped for issue #{issue.id} - account #{account.id} on #{plan_key} without active subscription")
+        return
+      end
+    end
+
     github_client = build_github_client(project)
     ai = AiSummaryService.new(issue: issue, sample_event: event, github_client: github_client).call
     if ai[:summary].present?
