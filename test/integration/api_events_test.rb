@@ -375,4 +375,102 @@ class ApiEventsTest < ActionDispatch::IntegrationTest
 
     assert_response :unauthorized
   end
+
+  # Batch dedup via client batch_id
+
+  test "POST /api/v1/events/batch deduplicates retried requests by batch_id" do
+    batch_id = "dedup-test-#{SecureRandom.hex(8)}"
+
+    body = {
+      batch_id: batch_id,
+      events: [
+        {
+          type: "error",
+          data: {
+            exception_class: "DedupError",
+            message: "first try",
+            backtrace: ["app/models/foo.rb:1:in `bar'"],
+            occurred_at: Time.current.iso8601,
+            environment: "production"
+          }
+        }
+      ]
+    }.to_json
+
+    # First request — should succeed normally
+    post "/api/v1/events/batch", params: body, headers: @headers
+    assert_response :created
+    json1 = JSON.parse(response.body)
+    assert_equal 1, json1["data"]["processed_count"]
+    assert_nil json1["data"]["deduplicated"]
+
+    # Second request with same batch_id — should be deduplicated
+    post "/api/v1/events/batch", params: body, headers: @headers
+    assert_response :created
+    json2 = JSON.parse(response.body)
+    assert_equal 0, json2["data"]["processed_count"]
+    assert_equal true, json2["data"]["deduplicated"]
+  end
+
+  test "POST /api/v1/events/batch deduplicates via X-Request-Id header" do
+    request_id = "req-#{SecureRandom.hex(8)}"
+
+    body = {
+      events: [
+        {
+          type: "error",
+          data: {
+            exception_class: "HeaderDedupError",
+            message: "header dedup",
+            backtrace: ["app/models/foo.rb:1:in `bar'"],
+            occurred_at: Time.current.iso8601,
+            environment: "production"
+          }
+        }
+      ]
+    }.to_json
+
+    headers_with_req_id = @headers.merge("X-Request-Id" => request_id)
+
+    # First request
+    post "/api/v1/events/batch", params: body, headers: headers_with_req_id
+    assert_response :created
+    json1 = JSON.parse(response.body)
+    assert_equal 1, json1["data"]["processed_count"]
+
+    # Retry — deduplicated
+    post "/api/v1/events/batch", params: body, headers: headers_with_req_id
+    assert_response :created
+    json2 = JSON.parse(response.body)
+    assert_equal true, json2["data"]["deduplicated"]
+  end
+
+  # Self-monitoring error filtering
+
+  test "POST /api/v1/events/batch filters out self-monitoring error events" do
+    body = {
+      events: [
+        {
+          type: "error",
+          data: {
+            exception_class: "SelfMonitorError",
+            message: "Error in our own API controller",
+            backtrace: [
+              "app/controllers/api/v1/events_controller.rb:42:in `create_batch'",
+              "actionpack/lib/action_controller/metal.rb:227:in `dispatch'"
+            ],
+            occurred_at: Time.current.iso8601,
+            environment: "production"
+          }
+        }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: @headers
+
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_equal 0, json["data"]["processed_count"],
+      "Error events from self-monitoring (events_controller) should be filtered out"
+  end
 end

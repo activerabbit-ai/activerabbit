@@ -84,7 +84,20 @@ class Api::V1::EventsController < Api::BaseController
       return
     end
 
-    batch_id = SecureRandom.uuid
+    # Dedup: if the client sends a batch_id (or X-Request-Id), reject retries.
+    # Prevents snowball effect when queue backs up → slow responses → client retries → more jobs.
+    client_batch_id = params[:batch_id] || request.headers["X-Request-Id"]
+    if client_batch_id.present?
+      dedup_key = "batch_dedup:#{@current_project.id}:#{client_batch_id}"
+      already_seen = Sidekiq.redis { |c| c.set(dedup_key, "1", nx: true, ex: 300) }
+      unless already_seen
+        render_created({ batch_id: client_batch_id, processed_count: 0, deduplicated: true },
+                       message: "Batch already processed (duplicate request)")
+        return
+      end
+    end
+
+    batch_id = client_batch_id || SecureRandom.uuid
     error_payloads = []
     perf_payloads = []
 
@@ -110,6 +123,9 @@ class Api::V1::EventsController < Api::BaseController
       when "error"
         payload = sanitize_error_payload(actual_data)
         if valid_error_payload?(payload)
+          # Skip self-monitoring errors to prevent feedback loops
+          # (same protection as performance events below)
+          next if self_monitoring_error?(payload)
           serializable_payload = JSON.parse(payload.to_h.to_json)
           error_payloads << serializable_payload
         end
@@ -381,6 +397,16 @@ class Api::V1::EventsController < Api::BaseController
 
     ctrl = payload[:controller_action].to_s
     SELF_MONITORING_CONTROLLERS.any? { |c| ctrl.start_with?(c) }
+  end
+
+  # Check if an error event originated from self-monitoring paths.
+  # Prevents feedback loops: ActiveRabbit error → ingest → possibly more errors → loop.
+  def self_monitoring_error?(payload)
+    # Check backtrace for self-monitoring controller paths
+    backtrace = payload[:backtrace]
+    return false unless backtrace.is_a?(Array)
+
+    backtrace.first(3).any? { |frame| frame.to_s.include?("api/v1/events_controller") }
   end
 
   # Bulk-enqueue jobs via Sidekiq::Client.push_bulk (1 Redis call per job class).

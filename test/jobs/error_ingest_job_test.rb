@@ -217,6 +217,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
 
   test "auto-enqueues AiSummaryJob for free plan within quota" do
     Sidekiq::Worker.clear_all
+    # Clear Redis counter again right before this test (parallel workers may pollute)
+    Sidekiq.redis { |c| c.del("ai_summary_enqueued:#{@account.id}:#{Date.current.strftime('%Y-%m')}") }
 
     # Make the default account look like a free plan with expired trial
     @account.update!(current_plan: "free", trial_ends_at: 1.day.ago, cached_ai_summaries_used: 0)
