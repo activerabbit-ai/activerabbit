@@ -111,17 +111,8 @@ class ProjectSettingsController < ApplicationController
   end
 
   def sync_all_errors
-    unless @project.fizzy_configured?
-      redirect_to project_settings_path(@project),
-                  alert: "Fizzy is not configured. Please set the endpoint URL and API key."
-      return
-    end
-
-    # Pass force=true to bypass the auto-sync toggle (this is a manual sync)
-    FizzyBatchSyncJob.perform_async(@project.id, true)
-
     redirect_to project_settings_path(@project),
-                notice: "Fizzy sync started. Issues will be synced in the background."
+                alert: "Fizzy sync is no longer available."
   end
 
   def disconnect_github

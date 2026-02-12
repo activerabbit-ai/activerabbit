@@ -6,6 +6,8 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
   setup do
     @account = accounts(:default)
     @project = projects(:default)
+    # Clear Redis AI summary counters to prevent cross-test pollution
+    Sidekiq.redis { |c| c.del("ai_summary_enqueued:#{@account.id}:#{Date.current.strftime('%Y-%m')}") }
   end
 
   test "processes error event and creates event record" do
