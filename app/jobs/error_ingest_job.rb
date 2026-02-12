@@ -1,7 +1,7 @@
 class ErrorIngestJob
   include Sidekiq::Job
 
-  sidekiq_options queue: :ingest, retry: 3
+  sidekiq_options queue: :ingest, retry: 1
 
   def perform(project_id, payload, batch_id = nil)
     # Find project without tenant scoping, then set the tenant
