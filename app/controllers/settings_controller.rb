@@ -29,7 +29,7 @@ class SettingsController < ApplicationController
   def update_account_name
     @account = current_account
 
-    unless current_user.role == "owner"
+    unless current_user.role == "owner" || viewing_as_super_admin?
       redirect_to settings_path, alert: "Only account owners can change the account name."
       return
     end
