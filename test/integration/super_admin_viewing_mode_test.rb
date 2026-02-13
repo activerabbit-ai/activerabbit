@@ -56,7 +56,7 @@ class SuperAdminViewingModeTest < ActionDispatch::IntegrationTest
 
     get dashboard_path
 
-    refute_includes response.body, "VIEW-ONLY MODE"
+    refute_includes response.body, "SUPER ADMIN MODE"
   end
 
   test "shows viewing banner when viewing another account" do
@@ -67,7 +67,7 @@ class SuperAdminViewingModeTest < ActionDispatch::IntegrationTest
 
     assert_includes response.body, "Viewing:"
     assert_includes response.body, @other_account.name
-    assert_includes response.body, "VIEW-ONLY MODE"
+    assert_includes response.body, "SUPER ADMIN MODE"
   end
 
   # Regular user restrictions

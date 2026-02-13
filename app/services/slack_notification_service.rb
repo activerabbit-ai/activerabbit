@@ -12,23 +12,28 @@ class SlackNotificationService
   end
 
   def send_error_frequency_alert(issue, payload)
-    send_message(build_error_frequency_message(issue, payload))
+    blocks, fallback = build_error_frequency_blocks(issue, payload)
+    send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
   def send_performance_alert(event, payload)
-    send_message(build_performance_message(event, payload))
+    blocks, fallback = build_performance_blocks(event, payload)
+    send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
   def send_n_plus_one_alert(payload)
-    send_message(build_n_plus_one_message(payload))
+    blocks, fallback = build_n_plus_one_blocks(payload)
+    send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
   def send_new_issue_alert(issue)
-    send_message(build_new_issue_message(issue))
+    blocks, fallback = build_new_issue_blocks(issue)
+    send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
   def send_custom_alert(title, message, color: "warning")
-    send_message(build_custom_message(title, message, color))
+    blocks, fallback = build_custom_blocks(title, message, color)
+    send_blocks(blocks: blocks, fallback_text: fallback)
   end
 
   # Send a message using Slack Block Kit format (for richer messages)
@@ -73,11 +78,164 @@ class SlackNotificationService
     "#{project_url}/errors/#{issue.id}#{query}"
   end
 
-  def build_error_frequency_message(issue, payload)
-    # Get the most recent event for additional context
+  # --- Block Kit builders (type: "actions" so buttons display in Slack) ---
+
+  def build_error_frequency_blocks(issue, payload)
     latest_event = issue.events.order(occurred_at: :desc).first
-    context = latest_event&.context || {}
-    params = extract_params(context)
+    explanation = error_explanation(issue.exception_class)
+    message_text = explanation.presence || truncate_text(issue.sample_message || latest_event&.message || "No message", 300)
+    request_paths = payload["request_paths"] || []
+    env_value = latest_event&.environment || @project.environment || "production"
+
+    blocks = [
+      { type: "header", text: { type: "plain_text", text: "🚨 High Error Frequency Alert", emoji: true } },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
+          { type: "mrkdwn", text: "*Frequency:*\n#{payload['count']} in #{payload['time_window']} min" },
+          { type: "mrkdwn", text: "*Total:*\n#{issue.count} occurrences" },
+          { type: "mrkdwn", text: "*Environment:*\n#{env_value}" }
+        ]
+      },
+      { type: "section", text: { type: "mrkdwn", text: "*Message:*\n#{message_text}" } }
+    ]
+    if request_paths.present?
+      if request_paths.size == 1
+        blocks << { type: "section", text: { type: "mrkdwn", text: "*Request:*\n#{truncate_text(request_paths.first, 200)}" } }
+      else
+        paths_text = request_paths.size <= 10 ? request_paths.map { |p| "• #{p}" }.join("\n") : request_paths.first(10).map { |p| "• #{p}" }.join("\n") + "\n... and #{request_paths.size - 10} more"
+        blocks << { type: "section", text: { type: "mrkdwn", text: "*Affected URLs (#{request_paths.size}):*\n#{truncate_text(paths_text, 1000)}" } }
+      end
+    elsif latest_event&.request_path.present?
+      req = latest_event.request_method.present? ? "#{latest_event.request_method} #{latest_event.request_path}" : latest_event.request_path
+      blocks << { type: "section", text: { type: "mrkdwn", text: "*Latest Request:*\n#{truncate_text(req, 200)}" } }
+    end
+    blocks << {
+      type: "actions",
+      elements: [
+        { type: "button", text: { type: "plain_text", text: "Open", emoji: true }, url: error_url(issue), style: "primary" },
+        { type: "button", text: { type: "plain_text", text: "Stack", emoji: true }, url: error_url(issue, tab: "stack") },
+        { type: "button", text: { type: "plain_text", text: "Samples", emoji: true }, url: error_url(issue, tab: "samples") },
+        { type: "button", text: { type: "plain_text", text: "Graph", emoji: true }, url: error_url(issue, tab: "graph") }
+      ]
+    }
+    [blocks, "High error frequency: #{issue.title}"]
+  end
+
+  def build_performance_blocks(event, payload)
+    endpoint = event.target.presence || payload["target"] || payload["controller_action"] || event.request_path || "Unknown"
+    blocks = [
+      { type: "header", text: { type: "plain_text", text: "⚠️ Performance Alert", emoji: true } },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
+          { type: "mrkdwn", text: "*Response Time:*\n#{payload['duration_ms']}ms" },
+          { type: "mrkdwn", text: "*Threshold:*\nExpected < 2000ms" },
+          { type: "mrkdwn", text: "*Environment:*\n#{@project.environment}" }
+        ]
+      },
+      { type: "section", text: { type: "mrkdwn", text: "*Endpoint:*\n#{endpoint}" } },
+      { type: "section", text: { type: "mrkdwn", text: "*Occurred:* #{format_time(event.occurred_at)}" } },
+      {
+        type: "actions",
+        elements: [
+          { type: "button", text: { type: "plain_text", text: "View Performance", emoji: true }, url: "#{project_url}/performance", style: "primary" }
+        ]
+      }
+    ]
+    [blocks, "Performance alert: #{payload['duration_ms']}ms - #{endpoint}"]
+  end
+
+  def build_n_plus_one_blocks(payload)
+    incidents = payload["incidents"]
+    controller_action = payload["controller_action"]
+    query_summary = incidents.first(3).map { |i| "• #{i['count_in_request']}x #{i['sql_fingerprint']['query_type']} queries" }.join("\n")
+    blocks = [
+      { type: "header", text: { type: "plain_text", text: "🔍 N+1 Query Alert", emoji: true } },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
+          { type: "mrkdwn", text: "*Environment:*\n#{@project.environment}" },
+          { type: "mrkdwn", text: "*High Severity:*\n#{incidents.size}" },
+          { type: "mrkdwn", text: "*Impact:*\nDB performance" }
+        ]
+      },
+      { type: "section", text: { type: "mrkdwn", text: "*Controller/Action:*\n#{controller_action}" } },
+      { type: "section", text: { type: "mrkdwn", text: "*Query summary:*\n#{query_summary}" } },
+      {
+        type: "actions",
+        elements: [
+          { type: "button", text: { type: "plain_text", text: "View Queries", emoji: true }, url: "#{project_url}/performance", style: "primary" }
+        ]
+      }
+    ]
+    [blocks, "N+1 detected in #{controller_action}"]
+  end
+
+  def build_new_issue_blocks(issue)
+    latest_event = issue.events.order(occurred_at: :desc).first
+    params = extract_params(latest_event&.context || {})
+    explanation = error_explanation(issue.exception_class)
+    message_text = explanation.presence || truncate_text(issue.sample_message || latest_event&.message || "No message", 300)
+    env_value = latest_event&.environment || @project.environment || "production"
+
+    blocks = [
+      { type: "header", text: { type: "plain_text", text: "🆕 New Issue: #{issue.exception_class}", emoji: true } },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
+          { type: "mrkdwn", text: "*First Seen:*\n#{format_time(issue.first_seen_at)}" },
+          { type: "mrkdwn", text: "*Occurrences:*\n#{issue.count}" },
+          { type: "mrkdwn", text: "*Environment:*\n#{env_value}" }
+        ]
+      },
+      { type: "section", text: { type: "mrkdwn", text: "*Message:*\n#{message_text}" } }
+    ]
+    if latest_event&.request_path.present?
+      req = latest_event.request_method.present? ? "#{latest_event.request_method} #{latest_event.request_path}" : latest_event.request_path
+      blocks << { type: "section", text: { type: "mrkdwn", text: "*Request:*\n#{truncate_text(req, 150)}" } }
+    end
+    formatted_params = format_params(params)
+    blocks << { type: "section", text: { type: "mrkdwn", text: "*Params:*\n#{truncate_text(formatted_params, 200)}" } } if formatted_params.present?
+    blocks << {
+      type: "actions",
+      elements: [
+        { type: "button", text: { type: "plain_text", text: "Open", emoji: true }, url: error_url(issue), style: "danger" },
+        { type: "button", text: { type: "plain_text", text: "Stack", emoji: true }, url: error_url(issue, tab: "stack") },
+        { type: "button", text: { type: "plain_text", text: "Samples", emoji: true }, url: error_url(issue, tab: "samples") },
+        { type: "button", text: { type: "plain_text", text: "Graph", emoji: true }, url: error_url(issue, tab: "graph") }
+      ]
+    }
+    [blocks, "New issue: #{issue.exception_class}"]
+  end
+
+  def build_custom_blocks(title, message, color)
+    blocks = [
+      { type: "header", text: { type: "plain_text", text: title, emoji: true } },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: "*Project:*\n#{@project.name}" },
+          { type: "mrkdwn", text: "*Environment:*\n#{@project.environment}" }
+        ]
+      },
+      { type: "section", text: { type: "mrkdwn", text: "*Message:*\n#{message}" } },
+      {
+        type: "actions",
+        elements: [
+          { type: "button", text: { type: "plain_text", text: "Open Project", emoji: true }, url: project_url, style: "primary" }
+        ]
+      }
+    ]
+    [blocks, "#{title}: #{message}"]
+  end
+
+  def build_error_frequency_message(issue, payload)
+    latest_event = issue.events.order(occurred_at: :desc).first
 
     # Get human-readable explanation for this error type
     explanation = error_explanation(issue.exception_class)
@@ -160,29 +318,6 @@ class SlackNotificationService
           color: "danger",
           fallback: "High error frequency detected for #{issue.title}",
           fields: fields,
-          actions: [
-            {
-              type: "button",
-              text: "Open",
-              url: error_url(issue),
-              style: "primary"
-            },
-            {
-              type: "button",
-              text: "Stack",
-              url: error_url(issue, tab: "stack")
-            },
-            {
-              type: "button",
-              text: "Samples",
-              url: error_url(issue, tab: "samples")
-            },
-            {
-              type: "button",
-              text: "Graph",
-              url: error_url(issue, tab: "graph")
-            }
-          ],
           footer: "ActiveRabbit Error Tracking",
           footer_icon: "https://activerabbit.com/icon.png",
           ts: Time.current.to_i
@@ -377,29 +512,6 @@ class SlackNotificationService
           color: "danger",
           fallback: "New issue detected: #{issue.exception_class} in #{issue.controller_action}",
           fields: fields,
-          actions: [
-            {
-              type: "button",
-              text: "Open",
-              url: error_url(issue),
-              style: "danger"
-            },
-            {
-              type: "button",
-              text: "Stack",
-              url: error_url(issue, tab: "stack")
-            },
-            {
-              type: "button",
-              text: "Samples",
-              url: error_url(issue, tab: "samples")
-            },
-            {
-              type: "button",
-              text: "Graph",
-              url: error_url(issue, tab: "graph")
-            }
-          ],
           footer: "ActiveRabbit Error Tracking",
           footer_icon: "https://activerabbit.com/icon.png",
           ts: Time.current.to_i
