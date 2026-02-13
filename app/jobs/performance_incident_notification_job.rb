@@ -205,6 +205,6 @@ class PerformanceIncidentNotificationJob
 
   def performance_url(project, target)
     encoded_target = ERB::Util.url_encode(target)
-    "#{URL_PROTOCOL}://#{URL_HOST}/#{project.slug}/performance/action/#{encoded_target}"
+    "#{URL_PROTOCOL}://#{URL_HOST}/#{project.slug}/performance/actions/#{encoded_target}"
   end
 end
