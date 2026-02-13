@@ -62,6 +62,18 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
       "cron_timezone" => "America/Los_Angeles"
     },
 
+    "trial_reminder_daily" => {
+      "cron" => "0 9 * * *",  # Daily at 9:00 AM PST - send trial ending reminders (8, 4, 2, 1, 0 days before & 2, 4, 6, 8 days after)
+      "class" => "TrialReminderCheckJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
+    "trial_expiration_daily" => {
+      "cron" => "0 2 * * *",  # Daily at 2:00 AM PST - downgrade expired trials to Free plan
+      "class" => "TrialExpirationJob",
+      "cron_timezone" => "America/Los_Angeles"
+    },
+
     # ========================================
     # Data Retention & Cleanup
     # ========================================

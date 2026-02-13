@@ -38,6 +38,24 @@ class LifecycleMailer < ApplicationMailer
     mail to: @user.email, subject: "Trial ends today"
   end
 
+  def trial_expired_warning(account:, days_since_expired:)
+    @account = account
+    @days_since_expired = days_since_expired
+    @user = confirmed_user_for(account)
+    return unless @user
+
+    mail to: @user.email, subject: "Your trial expired #{@days_since_expired} days ago — upgrade to Team"
+  end
+
+  def trial_expired_downgraded(account:, previous_plan:)
+    @account = account
+    @previous_plan = previous_plan
+    @user = confirmed_user_for(account)
+    return unless @user
+
+    mail to: @user.email, subject: "Your account has been moved to the Free plan"
+  end
+
   def payment_failed(account:, invoice_id:)
     @account = account
     @invoice_id = invoice_id

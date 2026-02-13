@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; margin-bottom: 20px; }
+    .alert { background: #fee2e2; border: 1px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    .info-box { background: #f3f4f6; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; }
+    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">ActiveRabbit</div>
+
+    <h1>Your account is now on the Free plan</h1>
+
+    <div class="alert">
+      <strong>Plan changed.</strong> Your ActiveRabbit account <strong><%= @account.name %></strong>
+      has been moved from the <strong><%= @previous_plan.titleize %></strong> plan to the <strong>Free</strong> plan
+      because your trial expired without a subscription.
+    </div>
+
+    <div class="info-box">
+      <strong>Your new Free plan limits:</strong>
+      <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+        <li><strong>5,000</strong> events per month</li>
+        <li><strong>5</strong> AI error summaries</li>
+        <li><strong>1</strong> project</li>
+        <li><strong>5</strong> pull requests</li>
+        <li>No uptime monitors or status pages</li>
+      </ul>
+    </div>
+
+    <p>Your existing data is safe — nothing has been deleted. You can upgrade at any time to restore full access.</p>
+
+    <p>
+      <a href="<%= plan_url(host: ENV.fetch('APP_HOST', 'localhost:3000'), protocol: Rails.env.production? ? 'https' : 'http') %>" class="button">Upgrade Now</a>
+    </p>
+
+    <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+      Questions? Reply to this email and we'll help you out.
+    </p>
+
+    <div class="footer">
+      <p>ActiveRabbit<br>AI-Powered Error Tracking for Rails</p>
+    </div>
+  </div>
+</body>
+</html>

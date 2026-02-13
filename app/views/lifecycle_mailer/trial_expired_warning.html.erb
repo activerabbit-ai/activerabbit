@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; margin-bottom: 20px; }
+    .alert { background: #fee2e2; border: 1px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    .warning-box { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; }
+    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
+    .comparison { margin: 20px 0; }
+    .comparison table { width: 100%; border-collapse: collapse; }
+    .comparison th, .comparison td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    .comparison th { background: #f9fafb; font-weight: 600; color: #374151; }
+    .free-col { color: #6b7280; }
+    .team-col { color: #f97316; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">ActiveRabbit</div>
+
+    <h1>Your trial expired <%= @days_since_expired %> days ago</h1>
+
+    <div class="alert">
+      <strong>Action required!</strong> Your ActiveRabbit trial for <strong><%= @account.name %></strong> expired <%= @days_since_expired %> days ago.
+      Upgrade to the <strong>Team plan</strong> to keep full access, or your account will be moved to the <strong>Free plan</strong>.
+    </div>
+
+    <div class="warning-box">
+      <strong>Upgrade to Team and keep:</strong>
+      <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+        <li><strong>50,000</strong> events per month</li>
+        <li><strong>100</strong> AI-powered error summaries</li>
+        <li><strong>10</strong> projects</li>
+        <li>Uptime monitoring & status pages</li>
+      </ul>
+    </div>
+
+    <div style="background: #f3f4f6; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; margin: 20px 0;">
+      <strong>Without upgrade (Free plan):</strong>
+      <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #6b7280;">
+        <li>Only 5,000 events/month</li>
+        <li>Only 5 AI summaries</li>
+        <li>Only 1 project</li>
+        <li>No uptime monitors or status pages</li>
+      </ul>
+    </div>
+
+    <p>
+      <a href="<%= plan_url(host: ENV.fetch('APP_HOST', 'localhost:3000'), protocol: Rails.env.production? ? 'https' : 'http') %>" class="button">Upgrade to Team</a>
+    </p>
+
+    <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+      If you don't need paid features, no action is needed — your account will continue on the Free plan.
+    </p>
+
+    <div class="footer">
+      <p>ActiveRabbit<br>AI-Powered Error Tracking for Rails</p>
+    </div>
+  </div>
+</body>
+</html>

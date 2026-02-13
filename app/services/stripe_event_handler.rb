@@ -204,7 +204,16 @@ class StripeEventHandler
   def handle_trial_will_end
     account = account_from_customer
     return unless account
-    TrialEndingReminderJob.perform_later(account_id: account.id, at: Time.current)
+
+    # Stripe sends trial_will_end 3 days before trial expires.
+    # Calculate actual days remaining from account's trial_ends_at.
+    days_left = if account.trial_ends_at.present?
+      ((account.trial_ends_at - Time.current) / 1.day).ceil.clamp(0, 30)
+    else
+      3 # Stripe default
+    end
+
+    TrialEndingReminderJob.perform_later(account_id: account.id, days_left: days_left)
   end
 
   def base_plan_price_ids

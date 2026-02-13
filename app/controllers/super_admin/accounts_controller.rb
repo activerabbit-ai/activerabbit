@@ -46,10 +46,27 @@ module SuperAdmin
 
         @pagy, @accounts = pagy(accounts, limit: 25)
 
-        # Preload counts without tenant scoping
+        # Preload counts and data without tenant scoping
         account_ids = @accounts.map(&:id)
         @projects_count = Project.where(account_id: account_ids).group(:account_id).count
         @users_count = User.where(account_id: account_ids).group(:account_id).count
+
+        # Preload projects grouped by account_id (for showing URLs)
+        @projects_by_account = Project.where(account_id: account_ids)
+                                       .order(:name)
+                                       .group_by(&:account_id)
+
+        # Preload subscription status: { account_id => true/false }
+        user_ids_by_account = User.where(account_id: account_ids).pluck(:account_id, :id)
+        all_user_ids = user_ids_by_account.map(&:last)
+        subscribed_user_ids = Pay::Subscription
+                                .joins(:customer)
+                                .where(status: %w[active trialing])
+                                .where(pay_customers: { owner_type: "User", owner_id: all_user_ids })
+                                .joins("INNER JOIN users ON users.id = pay_customers.owner_id")
+                                .pluck("users.account_id")
+                                .uniq
+        @subscribed_accounts = subscribed_user_ids.to_set
       end
     end
 

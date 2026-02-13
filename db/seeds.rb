@@ -44,6 +44,12 @@ end
 
 admin_user = users.first
 
+# Make admin@activerabbit.com a super admin
+unless admin_user.super_admin?
+  admin_user.update!(super_admin: true)
+  puts "  Promoted #{admin_user.email} to super_admin"
+end
+
 # ---------------------------------------------------------------------------
 # Projects
 # ---------------------------------------------------------------------------

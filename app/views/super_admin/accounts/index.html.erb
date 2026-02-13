@@ -65,13 +65,19 @@
             Account
           </th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Plan
-          </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Users
           </th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Projects
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Plan
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Subscribed
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Trial Days Left
           </th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Created
@@ -101,6 +107,34 @@
                 </div>
               </div>
             </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+                <%= @users_count[account.id] || 0 %>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500">
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                </svg>
+                <%= @projects_count[account.id] || 0 %>
+              </div>
+              <% if @projects_by_account[account.id].present? %>
+                <div class="mt-1 flex flex-col gap-1">
+                  <% @projects_by_account[account.id].each do |project| %>
+                    <div class="flex items-center gap-1.5">
+                      <%= link_to project.name, admin_project_path(project), class: "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors" %>
+                      <% if project.url.present? %>
+                        <%= link_to project.url, project.url, target: "_blank", rel: "noopener noreferrer", class: "text-xs text-gray-400 hover:text-indigo-600 truncate max-w-[200px]", title: project.url %>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= account.current_plan == 'team' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800' %>">
                 <%= account.current_plan&.titleize || 'Free' %>
@@ -111,21 +145,26 @@
                 </span>
               <% end %>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <div class="flex items-center">
-                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                </svg>
-                <%= @users_count[account.id] || 0 %>
-              </div>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <% if @subscribed_accounts.include?(account.id) %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Yes
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                  No
+                </span>
+              <% end %>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <div class="flex items-center">
-                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                </svg>
-                <%= @projects_count[account.id] || 0 %>
-              </div>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <% if account.on_trial? && account.trial_ends_at.present? %>
+                <% days_left = (account.trial_ends_at.to_date - Date.current).to_i %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= days_left <= 3 ? 'bg-red-100 text-red-800' : days_left <= 7 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' %>">
+                  <%= days_left %> days
+                </span>
+              <% else %>
+                <span class="text-gray-400">&mdash;</span>
+              <% end %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               <%= account.created_at.strftime("%b %d, %Y") %>
