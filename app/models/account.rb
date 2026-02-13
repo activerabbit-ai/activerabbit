@@ -1,14 +1,8 @@
-class Account < ApplicationRecord
-  # Billing is managed per User (team unlock). Account holds entitlements.
-
-  # Concerns
-  include ResourceQuotas
-  include QuotaWarnings
-
-  # Validations
-  validates :name, presence: true, uniqueness: true
-
-  # Associations
+module ResourceQuotas
+  def some_method
+    # method implementation
+  end  # Add this end
+end  # Ensure the module is properly closed  # Associations
   has_many :users, dependent: :destroy
   has_many :projects, dependent: :destroy
   has_many :api_tokens, through: :projects
