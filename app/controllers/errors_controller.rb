@@ -490,14 +490,21 @@ class ErrorsController < ApplicationController
   end
 
   def set_project
-    @project = current_account.projects.find(params[:project_id])
+    @project = current_account.projects.find_by(id: params[:project_id])
+  
+  if @project.nil?
+
+  respond_to do |format|
+  # Get GitHub API client for the issue's project (for enhanced AI context)
+  format.html { redirect_to errors_path, alert: "Project not found or access denied" }
+  def github_client_for_issue(issue)
+  format.json { render json: { error: "Project not found" }, status: :not_found }
+    project = issue.project
+  end
+    return nil unless project&.github_repo_full_name.present?
   end
 
-  # Get GitHub API client for the issue's project (for enhanced AI context)
-  def github_client_for_issue(issue)
-    project = issue.project
-    return nil unless project&.github_repo_full_name.present?
-
+  end
     settings = project.settings || {}
     installation_id = settings["github_installation_id"]
     project_pat = settings["github_pat"]
