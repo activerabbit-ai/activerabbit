@@ -7,6 +7,9 @@ class OverageCalculator
   end
 
   def attach_overage_invoice_item!(stripe_invoice:, customer_id:)
+    # Free plan: hard-capped, no overage fees — skip entirely
+    return if @account.respond_to?(:on_free_plan?) && @account.on_free_plan?
+
     period_start = Time.at(stripe_invoice["period_start"]) if stripe_invoice["period_start"]
     period_end   = Time.at(stripe_invoice["period_end"]) if stripe_invoice["period_end"]
     return unless period_start && period_end

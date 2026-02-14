@@ -6,6 +6,15 @@ class Api::V1::EventsController < Api::BaseController
       return
     end
 
+    # Hard cap: free plan stops accepting events once quota is reached
+    if free_plan_capped?(@current_project)
+      render json: {
+        error: "quota_exceeded",
+        message: "Free plan limit reached (5,000 errors/month). Data reporting is paused until your usage period resets. Upgrade to a paid plan for higher limits."
+      }, status: :too_many_requests
+      return
+    end
+
     payload = sanitize_error_payload(params)
 
     # Validate required fields; return 422 on failure
@@ -37,6 +46,15 @@ class Api::V1::EventsController < Api::BaseController
       return
     end
 
+    # Hard cap: free plan stops accepting events once quota is reached
+    if free_plan_capped?(@current_project)
+      render json: {
+        error: "quota_exceeded",
+        message: "Free plan limit reached (5,000 errors/month). Data reporting is paused until your usage period resets. Upgrade to a paid plan for higher limits."
+      }, status: :too_many_requests
+      return
+    end
+
     payload = sanitize_performance_payload(params)
 
     # Validate required fields
@@ -63,6 +81,15 @@ class Api::V1::EventsController < Api::BaseController
   def create_batch
     unless @current_project
       render json: { error: "project_not_found", message: "Project not found" }, status: :not_found
+      return
+    end
+
+    # Hard cap: free plan stops accepting events once quota is reached
+    if free_plan_capped?(@current_project)
+      render json: {
+        error: "quota_exceeded",
+        message: "Free plan limit reached (5,000 errors/month). Data reporting is paused until your usage period resets. Upgrade to a paid plan for higher limits."
+      }, status: :too_many_requests
       return
     end
 
@@ -447,5 +474,24 @@ class Api::V1::EventsController < Api::BaseController
   rescue => e
     Rails.logger.error("[ActiveRabbit] PerformanceIngestJob.perform_async failed, falling back to inline: #{e.class}: #{e.message}")
     PerformanceIngestJob.new.perform(project_id, payload, batch_id)
+  end
+
+  # Free plan hard cap: once the event limit is reached, stop accepting data
+  # until the 30-day usage period resets. Uses a Redis cache (60s TTL) to avoid
+  # hitting the DB on every API request.
+  def free_plan_capped?(project)
+    account = project.account
+    return false unless account
+
+    cache_key = "free_plan_capped:#{account.id}"
+    cached = Rails.cache.read(cache_key)
+    return cached unless cached.nil?
+
+    capped = account.free_plan_events_capped?
+    Rails.cache.write(cache_key, capped, expires_in: 60.seconds)
+    capped
+  rescue => e
+    Rails.logger.error("[ActiveRabbit] free_plan_capped? check failed: #{e.message}")
+    false # Don't block ingestion on errors
   end
 end

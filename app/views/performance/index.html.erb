@@ -97,7 +97,7 @@
         <% list_active = params[:tab] != 'graph' %>
         <% graph_active = params[:tab] == 'graph' %>
         <%= link_to 'List', list_url, class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{list_active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
-        <%= link_to 'Graph', graph_url, class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{graph_active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
+        <%= link_to 'Analytics', graph_url, class: "ml-1 first:ml-0 px-3 py-1.5 rounded-full text-xs font-medium #{graph_active ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}" %>
       </div>
     </div>
   </div>

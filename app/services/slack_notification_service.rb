@@ -8,7 +8,10 @@ class SlackNotificationService
   end
 
   def configured?
-    @client.present?
+    return false unless @client.present?
+    # Free plan does not include Slack notifications
+    return false if @project&.account && !@project.account.slack_notifications_allowed?
+    true
   end
 
   def send_error_frequency_alert(issue, payload)

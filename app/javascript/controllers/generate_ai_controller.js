@@ -46,6 +46,9 @@ export default class extends Controller {
       if (data.success) {
         // Reload to show the new AI analysis panel
         window.location.reload()
+      } else if (data.free_plan && data.redirect_url) {
+        // Free plan — redirect to plan/upgrade page
+        window.location.href = data.redirect_url
       } else if (data.quota_exceeded) {
         // Quota exceeded — reload page so ERB renders the correct quota UI
         window.location.reload()

@@ -95,4 +95,44 @@ class AccountSlackNotificationServiceTest < ActiveSupport::TestCase
     # Should iterate through account users
     assert users_notified.is_a?(Array)
   end
+
+  # ===========================================================================
+  # Free plan Slack blocking
+  # ===========================================================================
+
+  test "configured? returns false when account is on free plan" do
+    free_account = accounts(:free_account)
+    free_account.update!(slack_webhook_url: "https://hooks.slack.com/services/test")
+    service = AccountSlackNotificationService.new(free_account)
+
+    refute service.configured?,
+      "Free plan should not have Slack notifications even with webhook configured"
+  end
+
+  test "configured? returns true when team account has webhook" do
+    team_account = accounts(:team_account)
+    team_account.update!(slack_webhook_url: "https://hooks.slack.com/services/test")
+    service = AccountSlackNotificationService.new(team_account)
+
+    assert service.configured?,
+      "Team plan with webhook should be configured for Slack"
+  end
+
+  test "send_custom_alert does nothing for free plan account" do
+    free_account = accounts(:free_account)
+    free_account.update!(slack_webhook_url: "https://hooks.slack.com/services/test")
+    service = AccountSlackNotificationService.new(free_account)
+
+    notification_sent = false
+    Slack::Notifier.stub(:new, ->(*args) {
+      notifier = Object.new
+      notifier.define_singleton_method(:post) { |msg| notification_sent = true }
+      notifier
+    }) do
+      service.send_custom_alert("Test Title", "Test message")
+    end
+
+    refute notification_sent,
+      "Should NOT send Slack notification for free plan account"
+  end
 end

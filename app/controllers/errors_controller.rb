@@ -10,6 +10,12 @@ class ErrorsController < ApplicationController
     # Get all issues (errors) ordered by most recent, including resolved ones
     base_scope = project_scope ? project_scope.issues : Issue
 
+    # Data retention: only show issues with recent activity within retention window
+    # Free plan: 5 days, paid plans: 31 days
+    if retention_cutoff
+      base_scope = base_scope.where("last_seen_at >= ?", retention_cutoff)
+    end
+
     # Always exclude errors from the last minute to avoid showing realtime
     # noise that hasn't been fully processed / grouped yet.
     base_scope = base_scope.where("last_seen_at < ?", 1.minute.ago)
@@ -79,6 +85,7 @@ class ErrorsController < ApplicationController
     issue_ids = @issues.map(&:id)
     if issue_ids.any?
       events_scope = project_scope ? project_scope.events : Event
+      events_scope = events_scope.within_retention(retention_cutoff) if retention_cutoff
       cutoff_24h = 24.hours.ago
 
       # Only count events for the 25 issues on this page (NOT a global count).
@@ -105,6 +112,7 @@ class ErrorsController < ApplicationController
 
     # Optional: build graph data across all errors
     if params[:tab] == "graph"
+      max_retention_seconds = ((current_account&.data_retention_days || 31) * 24).hours
       range_key = (params[:range] || "7D").to_s.upcase
       window_seconds = case range_key
       when "1H" then 1.hour
@@ -117,6 +125,8 @@ class ErrorsController < ApplicationController
       when "30D" then 30.days
       else 7.days
       end
+      # Cap graph range to plan's data retention period
+      window_seconds = [window_seconds, max_retention_seconds].min
 
       bucket_seconds = case range_key
       when "1H", "4H", "8H" then 5.minutes
@@ -136,6 +146,7 @@ class ErrorsController < ApplicationController
       # Use SQL date_trunc + GROUP BY to count events per bucket in the DB.
       # This returns ~7-300 rows instead of loading millions of timestamps into Ruby.
       events_scope = project_scope ? project_scope.events : Event
+      events_scope = events_scope.within_retention(retention_cutoff) if retention_cutoff
       trunc_unit = bucket_seconds <= 5.minutes ? "minute" : (bucket_seconds <= 1.hour ? "hour" : "day")
       bucketed = events_scope
         .where(occurred_at: start_time..end_time)
@@ -183,6 +194,7 @@ class ErrorsController < ApplicationController
                            .first
 
     events_scope = @issue.events
+    events_scope = events_scope.within_retention(retention_cutoff) if retention_cutoff
 
     # Simple filters for Samples table
     events_scope = events_scope.where(server_name: params[:server_name]) if params[:server_name].present?
@@ -209,6 +221,7 @@ class ErrorsController < ApplicationController
     # Graph data for counts over time (only build when requested)
     if params[:tab] == "graph"
       range_key = (params[:range] || "7D").to_s.upcase
+      max_retention_seconds = ((current_account&.data_retention_days || 31) * 24).hours
       window_seconds = case range_key
       when "1H" then 1.hour
       when "4H" then 4.hours
@@ -220,6 +233,8 @@ class ErrorsController < ApplicationController
       when "30D" then 30.days
       else 24.hours
       end
+      # Cap graph range to plan's data retention period
+      window_seconds = [window_seconds, max_retention_seconds].min
 
       bucket_seconds = case range_key
       when "1H", "4H", "8H" then 5.minutes
@@ -254,7 +269,12 @@ class ErrorsController < ApplicationController
 
     if params[:tab] == "ai"
       Rails.logger.info "[AI Debug] Issue ##{@issue.id} - ai_summary present: #{@issue.ai_summary.present?}, length: #{@issue.ai_summary&.length}"
-      if @issue.ai_summary.present?
+
+      # Free plan: AI summaries are not available — redirect to plan page
+      account = current_user&.account
+      if account&.on_free_plan?
+        @ai_result = { error: "free_plan", message: "AI summaries are not available on the Free plan. Upgrade to unlock AI-powered error analysis." }
+      elsif @issue.ai_summary.present?
         @ai_result = { summary: @issue.ai_summary }
         Rails.logger.info "[AI Debug] Set @ai_result with summary length: #{@ai_result[:summary]&.length}"
       elsif @issue.ai_summary_generated_at.present?
@@ -280,8 +300,17 @@ class ErrorsController < ApplicationController
     @issue = (project_scope ? project_scope.issues : Issue).find(params[:id])
     @selected_event = @issue.events.order(occurred_at: :desc).first
 
-    # Check quota before generating (ERB handles all quota UI on page reload)
+    # Free plan: AI is fully blocked — redirect to plan page
     account = current_user&.account || @issue.account
+    if account&.on_free_plan?
+      respond_to do |format|
+        format.json { render json: { success: false, free_plan: true, redirect_url: plan_path } }
+        format.html { redirect_to plan_path, alert: "AI summaries are not available on the Free plan. Upgrade to unlock AI-powered error analysis." }
+      end
+      return
+    end
+
+    # Check quota before generating (ERB handles all quota UI on page reload)
     if account && !account.within_quota?(:ai_summaries)
       respond_to do |format|
         format.json { render json: { success: false, quota_exceeded: true } }

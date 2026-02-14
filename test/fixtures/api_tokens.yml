@@ -13,3 +13,10 @@ inactive_token:
   name: "Inactive Token"
   token: <%= SecureRandom.hex(32) %>
   active: false
+
+free_token:
+  account: free_account
+  project: free_project
+  name: "Free Plan Token"
+  token: <%= SecureRandom.hex(32) %>
+  active: true

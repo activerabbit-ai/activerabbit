@@ -40,7 +40,7 @@ class ApplicationController < ActionController::Base
   # Super admin viewing mode: read-only access
   before_action :enforce_read_only_for_super_admin_viewing
 
-  helper_method :current_project, :current_account, :selected_project_for_menu, :viewing_as_super_admin?
+  helper_method :current_project, :current_account, :selected_project_for_menu, :viewing_as_super_admin?, :retention_cutoff
 
   protected
 
@@ -179,6 +179,13 @@ class ApplicationController < ActionController::Base
     if message
       flash.now[:alert] = view_context.link_to(message, plan_path, class: "underline hover:text-red-800").html_safe
     end
+  end
+
+  # Data retention cutoff for the current account's plan.
+  # Free plan: 5 days, paid plans: 31 days.
+  # Use this to scope event queries so free plan users only see recent data.
+  def retention_cutoff
+    @_retention_cutoff ||= current_account&.data_retention_cutoff
   end
 
   def user_not_authorized

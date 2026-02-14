@@ -18,6 +18,7 @@ services:
     # Enable live reloading
     command: >
       bash -c "
+        rm -f tmp/pids/server.pid &&
         echo 'Waiting for database...' &&
         bundle exec rails db:prepare &&
         echo 'Building Tailwind CSS...' &&

@@ -273,7 +273,7 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
     end
   end
 
-  test "auto-enqueues AiSummaryJob for free plan within quota" do
+  test "does NOT auto-enqueue AiSummaryJob for free plan (0 AI quota)" do
     Sidekiq::Worker.clear_all
     # Clear Redis counter again right before this test (parallel workers may pollute)
     Sidekiq.redis { |c| c.del("ai_summary_enqueued:#{@account.id}:#{Date.current.strftime('%Y-%m')}") }
@@ -283,7 +283,7 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
 
     payload = {
       exception_class: "FreeAutoAIError",
-      message: "Free plan first 5 errors get auto AI",
+      message: "Free plan has 0 AI summaries — should not enqueue",
       backtrace: ["app/models/free.rb:1:in `go'"],
       controller_action: "FreeController#go",
       environment: "production"
@@ -291,7 +291,69 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
 
     ErrorIngestJob.new.perform(@project.id, payload)
 
-    assert_equal 1, AiSummaryJob.jobs.size,
-      "AiSummaryJob should be auto-enqueued for free plan within quota (first 5)"
+    assert_equal 0, AiSummaryJob.jobs.size,
+      "AiSummaryJob should NOT be auto-enqueued for free plan (0 AI quota)"
+  end
+
+  # ============================================================================
+  # Free plan hard cap safety net
+  # ============================================================================
+
+  test "drops event when free plan event cap is reached" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    ActsAsTenant.current_tenant = free_account
+
+    # Exhaust the free plan quota
+    free_account.update!(cached_events_used: 5_001)
+
+    payload = {
+      exception_class: "CappedError",
+      message: "Should be dropped by safety net",
+      backtrace: ["app/models/capped.rb:1:in `run'"],
+      controller_action: "CappedController#run",
+      environment: "production"
+    }
+
+    assert_no_difference "Event.count" do
+      ErrorIngestJob.new.perform(free_project.id, payload)
+    end
+  end
+
+  test "processes event when free plan is under cap" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    ActsAsTenant.current_tenant = free_account
+
+    free_account.update!(cached_events_used: 100)
+
+    payload = {
+      exception_class: "UnderCapError",
+      message: "Should be processed normally",
+      backtrace: ["app/models/under.rb:1:in `run'"],
+      controller_action: "UnderController#run",
+      environment: "production"
+    }
+
+    assert_difference "Event.count", 1 do
+      ErrorIngestJob.new.perform(free_project.id, payload)
+    end
+  end
+
+  test "does not drop events for team plan even when over quota" do
+    # Default account is on team plan (trial) — no hard cap
+    @account.update!(cached_events_used: 999_999)
+
+    payload = {
+      exception_class: "TeamOverQuotaError",
+      message: "Team plan uses overage billing, not hard cap",
+      backtrace: ["app/models/team.rb:1:in `run'"],
+      controller_action: "TeamController#run",
+      environment: "production"
+    }
+
+    assert_difference "Event.count", 1 do
+      ErrorIngestJob.new.perform(@project.id, payload)
+    end
   end
 end

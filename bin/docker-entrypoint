@@ -10,6 +10,7 @@ fi
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   # Remove stale PID file if it exists (prevents "A server is already running" error)
   rm -f /rails/tmp/pids/server.pid
+  rm -f /app/tmp/pids/server.pid
 
   ./bin/rails db:prepare
 fi

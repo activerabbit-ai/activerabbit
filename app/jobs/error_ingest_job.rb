@@ -27,6 +27,15 @@ class ErrorIngestJob
     project = ActsAsTenant.without_tenant { Project.find(project_id) }
     ActsAsTenant.current_tenant = project.account
 
+    # Hard cap: free plan stops accepting events once quota is reached.
+    # This is a safety net — the API controller also checks, but jobs may
+    # already be enqueued before the cap was reached.
+    account = project.account
+    if account&.free_plan_events_capped?
+      Rails.logger.info "[ErrorIngestJob] Dropped: free plan cap reached for account #{account.id}"
+      return
+    end
+
     # Ingest the error event
     event = Event.ingest_error(project: project, payload: payload)
 

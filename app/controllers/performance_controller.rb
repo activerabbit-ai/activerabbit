@@ -16,12 +16,16 @@ class PerformanceController < ApplicationController
       # Adaptive default window so the page shows data by default
       requested_hours = (params[:hours_back] || 24).to_i
       @hours_back = requested_hours
+
+      # Cap the maximum window to the plan's data retention period
+      max_retention_hours = (current_account&.data_retention_days || 31) * 24
       unless PerformanceEvent.where(project: project_scope).where("occurred_at > ?", @hours_back.hours.ago).exists?
         @hours_back = [@hours_back, 168].max # 7 days
       end
       unless PerformanceEvent.where(project: project_scope).where("occurred_at > ?", @hours_back.hours.ago).exists?
         @hours_back = [@hours_back, 720].max # 30 days
       end
+      @hours_back = [@hours_back, max_retention_hours].min
 
       @rollups = project_scope.perf_rollups
                          .where(timeframe: @timeframe)
@@ -406,6 +410,7 @@ class PerformanceController < ApplicationController
     end
 
     # Range handling (default ALL except Graph which defaults to 7D)
+    max_retention_seconds = ((current_account&.data_retention_days || 31) * 24).hours
     default_range_key = (@current_tab == "graph") ? "7D" : "ALL"
     range_key = (params[:range] || default_range_key).to_s.upcase
     window_seconds = case range_key
@@ -417,9 +422,11 @@ class PerformanceController < ApplicationController
     when "48H" then 48.hours
     when "7D" then 7.days
     when "30D" then 30.days
-    when "ALL" then nil
+    when "ALL" then max_retention_seconds  # Cap "ALL" to retention period
     else 7.days
     end
+    # Cap to plan's data retention period
+    window_seconds = [window_seconds, max_retention_seconds].min if window_seconds
 
     project_scope = @current_project || @project
 

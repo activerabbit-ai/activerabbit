@@ -13,6 +13,7 @@ class Event < ApplicationRecord
   scope :recent, -> { order(occurred_at: :desc) }
   scope :for_timerange, ->(start_time, end_time) { where(occurred_at: start_time..end_time) }
   scope :last_24h, -> { where("occurred_at > ?", 24.hours.ago) }
+  scope :within_retention, ->(cutoff) { where("occurred_at >= ?", cutoff) }
   # Events from failed background jobs (Sidekiq / Solid Queue via ActiveJob)
   # Cast to jsonb so PostgreSQL ? (key exists) operator works (it only exists for jsonb, not json)
   scope :from_job_failures, -> {

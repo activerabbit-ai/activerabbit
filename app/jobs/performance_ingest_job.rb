@@ -7,6 +7,12 @@ class PerformanceIngestJob
     # Project is multi-tenant; fetch it without tenant, then set tenant for the rest
     project = ActsAsTenant.without_tenant { Project.find(project_id) }
 
+    # Hard cap: free plan stops accepting events once quota is reached
+    if project.account&.free_plan_events_capped?
+      Rails.logger.info "[PerformanceIngestJob] Dropped: free plan cap reached for account #{project.account.id}"
+      return
+    end
+
     # Set tenant context for ActsAsTenant
     ActsAsTenant.with_tenant(project.account) do
       perform_with_tenant(project, payload, batch_id)

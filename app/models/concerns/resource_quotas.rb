@@ -14,19 +14,29 @@ module ResourceQuotas
 
   # Plan-based quota definitions
   #
+  # Free plan:
+  #   - 5,000 errors/month, 0 AI summaries, 0 PRs, unlimited projects, 1 user
+  #   - 5 days data retention, email notifications only (no Slack)
+  #   - No uptime monitors or status pages
+  #   - Hard-capped: once limit hit → stop accepting events until period resets
+  #   - No overage fees
+  #
   # AI summaries (Generate AI):
-  #   free  → 5   (first 5 unique errors)
-  #   trial → 20  (14-day trial period)
-  #   team  → 100 (first 100 unique errors, then "Buy more")
+  #   free     → 0   (not available — upgrade required)
+  #   trial    → 20  (14-day trial period)
+  #   team     → 20  (first 20 unique errors, then "Buy more")
   #   business → 100
   PLAN_QUOTAS = {
     free: {
       events: 5_000,
-      ai_summaries: 5,
-      pull_requests: 5,
+      ai_summaries: 0,
+      pull_requests: 0,
       uptime_monitors: 0,
       status_pages: 0,
-      projects: 1
+      projects: 999_999,
+      users: 1,
+      data_retention_days: 5,
+      slack_notifications: false
     },
     trial: {
       events: 50_000,
@@ -34,7 +44,9 @@ module ResourceQuotas
       pull_requests: 100,
       uptime_monitors: 20,
       status_pages: 5,
-      projects: 10
+      projects: 10,
+      data_retention_days: 31,
+      slack_notifications: true
     },
     team: {
       events: 50_000,
@@ -42,7 +54,9 @@ module ResourceQuotas
       pull_requests: 20,
       uptime_monitors: 20,
       status_pages: 5,
-      projects: 10
+      projects: 10,
+      data_retention_days: 31,
+      slack_notifications: true
     },
     business: {
       events: 100_000,
@@ -50,7 +64,9 @@ module ResourceQuotas
       pull_requests: 250,
       uptime_monitors: 5,
       status_pages: 1,
-      projects: 50
+      projects: 50,
+      data_retention_days: 31,
+      slack_notifications: true
     }
   }.freeze
 
@@ -83,6 +99,53 @@ module ResourceQuotas
 
   def projects_quota
     quota_for_resource(:projects)
+  end
+
+  # Data retention period in days for the current plan
+  #
+  # Example:
+  #   account.data_retention_days # => 7 (free), 31 (team/business)
+  def data_retention_days
+    quota_for_resource(:data_retention_days)
+  end
+
+  # Cutoff timestamp for data retention based on current plan.
+  # Events older than this should not be displayed or retained.
+  #
+  # Example:
+  #   account.data_retention_cutoff # => 5.days.ago (free), 31.days.ago (team)
+  def data_retention_cutoff
+    data_retention_days.days.ago
+  end
+
+  # Whether the current plan includes Slack notifications
+  #
+  # Example:
+  #   account.slack_notifications_allowed? # => false (free plan)
+  def slack_notifications_allowed?
+    plan_key = effective_plan_key
+    PLAN_QUOTAS.dig(plan_key, :slack_notifications) != false
+  end
+
+  # Whether the account is on the free plan (not trial, not paid)
+  #
+  # Example:
+  #   account.on_free_plan? # => true
+  def on_free_plan?
+    effective_plan_key == :free
+  end
+
+  # Whether the free plan event cap has been reached.
+  # Free plan has a hard cap: once you hit the limit, we stop accepting events
+  # until the 30-day usage period resets. No overage fees.
+  #
+  # Returns false for paid plans (they use overage billing instead).
+  #
+  # Example:
+  #   account.free_plan_events_capped? # => true (stop ingesting)
+  def free_plan_events_capped?
+    return false unless on_free_plan?
+    !within_quota?(:events)
   end
 
   # Human-readable effective plan name, taking trials into account.

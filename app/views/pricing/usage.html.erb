@@ -72,6 +72,221 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Data Retention -->
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-amber-500">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <h3 class="text-lg font-semibold text-gray-900">Data Retention</h3>
+            </div>
+            <span class="text-2xl font-bold text-amber-600"><%= @data_retention_days %> days</span>
+          </div>
+          <div class="space-y-2">
+            <p class="text-xs text-gray-500">
+              Error and performance data older than <%= @data_retention_days %> days is automatically removed.
+            </p>
+            <% if @is_free_plan %>
+              <div class="flex items-center gap-2 text-xs text-gray-400 mt-2">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Team &amp; Business: 31 days retention
+              </div>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all mt-1">
+                Upgrade for more
+              </a>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- AI Summaries -->
+        <% if @is_free_plan %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-orange-400">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-gray-900">AI Summaries</h3>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">NOT AVAILABLE</span>
+            </div>
+            <div class="space-y-3">
+              <p class="text-sm text-gray-500">AI-powered error analysis is not included in the Free plan.</p>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Team plan: $29/mo &bull; Business: $80/mo
+              </div>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
+                Upgrade to unlock
+              </a>
+            </div>
+          </div>
+        <% else %>
+          <% ai_pct = @account.usage_percentage(:ai_summaries) %>
+          <% ai_over = ai_pct >= 100 %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= ai_over ? 'border-red-500 ring-2 ring-red-200' : 'border-purple-500' %>">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-gray-900">AI Summaries</h3>
+              <% if ai_over %>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
+              <% else %>
+                <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+              <% end %>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Used (billing period):</span>
+                <span class="font-bold <%= ai_over ? 'text-red-600' : 'text-gray-900' %>"><%= @ai_summaries_used %></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Quota:</span>
+                <span class="font-medium text-gray-700"><%= @ai_summaries_quota %></span>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500">
+                <span>Last 30 days:</span>
+                <span><%= number_with_delimiter(@ai_summaries_last_30_days) %></span>
+              </div>
+              <% if @account.on_trial? && @free_plan_usage.present? %>
+                <div class="flex justify-between text-xs mt-1">
+                  <span class="text-gray-500">Free plan limit:</span>
+                  <span class="text-red-600 font-semibold">0 (not available)</span>
+                </div>
+              <% end %>
+              <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+                <div class="<%= ai_over ? 'bg-red-500' : 'bg-purple-500' %> h-3 rounded-full transition-all" style="width: <%= [ai_pct, 100].min %>%"></div>
+              </div>
+              <div class="text-right text-sm font-bold <%= ai_over ? 'text-red-600' : (ai_pct >= 90 ? 'text-orange-500' : ai_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+                <%= ai_pct.round(1) %>%
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Pull Requests -->
+        <% if @is_free_plan %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-orange-400">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-gray-900">Pull Requests</h3>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">NOT AVAILABLE</span>
+            </div>
+            <div class="space-y-3">
+              <p class="text-sm text-gray-500">AI-generated pull requests are not included in the Free plan.</p>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+                Team plan: $29/mo &bull; Business: $80/mo
+              </div>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all">
+                Upgrade to unlock
+              </a>
+            </div>
+          </div>
+        <% else %>
+          <% pr_pct = @account.usage_percentage(:pull_requests) %>
+          <% pr_over = pr_pct >= 100 %>
+          <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= pr_over ? 'border-red-500 ring-2 ring-red-200' : 'border-pink-500' %>">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-gray-900">Pull Requests</h3>
+              <% if pr_over %>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
+              <% else %>
+                <svg class="w-8 h-8 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+              <% end %>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Used (billing period):</span>
+                <span class="font-bold <%= pr_over ? 'text-red-600' : 'text-gray-900' %>"><%= @pull_requests_used %></span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Quota:</span>
+                <span class="font-medium text-gray-700"><%= @pull_requests_quota %></span>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500">
+                <span>Last 30 days:</span>
+                <span><%= number_with_delimiter(@pull_requests_last_30_days) %></span>
+              </div>
+              <% if @account.on_trial? && @free_plan_usage.present? %>
+                <div class="flex justify-between text-xs mt-1">
+                  <span class="text-gray-500">Free plan limit:</span>
+                  <span class="text-red-600 font-semibold">0 (not available)</span>
+                </div>
+              <% end %>
+              <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+                <div class="<%= pr_over ? 'bg-red-500' : 'bg-pink-500' %> h-3 rounded-full transition-all" style="width: <%= [pr_pct, 100].min %>%"></div>
+              </div>
+              <div class="text-right text-sm font-bold <%= pr_over ? 'text-red-600' : (pr_pct >= 90 ? 'text-orange-500' : pr_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+                <%= pr_pct.round(1) %>%
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Projects -->
+        <% proj_unlimited = @projects_quota.to_i >= 999_999 || @is_free_plan %>
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-green-500">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Projects</h3>
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Active projects:</span>
+              <span class="font-bold text-gray-900"><%= @projects_used %></span>
+            </div>
+            <% if proj_unlimited %>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Limit:</span>
+                <span class="font-medium text-green-600">Unlimited</span>
+              </div>
+            <% else %>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Quota:</span>
+                <span class="font-medium text-gray-700"><%= number_with_delimiter(@projects_quota) %></span>
+              </div>
+              <% proj_pct = @account.usage_percentage(:projects) %>
+              <% proj_over = proj_pct >= 100 %>
+              <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
+                <div class="<%= proj_over ? 'bg-red-500' : 'bg-green-500' %> h-3 rounded-full transition-all" style="width: <%= [proj_pct, 100].min %>%"></div>
+              </div>
+              <div class="text-right text-sm font-bold <%= proj_over ? 'text-red-600' : (proj_pct >= 90 ? 'text-orange-500' : proj_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
+                <%= proj_pct.round(1) %>%
+              </div>
+            <% end %>
+            <% if @account.on_trial? && @free_plan_usage.present? %>
+              <div class="flex justify-between text-xs mt-1">
+                <span class="text-gray-500">Free plan limit:</span>
+                <span class="text-green-600 font-semibold">Unlimited</span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+        <!-- Requests Total (last 30 days, all sources incl. performance) -->
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-gray-500">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Requests Total</h3>
+            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v2a2 2 0 002 2h2a2 2 0 002-2v-2m-9-4h10M5 9h14M5 5h14"/>
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Requests (last 30 days):</span>
+              <span class="font-bold text-gray-900"><%= number_with_delimiter(@requests_total_last_30_days) %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plan Features Section -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
         <!-- Error Tracking -->
         <% events_pct = @account.usage_percentage(:events) %>
         <% events_over = events_pct >= 100 %>
@@ -113,149 +328,88 @@
             <div class="text-right text-sm font-bold <%= events_over ? 'text-red-600' : (events_pct >= 90 ? 'text-orange-500' : events_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
               <%= events_pct.round(1) %>%
             </div>
+            <% if @is_free_plan %>
+              <% if events_over %>
+                <p class="text-xs text-red-600 font-medium mt-1">Hard cap reached — new events are paused until your billing period resets.</p>
+              <% else %>
+                <p class="text-xs text-gray-400 mt-1">Hard-capped at <%= number_with_delimiter(@event_quota) %>/mo — no overage fees.</p>
+              <% end %>
+              <div class="flex items-center gap-2 text-xs text-gray-400 mt-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                Team: 50,000/mo &bull; Business: 100,000/mo
+              </div>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all mt-1">
+                Upgrade for more
+              </a>
+            <% end %>
           </div>
         </div>
 
-        <!-- AI Summaries -->
-        <% ai_pct = @account.usage_percentage(:ai_summaries) %>
-        <% ai_over = ai_pct >= 100 %>
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= ai_over ? 'border-red-500 ring-2 ring-red-200' : 'border-purple-500' %>">
+        <!-- Users -->
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-cyan-500">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900">AI Summaries</h3>
-            <% if ai_over %>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
-            <% else %>
-              <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-              </svg>
-            <% end %>
-          </div>
-          <div class="space-y-2">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Used (billing period):</span>
-              <span class="font-bold <%= ai_over ? 'text-red-600' : 'text-gray-900' %>"><%= @ai_summaries_used %></span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Quota:</span>
-              <span class="font-medium text-gray-700"><%= @ai_summaries_quota %></span>
-            </div>
-            <div class="flex justify-between text-xs text-gray-500">
-              <span>Last 30 days:</span>
-              <span><%= number_with_delimiter(@ai_summaries_last_30_days) %></span>
-            </div>
-            <% if @account.on_trial? && @free_plan_usage.present? %>
-              <div class="flex justify-between text-xs mt-1">
-                <span class="text-gray-500">Free plan limit:</span>
-                <span class="<%= @ai_summaries_used > @free_plan_usage[:ai_summaries][:quota] ? 'text-red-600 font-semibold' : 'text-gray-700' %>">
-                  <%= @free_plan_usage[:ai_summaries][:quota] %>
-                </span>
-              </div>
-            <% end %>
-            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-              <div class="<%= ai_over ? 'bg-red-500' : 'bg-purple-500' %> h-3 rounded-full transition-all" style="width: <%= [ai_pct, 100].min %>%"></div>
-            </div>
-            <div class="text-right text-sm font-bold <%= ai_over ? 'text-red-600' : (ai_pct >= 90 ? 'text-orange-500' : ai_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
-              <%= ai_pct.round(1) %>%
-            </div>
-          </div>
-        </div>
-
-        <!-- Pull Requests -->
-        <% pr_pct = @account.usage_percentage(:pull_requests) %>
-        <% pr_over = pr_pct >= 100 %>
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= pr_over ? 'border-red-500 ring-2 ring-red-200' : 'border-pink-500' %>">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900">Pull Requests</h3>
-            <% if pr_over %>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
-            <% else %>
-              <svg class="w-8 h-8 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-              </svg>
-            <% end %>
-          </div>
-          <div class="space-y-2">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Used (billing period):</span>
-              <span class="font-bold <%= pr_over ? 'text-red-600' : 'text-gray-900' %>"><%= @pull_requests_used %></span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Quota:</span>
-              <span class="font-medium text-gray-700"><%= @pull_requests_quota %></span>
-            </div>
-            <div class="flex justify-between text-xs text-gray-500">
-              <span>Last 30 days:</span>
-              <span><%= number_with_delimiter(@pull_requests_last_30_days) %></span>
-            </div>
-            <% if @account.on_trial? && @free_plan_usage.present? %>
-              <div class="flex justify-between text-xs mt-1">
-                <span class="text-gray-500">Free plan limit:</span>
-                <span class="<%= @pull_requests_used > @free_plan_usage[:pull_requests][:quota] ? 'text-red-600 font-semibold' : 'text-gray-700' %>">
-                  <%= @free_plan_usage[:pull_requests][:quota] %>
-                </span>
-              </div>
-            <% end %>
-            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
-              <div class="<%= pr_over ? 'bg-red-500' : 'bg-pink-500' %> h-3 rounded-full transition-all" style="width: <%= [pr_pct, 100].min %>%"></div>
-            </div>
-            <div class="text-right text-sm font-bold <%= pr_over ? 'text-red-600' : (pr_pct >= 90 ? 'text-orange-500' : pr_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
-              <%= pr_pct.round(1) %>%
-            </div>
-          </div>
-        </div>
-
-        <!-- Projects -->
-        <% proj_pct = @account.usage_percentage(:projects) %>
-        <% proj_over = proj_pct >= 100 %>
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= proj_over ? 'border-red-500 ring-2 ring-red-200' : 'border-green-500' %>">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900">Projects</h3>
-            <% if proj_over %>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">OVER LIMIT</span>
-            <% else %>
-              <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-              </svg>
-            <% end %>
-          </div>
-          <div class="space-y-2">
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Used:</span>
-              <span class="font-bold <%= proj_over ? 'text-red-600' : 'text-gray-900' %>"><%= @projects_used %></span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Quota:</span>
-              <span class="font-medium text-gray-700"><%= @projects_quota %></span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
-              <div class="<%= proj_over ? 'bg-red-500' : 'bg-green-500' %> h-3 rounded-full transition-all" style="width: <%= [proj_pct, 100].min %>%"></div>
-            </div>
-            <% if @account.on_trial? && @free_plan_usage.present? %>
-              <div class="flex justify-between text-xs mt-1">
-                <span class="text-gray-500">Free plan limit:</span>
-                <span class="<%= @projects_used > @free_plan_usage[:projects][:quota] ? 'text-red-600 font-semibold' : 'text-gray-700' %>">
-                  <%= @free_plan_usage[:projects][:quota] %>
-                </span>
-              </div>
-            <% end %>
-            <div class="text-right text-sm font-bold <%= proj_over ? 'text-red-600' : (proj_pct >= 90 ? 'text-orange-500' : proj_pct >= 80 ? 'text-yellow-500' : 'text-green-500') %>">
-              <%= proj_pct.round(1) %>%
-            </div>
-          </div>
-        </div>
-        <!-- Requests Total (last 30 days, all sources incl. performance) -->
-        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 border-gray-500">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900">Requests Total</h3>
-            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v2a2 2 0 002 2h2a2 2 0 002-2v-2m-9-4h10M5 9h14M5 5h14"/>
+            <h3 class="text-lg font-semibold text-gray-900">Users</h3>
+            <svg class="w-8 h-8 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
           </div>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-600">Requests (last 30 days):</span>
-              <span class="font-bold text-gray-900"><%= number_with_delimiter(@requests_total_last_30_days) %></span>
+              <span class="text-gray-600">Current users:</span>
+              <span class="font-bold text-gray-900"><%= @users_used %></span>
             </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Limit:</span>
+              <span class="font-medium text-gray-700"><%= @users_quota ? @users_quota : "Unlimited" %></span>
+            </div>
+            <% if @is_free_plan %>
+              <div class="flex items-center gap-2 text-xs text-gray-400 mt-2">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Team &amp; Business: Unlimited users
+              </div>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all mt-1">
+                Upgrade for more
+              </a>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-shadow border-l-4 <%= @slack_allowed ? 'border-teal-500' : 'border-gray-300' %>">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+            <svg class="w-8 h-8 <%= @slack_allowed ? 'text-teal-500' : 'text-gray-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Email:</span>
+              <span class="font-bold text-green-600">&#10003; Enabled</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Slack:</span>
+              <% if @slack_allowed %>
+                <span class="font-bold text-green-600">&#10003; Available</span>
+              <% else %>
+                <span class="font-bold text-gray-400">&mdash; Not available</span>
+              <% end %>
+            </div>
+            <% if @is_free_plan %>
+              <div class="flex items-center gap-2 text-xs text-gray-400 mt-2">
+                <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                Team &amp; Business: Email + Slack
+              </div>
+              <a href="<%= plan_path %>" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md shadow hover:from-indigo-700 hover:to-violet-700 transition-all mt-1">
+                Upgrade for Slack
+              </a>
+            <% end %>
           </div>
         </div>
       </div>

@@ -6,179 +6,203 @@
   <title><%= @subject %></title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
       color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 16px;
     }
     .container {
-      background-color: #ffffff;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
       border-radius: 8px;
-      padding: 30px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
     }
     .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
       text-align: center;
-      margin-bottom: 30px;
     }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      color: #1a1a1a;
+    .content {
+      padding: 24px 20px;
     }
-    .severity-critical {
-      color: #dc2626;
-    }
-    .severity-warning {
-      color: #d97706;
-    }
-    .severity-resolved {
-      color: #059669;
-    }
-    .metrics {
-      background-color: #f8f9fa;
+    h2 { margin: 24px 0 12px; font-size: 16px; }
+    p { margin: 0 0 16px 0; color: #333; font-size: 14px; }
+    .info-box {
+      background: #f8f9fa;
       border-radius: 6px;
-      padding: 20px;
-      margin: 20px 0;
+      padding: 16px;
+      margin: 16px 0;
     }
-    .metric-row {
-      display: flex;
-      justify-content: space-between;
+    .info-box table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .info-box td {
       padding: 8px 0;
       border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
     }
-    .metric-row:last-child {
+    .info-box tr:last-child td {
       border-bottom: none;
     }
-    .metric-label {
+    .info-box .label {
       font-weight: 500;
       color: #6b7280;
+      width: 40%;
     }
-    .metric-value {
+    .info-box .value {
       font-weight: 600;
       color: #1f2937;
+      text-align: right;
     }
     .endpoint {
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
       background-color: #e5e7eb;
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 14px;
+      font-size: 13px;
     }
-    .cta {
+    .button-wrapper {
       text-align: center;
-      margin-top: 30px;
+      margin: 24px 0 8px;
     }
-    .cta a {
+    .button {
       display: inline-block;
-      background-color: #4f46e5;
-      color: #ffffff;
+      padding: 12px 20px;
+      background: #667eea;
+      color: #ffffff !important;
       text-decoration: none;
-      padding: 12px 24px;
       border-radius: 6px;
-      font-weight: 500;
-    }
-    .cta a:hover {
-      background-color: #4338ca;
+      font-size: 14px;
+      font-weight: 600;
     }
     .footer {
       text-align: center;
-      margin-top: 30px;
-      font-size: 12px;
-      color: #9ca3af;
+      padding: 16px;
+      font-size: 13px;
+      color: #777;
+      border-top: 1px solid #e5e5e5;
+    }
+    .footer a {
+      color: #667eea;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>
-        <% if @incident.status == "open" %>
-          <span class="<%= @incident.severity == 'critical' ? 'severity-critical' : 'severity-warning' %>">
-            <%= @incident.severity == 'critical' ? '🔴 CRITICAL' : '🟡 WARNING' %>
-          </span>
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;">
+          <%= image_tag "faviicons/favicon-512.png",
+            width: 48,
+            height: 48,
+            style: "display:block;margin-right:16px;" %>
+          <div style="text-align:left;">
+            <div style="font-weight:700;font-size:16px;line-height:1.25;">
+              <% if @incident.status == "open" %>
+                <% if @incident.severity == "critical" %>
+                  CRITICAL Performance Incident
+                <% else %>
+                  WARNING Performance Incident
+                <% end %>
+              <% else %>
+                RESOLVED Performance Incident
+              <% end %>
+            </div>
+            <div style="font-size:13px;opacity:0.9;margin-top:2px;">
+              Project: <%= @project.name %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <p style="text-align:center;margin-bottom:16px;">
+        <% if @incident.status == "open" && @incident.severity == "critical" %>
+          <span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;background:#fef2f2;color:#dc2626;">🔴 CRITICAL</span>
+        <% elsif @incident.status == "open" %>
+          <span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;background:#fffbeb;color:#d97706;">🟡 WARNING</span>
         <% else %>
-          <span class="severity-resolved">✅ RESOLVED</span>
+          <span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;background:#ecfdf5;color:#059669;">✅ RESOLVED</span>
         <% end %>
-      </h1>
-      <p style="margin-top: 10px; color: #6b7280;">
-        Performance Incident - <%= @project.name %>
       </p>
-    </div>
 
-    <div class="metrics">
-      <div class="metric-row">
-        <span class="metric-label">Endpoint</span>
-        <span class="metric-value endpoint"><%= @incident.target %></span>
-      </div>
+      <div class="info-box">
+        <table>
+          <tr>
+            <td class="label">Endpoint</td>
+            <td class="value"><span class="endpoint"><%= @incident.target %></span></td>
+          </tr>
 
-      <% if @incident.status == "open" %>
-        <div class="metric-row">
-          <span class="metric-label">Current p95</span>
-          <span class="metric-value"><%= @incident.trigger_p95_ms.round(0) %>ms</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Threshold</span>
-          <span class="metric-value"><%= @incident.threshold_ms.round(0) %>ms</span>
-        </div>
-      <% else %>
-        <div class="metric-row">
-          <span class="metric-label">Duration</span>
-          <span class="metric-value"><%= @incident.duration_minutes || 0 %> minutes</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Peak p95</span>
-          <span class="metric-value"><%= @incident.peak_p95_ms&.round(0) || 'N/A' %>ms</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Resolved p95</span>
-          <span class="metric-value"><%= @incident.resolve_p95_ms&.round(0) || 'N/A' %>ms</span>
-        </div>
-      <% end %>
-
-      <div class="metric-row">
-        <span class="metric-label">Environment</span>
-        <span class="metric-value"><%= @incident.environment %></span>
-      </div>
-
-      <div class="metric-row">
-        <span class="metric-label">Time</span>
-        <span class="metric-value">
           <% if @incident.status == "open" %>
-            <%= @incident.opened_at.strftime("%b %d, %Y %H:%M UTC") %>
+            <tr>
+              <td class="label">Current p95</td>
+              <td class="value"><%= @incident.trigger_p95_ms.round(0) %>ms</td>
+            </tr>
+            <tr>
+              <td class="label">Threshold</td>
+              <td class="value"><%= @incident.threshold_ms.round(0) %>ms</td>
+            </tr>
           <% else %>
-            <%= @incident.closed_at&.strftime("%b %d, %Y %H:%M UTC") || 'N/A' %>
+            <tr>
+              <td class="label">Duration</td>
+              <td class="value"><%= @incident.duration_minutes || 0 %> minutes</td>
+            </tr>
+            <tr>
+              <td class="label">Peak p95</td>
+              <td class="value"><%= @incident.peak_p95_ms&.round(0) || 'N/A' %>ms</td>
+            </tr>
+            <tr>
+              <td class="label">Resolved p95</td>
+              <td class="value"><%= @incident.resolve_p95_ms&.round(0) || 'N/A' %>ms</td>
+            </tr>
           <% end %>
-        </span>
+
+          <tr>
+            <td class="label">Environment</td>
+            <td class="value"><%= @incident.environment %></td>
+          </tr>
+
+          <tr>
+            <td class="label">Time</td>
+            <td class="value">
+              <% if @incident.status == "open" %>
+                <%= @incident.opened_at.strftime("%b %d, %Y %H:%M UTC") %>
+              <% else %>
+                <%= @incident.closed_at&.strftime("%b %d, %Y %H:%M UTC") || 'N/A' %>
+              <% end %>
+            </td>
+          </tr>
+        </table>
       </div>
-    </div>
 
-    <p style="color: #6b7280; text-align: center;">
-      <% if @incident.status == "open" %>
-        The p95 latency for this endpoint has exceeded the threshold for consecutive evaluations.
-        Please investigate the cause of the performance degradation.
-      <% else %>
-        The p95 latency has returned to normal levels. The incident is now resolved.
-      <% end %>
-    </p>
+      <p style="color:#6b7280;text-align:center;">
+        <% if @incident.status == "open" %>
+          The p95 latency for this endpoint has exceeded the threshold for consecutive evaluations.
+          Please investigate the cause of the performance degradation.
+        <% else %>
+          The p95 latency has returned to normal levels. The incident is now resolved.
+        <% end %>
+      </p>
 
-    <div class="cta">
-      <a href="<%= @dashboard_url %>">View Performance Dashboard</a>
+      <div class="button-wrapper">
+        <a href="<%= @dashboard_url %>" class="button">View Performance Dashboard</a>
+      </div>
     </div>
 
     <div class="footer">
       <p>
         This alert was sent by ActiveRabbit for project <%= @project.name %>.
         <br>
-        <a href="<%= "#{@protocol}://#{@host}/#{@project.slug}/settings" %>" style="color: #6b7280;">
-          Manage notification settings
-        </a>
+        <a href="<%= "#{@protocol}://#{@host}/#{@project.slug}/settings" %>">Manage notification settings</a>
       </p>
     </div>
   </div>
 </body>
 </html>
-

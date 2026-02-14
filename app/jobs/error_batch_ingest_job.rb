@@ -24,6 +24,12 @@ class ErrorBatchIngestJob
     project = ActsAsTenant.without_tenant { Project.find(project_id) }
     ActsAsTenant.current_tenant = project.account
 
+    # Hard cap: free plan stops accepting events once quota is reached
+    if project.account&.free_plan_events_capped?
+      Rails.logger.info "[ErrorBatchIngest] Dropped batch: free plan cap reached for account #{project.account.id}"
+      return
+    end
+
     payloads.each do |payload|
       process_single_error(project, payload, batch_id)
     rescue => e

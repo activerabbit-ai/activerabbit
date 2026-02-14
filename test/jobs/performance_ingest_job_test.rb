@@ -95,4 +95,61 @@ class PerformanceIngestJobTest < ActiveSupport::TestCase
       PerformanceIngestJob.new.perform(@project.id, payload)
     end
   end
+
+  # ============================================================================
+  # Free plan hard cap safety net
+  # ============================================================================
+
+  test "drops performance event when free plan event cap is reached" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    ActsAsTenant.current_tenant = free_account
+
+    free_account.update!(cached_events_used: 5_001)
+
+    payload = {
+      controller_action: "CappedController#index",
+      duration_ms: 150.5,
+      environment: "production",
+      occurred_at: Time.current.iso8601
+    }
+
+    assert_no_difference "PerformanceEvent.count" do
+      PerformanceIngestJob.new.perform(free_project.id, payload)
+    end
+  end
+
+  test "processes performance event when free plan is under cap" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    ActsAsTenant.current_tenant = free_account
+
+    free_account.update!(cached_events_used: 100)
+
+    payload = {
+      controller_action: "UnderCapController#index",
+      duration_ms: 80.0,
+      environment: "production",
+      occurred_at: Time.current.iso8601
+    }
+
+    assert_difference "PerformanceEvent.count", 1 do
+      PerformanceIngestJob.new.perform(free_project.id, payload)
+    end
+  end
+
+  test "does not drop performance events for team plan even when over quota" do
+    @account.update!(cached_events_used: 999_999)
+
+    payload = {
+      controller_action: "TeamOverQuotaController#index",
+      duration_ms: 200.0,
+      environment: "production",
+      occurred_at: Time.current.iso8601
+    }
+
+    assert_difference "PerformanceEvent.count", 1 do
+      PerformanceIngestJob.new.perform(@project.id, payload)
+    end
+  end
 end

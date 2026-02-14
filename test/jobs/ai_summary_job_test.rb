@@ -128,6 +128,34 @@ class AiSummaryJobTest < ActiveSupport::TestCase
     Account.define_method(:effective_plan_key, original_plan_key) if original_plan_key
   end
 
+  test "skips AI summary for free plan account" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+
+    payload = {
+      exception_class: "FreePlanAiError",
+      message: "Should not generate AI",
+      backtrace: ["app/controllers/home_controller.rb:5:in `index'"],
+      controller_action: "HomeController#index",
+      environment: "production"
+    }
+
+    event = Event.ingest_error(project: free_project, payload: payload)
+    issue = event.issue
+
+    # Free plan has 0 AI summaries — within_quota?(:ai_summaries) returns false
+    AiSummaryService.stub(:new, ->(*args) {
+      raise "AI summary should NOT be generated for free plan!"
+    }) do
+      assert_nothing_raised do
+        AiSummaryJob.new.perform(issue.id, event.id, free_project.id)
+      end
+    end
+
+    issue.reload
+    assert_nil issue.ai_summary, "Free plan should not have AI summary generated"
+  end
+
   test "does not raise on missing records" do
     assert_nothing_raised do
       AiSummaryJob.new.perform(999999, 999999, 999999)

@@ -7,7 +7,10 @@ class AccountSlackNotificationService
   end
 
   def configured?
-    @webhook_url.present?
+    return false unless @webhook_url.present?
+    # Free plan does not include Slack notifications
+    return false unless @account.slack_notifications_allowed?
+    true
   end
 
   def send_error_frequency_alert(issue, payload, user: nil)

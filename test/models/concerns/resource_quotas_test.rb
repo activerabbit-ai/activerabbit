@@ -66,9 +66,9 @@ class ResourceQuotasTest < ActiveSupport::TestCase
   # ai_summaries_quota
   # ==========================================================================
 
-  test "ai_summaries_quota returns 5 for free plan" do
+  test "ai_summaries_quota returns 0 for free plan" do
     account = Account.new(current_plan: "free")
-    assert_equal 5, account.ai_summaries_quota
+    assert_equal 0, account.ai_summaries_quota
   end
 
   test "ai_summaries_quota returns 20 for trial plan" do
@@ -90,9 +90,9 @@ class ResourceQuotasTest < ActiveSupport::TestCase
   # pull_requests_quota
   # ==========================================================================
 
-  test "pull_requests_quota returns 5 for free plan" do
+  test "pull_requests_quota returns 0 for free plan" do
     account = Account.new(current_plan: "free")
-    assert_equal 5, account.pull_requests_quota
+    assert_equal 0, account.pull_requests_quota
   end
 
   test "pull_requests_quota returns 100 for trial plan" do
@@ -162,9 +162,9 @@ class ResourceQuotasTest < ActiveSupport::TestCase
   # projects_quota
   # ==========================================================================
 
-  test "projects_quota returns 1 for free plan" do
+  test "projects_quota returns 999999 for free plan" do
     account = Account.new(current_plan: "free")
-    assert_equal 1, account.projects_quota
+    assert_equal 999_999, account.projects_quota
   end
 
   test "projects_quota returns 10 for trial plan" do
@@ -331,33 +331,33 @@ class ResourceQuotasTest < ActiveSupport::TestCase
 
   test "within_quota? for projects on free plan" do
     account = Account.new(current_plan: "free", cached_projects_used: 0)
-    assert account.within_quota?(:projects) # 0 < 1
+    assert account.within_quota?(:projects) # 0 < 999999
   end
 
-  test "within_quota? for projects at limit on free plan" do
+  test "within_quota? for projects at 1 on free plan (unlimited)" do
     account = Account.new(current_plan: "free", cached_projects_used: 1)
-    assert_not account.within_quota?(:projects) # 1 < 1 => false
+    assert account.within_quota?(:projects) # 1 < 999999 => true (unlimited)
   end
 
   # ==========================================================================
   # AI Generate quota per plan (integration-style tests)
   # ==========================================================================
 
-  test "free plan gets 5 AI summaries" do
+  test "free plan gets 0 AI summaries" do
     account = accounts(:free_account)
     account.current_plan = "free"
     account.trial_ends_at = 1.day.ago
     account.cached_ai_summaries_used = 0
 
-    assert_equal 5, account.ai_summaries_quota
-    assert account.within_quota?(:ai_summaries)
+    assert_equal 0, account.ai_summaries_quota
+    assert_not account.within_quota?(:ai_summaries) # 0 < 0 => false (not available)
   end
 
-  test "free plan with 5 used is over AI quota" do
+  test "free plan with any used is over AI quota" do
     account = accounts(:free_account)
     account.current_plan = "free"
     account.trial_ends_at = 1.day.ago
-    account.cached_ai_summaries_used = 5
+    account.cached_ai_summaries_used = 1
 
     assert_not account.within_quota?(:ai_summaries)
   end

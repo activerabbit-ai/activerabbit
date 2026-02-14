@@ -196,16 +196,20 @@ class Account < ApplicationRecord
 
   # Check if this account is eligible for automatic AI summary generation
   # on new issues. Rules:
-  #   - Free plan:  auto-generate within quota (first 5)
+  #   - Free plan:  NOT eligible (0 AI summaries on free plan)
   #   - Trial plan: auto-generate within quota (first 20)
   #   - Team/Business: auto-generate within quota (first 100) BUT only
   #     if the user has an active subscription (actually paying)
   def eligible_for_auto_ai_summary?
+    plan_key = send(:effective_plan_key)
+
+    # Free plan has no AI summaries at all
+    return false if plan_key == :free
+
     return false unless within_quota?(:ai_summaries)
 
-    plan_key = send(:effective_plan_key)
     case plan_key
-    when :free, :trial
+    when :trial
       true
     when :team, :business
       active_subscription?

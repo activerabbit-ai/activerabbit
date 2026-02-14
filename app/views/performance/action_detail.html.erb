@@ -47,7 +47,7 @@
           Samples
         <% end %>
         <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
-          Graph
+          Analytics
         <% end %>
       </div>
       <div class="flex items-center space-x-2">

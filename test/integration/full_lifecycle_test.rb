@@ -704,4 +704,218 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     assert_equal 50_000, account.event_quota, "Step 8: Team quota restored"
     refute account.on_trial?, "Step 8: No longer on trial (paid subscription)"
   end
+
+  # ===========================================================================
+  # 9. Free plan end-to-end: quotas, hard cap, no Slack, no AI
+  # ===========================================================================
+
+  test "free plan enforces all restrictions end-to-end" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    free_token = api_tokens(:free_token)
+    free_user = users(:free_account_owner)
+    sign_in free_user
+    ActsAsTenant.current_tenant = free_account
+
+    # --- Verify free plan quotas ---
+    assert_equal "free", free_account.current_plan
+    assert free_account.on_free_plan?
+    assert_equal 5_000, free_account.event_quota_value
+    assert_equal 0, free_account.ai_summaries_quota
+    assert_equal 0, free_account.pull_requests_quota
+    assert_equal 999_999, free_account.projects_quota
+    assert_equal 5, free_account.data_retention_days
+    refute free_account.slack_notifications_allowed?
+
+    # --- Accept events under quota ---
+    free_account.update!(cached_events_used: 100)
+    api_headers = { "CONTENT_TYPE" => "application/json", "X-Project-Token" => free_token.token }
+
+    post "/api/v1/events/errors", params: {
+      exception_class: "FreeE2EError",
+      message: "Under quota — should be accepted",
+      backtrace: ["app/models/test.rb:1:in `run'"],
+      occurred_at: Time.current.iso8601
+    }.to_json, headers: api_headers
+
+    assert_response :created, "Free plan under quota should accept events"
+
+    # --- Hard cap: reject events when over quota ---
+    free_account.update!(cached_events_used: 5_001)
+    # Clear the cache so the controller re-checks
+    Rails.cache.delete("free_plan_capped:#{free_account.id}")
+
+    post "/api/v1/events/errors", params: {
+      exception_class: "FreeE2ECapped",
+      message: "Over quota — should be rejected",
+      backtrace: ["app/models/test.rb:1:in `run'"],
+      occurred_at: Time.current.iso8601
+    }.to_json, headers: api_headers
+
+    assert_response :too_many_requests, "Free plan over quota should return 429"
+    json = JSON.parse(response.body)
+    assert_equal "quota_exceeded", json["error"]
+    assert_includes json["message"], "5,000"
+
+    # --- Batch endpoint also returns 429 ---
+    post "/api/v1/events/batch", params: {
+      events: [
+        { event_type: "error", data: { exception_class: "BatchError", message: "batch" } }
+      ]
+    }.to_json, headers: api_headers
+
+    assert_response :too_many_requests, "Free plan batch endpoint should also return 429"
+
+    # --- Performance endpoint also returns 429 ---
+    post "/api/v1/events/performance", params: {
+      controller_action: "HomeController#index",
+      duration_ms: 100,
+      occurred_at: Time.current.iso8601
+    }.to_json, headers: api_headers
+
+    assert_response :too_many_requests, "Free plan performance endpoint should also return 429"
+
+    # --- Ingest job safety net: drops events for capped account ---
+    ActsAsTenant.current_tenant = free_account
+
+    assert_no_difference "Event.count" do
+      ErrorIngestJob.new.perform(free_project.id, {
+        exception_class: "SafetyNetError",
+        message: "Should be dropped by job safety net",
+        backtrace: [],
+        controller_action: "TestController#run",
+        environment: "production"
+      })
+    end
+
+    # --- AI summaries: fully blocked on free plan ---
+    refute free_account.within_quota?(:ai_summaries),
+      "Free plan should have 0 AI summaries (within_quota? returns false)"
+
+    refute free_account.eligible_for_auto_ai_summary?,
+      "Free plan should not be eligible for auto AI summary"
+
+    # Verify regenerate_ai_summary redirects to plan page for free plan
+    # Reset cached_events_used so we can create an issue for testing
+    free_account.update!(cached_events_used: 100)
+    Rails.cache.delete("free_plan_capped:#{free_account.id}")
+
+    post "/api/v1/events/errors", params: {
+      exception_class: "FreeAiTestError",
+      message: "Test issue for AI redirect",
+      backtrace: ["app/models/test.rb:1:in `run'"],
+      occurred_at: Time.current.iso8601
+    }.to_json, headers: api_headers
+
+    assert_response :created
+
+    # Drain the background job so the Issue is actually created (Sidekiq::Testing.fake!)
+    ErrorIngestJob.drain
+
+    ai_test_issue = Issue.find_by(exception_class: "FreeAiTestError")
+    assert ai_test_issue.present?, "Issue should have been created"
+
+    # POST regenerate_ai_summary — should redirect to plan page (JSON)
+    post regenerate_ai_summary_error_path(ai_test_issue),
+      headers: { "Accept" => "application/json", "X-Requested-With" => "XMLHttpRequest" }
+
+    assert_response :ok # JSON response with free_plan: true
+    ai_json = JSON.parse(response.body)
+    assert_equal false, ai_json["success"]
+    assert_equal true, ai_json["free_plan"], "Should indicate free plan block"
+    assert ai_json["redirect_url"].present?, "Should include redirect URL to plan page"
+
+    # --- Slack notifications: blocked on free plan ---
+    free_project.update!(
+      slack_access_token: "xoxb-test",
+      slack_channel_id: "#alerts",
+      slack_team_name: "Test"
+    )
+    slack_service = SlackNotificationService.new(free_project)
+    refute slack_service.configured?,
+      "Free plan project should not have Slack configured"
+
+    account_slack = AccountSlackNotificationService.new(free_account)
+    refute account_slack.configured?,
+      "Free plan account should not have Slack configured"
+  end
+
+  # ===========================================================================
+  # 10. Team plan end-to-end: full features, overages, no hard cap
+  # ===========================================================================
+
+  test "team plan provides full features end-to-end" do
+    team_account = accounts(:team_account)
+    user = users(:second_owner)
+    sign_in user
+    ActsAsTenant.current_tenant = team_account
+
+    # --- Verify team plan quotas ---
+    assert_equal "team", team_account.current_plan
+    refute team_account.on_free_plan?
+    assert_equal 50_000, team_account.event_quota_value
+    assert_equal 20, team_account.ai_summaries_quota
+    assert_equal 20, team_account.pull_requests_quota
+    assert_equal 31, team_account.data_retention_days
+    assert team_account.slack_notifications_allowed?
+
+    # --- Create a project ---
+    post projects_path, params: {
+      project: {
+        name: "Team E2E App #{SecureRandom.hex(4)}",
+        environment: "production",
+        url: "https://team-e2e-#{SecureRandom.hex(4)}.example.com"
+      }
+    }
+    assert_response :redirect, "Team plan should be able to create projects"
+
+    project = team_account.projects.reload.last
+    assert project.present?
+    token = project.api_tokens.active.first
+    assert token.present?
+
+    # --- Accept events even when over quota (no hard cap for team) ---
+    team_account.update!(cached_events_used: 999_999)
+
+    api_headers = { "CONTENT_TYPE" => "application/json", "X-Project-Token" => token.token }
+    post "/api/v1/events/errors", params: {
+      exception_class: "TeamE2EError",
+      message: "Team plan has no hard cap",
+      backtrace: ["app/models/team.rb:1:in `run'"],
+      occurred_at: Time.current.iso8601
+    }.to_json, headers: api_headers
+
+    assert_response :created, "Team plan should accept events even when over quota"
+
+    # --- free_plan_events_capped? returns false for team ---
+    refute team_account.free_plan_events_capped?,
+      "Team plan should never be hard-capped"
+
+    # --- AI summaries: available on team plan ---
+    team_account.update!(cached_ai_summaries_used: 5)
+    assert team_account.within_quota?(:ai_summaries),
+      "Team plan should have AI summaries available (5/20 used)"
+
+    # --- Slack notifications: available on team plan ---
+    project.update!(
+      slack_access_token: "xoxb-team-test",
+      slack_channel_id: "#team-alerts",
+      slack_team_name: "Team"
+    )
+    slack_service = SlackNotificationService.new(project)
+    assert slack_service.configured?,
+      "Team plan project should have Slack configured"
+
+    # --- Ingest job does NOT drop events for team ---
+    ActsAsTenant.current_tenant = team_account
+    assert_difference "Event.count", 1 do
+      ErrorIngestJob.new.perform(project.id, {
+        exception_class: "TeamIngestError",
+        message: "Team plan events are never dropped",
+        backtrace: ["app/models/team.rb:1:in `run'"],
+        controller_action: "TeamController#run",
+        environment: "production"
+      })
+    end
+  end
 end

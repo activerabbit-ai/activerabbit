@@ -1,7 +1,92 @@
-<p>Hello <%= @email %>!</p>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email Address Changed - ActiveRabbit</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 16px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+    .content {
+      padding: 24px 20px;
+    }
+    p { margin: 0 0 16px 0; color: #333; font-size: 14px; }
+    .note {
+      background: #f3f4f6;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 13px;
+      color: #777;
+      border-top: 1px solid #e5e5e5;
+    }
+    .footer a { color: #667eea; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;">
+          <%= image_tag "faviicons/favicon-512.png",
+            width: 48,
+            height: 48,
+            style: "display:block;margin-right:16px;" %>
+          <div style="text-align:left;">
+            <div style="font-weight:700;font-size:16px;line-height:1.25;">
+              Email Address Changed
+            </div>
+            <div style="font-size:13px;opacity:0.9;margin-top:2px;">
+              ActiveRabbit Account Notice
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<% if @resource.try(:unconfirmed_email?) %>
-  <p>We're contacting you to notify you that your email is being changed to <%= @resource.unconfirmed_email %>.</p>
-<% else %>
-  <p>We're contacting you to notify you that your email has been changed to <%= @resource.email %>.</p>
-<% end %>
+    <div class="content">
+      <p>Hello <%= @email %>!</p>
+
+      <% if @resource.try(:unconfirmed_email?) %>
+        <p>We're contacting you to notify you that your email is being changed to <strong><%= @resource.unconfirmed_email %></strong>.</p>
+      <% else %>
+        <p>We're contacting you to notify you that your email has been changed to <strong><%= @resource.email %></strong>.</p>
+      <% end %>
+
+      <div class="note">
+        If you didn't make this change, please contact us immediately.
+      </div>
+    </div>
+
+    <div class="footer">
+      ActiveRabbit &ndash; AI-Powered Error Tracking for Rails
+    </div>
+  </div>
+</body>
+</html>

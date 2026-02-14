@@ -3,35 +3,103 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .logo { font-size: 24px; font-weight: bold; color: #f97316; margin-bottom: 20px; }
-    .alert { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0; }
-    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; }
-    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 16px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+    .content {
+      padding: 24px 20px;
+    }
+    h2 { margin: 24px 0 12px; font-size: 16px; }
+    p { margin: 0 0 16px 0; color: #333; font-size: 14px; }
+    .warning-box {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .button-wrapper {
+      text-align: center;
+      margin: 24px 0 8px;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #667eea;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 13px;
+      color: #777;
+      border-top: 1px solid #e5e5e5;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">ActiveRabbit</div>
-    
-    <h1>You're at <%= @percent %>% of your monthly quota</h1>
-    
-    <div class="alert">
-      <strong>Usage alert!</strong> Your account <%= @account.name %> has used <%= @percent %>% of the monthly quota.
+    <div class="header">
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;">
+          <%= image_tag "faviicons/favicon-512.png",
+            width: 48,
+            height: 48,
+            style: "display:block;margin-right:16px;" %>
+          <div style="text-align:left;">
+            <div style="font-weight:700;font-size:16px;line-height:1.25;">
+              Usage at <%= @percent %>%
+            </div>
+            <div style="font-size:13px;opacity:0.9;margin-top:2px;">
+              ActiveRabbit Quota Alert
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <p>Consider upgrading your plan for more capacity:</p>
-    <ul>
-      <li>Higher event limits</li>
-      <li>More AI summaries</li>
-      <li>Additional features</li>
-    </ul>
-    
-    <p><a href="<%= plan_url(host: ENV.fetch('APP_HOST', 'localhost:3000')) %>" class="button">View Plans</a></p>
-    
+
+    <div class="content">
+      <div class="warning-box">
+        <strong>Usage alert!</strong> Your account <%= @account.name %> has used <%= @percent %>% of the monthly quota.
+      </div>
+
+      <p>Consider upgrading your plan for more capacity:</p>
+      <ul style="margin: 0 0 16px 0; padding-left: 20px; font-size: 14px; color: #333;">
+        <li>Higher event limits</li>
+        <li>More AI summaries</li>
+        <li>Additional features</li>
+      </ul>
+
+      <div class="button-wrapper">
+        <a href="<%= plan_url(host: ENV.fetch('APP_HOST', 'localhost:3000')) %>" class="button">View Plans</a>
+      </div>
+    </div>
+
     <div class="footer">
-      <p>ActiveRabbit<br>AI-Powered Error Tracking for Rails</p>
+      ActiveRabbit – AI-Powered Error Tracking for Rails
     </div>
   </div>
 </body>

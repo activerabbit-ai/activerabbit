@@ -193,7 +193,7 @@
   </div>
 </div>
 
-<!-- Tabs: AI summary | Stack Trace | Samples | Graph -->
+<!-- Tabs: AI summary | Stack Trace | Samples | Analytics -->
 <% current_tab = case params[:tab]
 when 'ai' then 'ai'
 when 'samples' then 'samples'
@@ -213,7 +213,7 @@ end %>
             Samples
           <% end %>
           <%= link_to url_for(params.permit!.to_h.merge(tab: 'graph', event_id: nil)), class: "ml-1 px-4 py-2 rounded-full text-sm font-medium transition #{current_tab == 'graph' ? 'bg-white text-indigo-600 shadow ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-800'}", aria: { current: (current_tab == 'graph') } do %>
-            Graph
+            Analytics
           <% end %>
         </div>
 
@@ -241,10 +241,26 @@ end %>
                                 regenerate_ai_summary_error_path(@issue)
                               end %>
           <% account = current_user&.account %>
-          <% quota_exceeded = account && !account.within_quota?(:ai_summaries) %>
+          <% is_free_plan = account&.on_free_plan? %>
+          <% quota_exceeded = is_free_plan || (account && !account.within_quota?(:ai_summaries)) %>
           <% upgrade_url = plan_path rescue "/plan" %>
 
-          <% if quota_exceeded %>
+          <% if is_free_plan %>
+            <%# Free plan: AI is fully blocked — always show upgrade link %>
+            <div id="ai-analysis" class="inline-flex flex-col items-start">
+              <a href="<%= upgrade_url %>"
+                 class="group inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all bg-gradient-to-r from-indigo-500/10 to-violet-500/10 text-indigo-700 border border-indigo-200 hover:from-indigo-600 hover:to-violet-600 hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-indigo-200/50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>AI Analysis</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-600 group-hover:bg-white/20 group-hover:text-white transition-colors">
+                  Upgrade
+                </span>
+              </a>
+              <p class="mt-1.5 text-xs text-gray-400 pl-1">AI summaries are not available on the Free plan</p>
+            </div>
+          <% elsif quota_exceeded %>
             <% _plan_key = account&.send(:effective_plan_key) rescue :free %>
             <% _is_paid_plan = %i[team business].include?(_plan_key) %>
             <% _cta_url = _is_paid_plan ? (billing_portal_index_path rescue upgrade_url) : upgrade_url %>

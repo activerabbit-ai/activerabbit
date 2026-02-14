@@ -54,3 +54,13 @@ secondary:
   environment: "production"
   active: true
   settings: {}
+
+free_project:
+  account: free_account
+  user: free_account_owner
+  name: "Free Plan Project"
+  slug: "free-plan-project"
+  url: "http://free.example.com"
+  environment: "production"
+  active: true
+  settings: {}

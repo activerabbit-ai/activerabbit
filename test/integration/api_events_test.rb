@@ -286,6 +286,113 @@ class ApiEventsTest < ActionDispatch::IntegrationTest
     assert_equal 1, json["data"]["processed_count"]
   end
 
+  # ===========================================================================
+  # Free plan hard cap (429 Too Many Requests)
+  # ===========================================================================
+
+  test "POST /api/v1/events/errors returns 429 when free plan cap reached" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    free_token = api_tokens(:free_token)
+
+    # Simulate exhausted quota
+    free_account.update!(cached_events_used: 5_001)
+
+    headers = { "CONTENT_TYPE" => "application/json", "X-Project-Token" => free_token.token }
+    body = {
+      exception_class: "RuntimeError",
+      message: "Should be rejected",
+      backtrace: ["app/controllers/home_controller.rb:1:in `index'"],
+      occurred_at: Time.current.iso8601
+    }.to_json
+
+    post "/api/v1/events/errors", params: body, headers: headers
+
+    assert_response :too_many_requests
+    json = JSON.parse(response.body)
+    assert_equal "quota_exceeded", json["error"]
+    assert_includes json["message"], "Free plan limit reached"
+    assert_includes json["message"], "5,000"
+  end
+
+  test "POST /api/v1/events/performance returns 429 when free plan cap reached" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    free_token = api_tokens(:free_token)
+
+    free_account.update!(cached_events_used: 5_001)
+
+    headers = { "CONTENT_TYPE" => "application/json", "X-Project-Token" => free_token.token }
+    body = {
+      controller_action: "HomeController#index",
+      duration_ms: 250.0,
+      occurred_at: Time.current.iso8601
+    }.to_json
+
+    post "/api/v1/events/performance", params: body, headers: headers
+
+    assert_response :too_many_requests
+    json = JSON.parse(response.body)
+    assert_equal "quota_exceeded", json["error"]
+  end
+
+  test "POST /api/v1/events/batch returns 429 when free plan cap reached" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    free_token = api_tokens(:free_token)
+
+    free_account.update!(cached_events_used: 5_001)
+
+    headers = { "CONTENT_TYPE" => "application/json", "X-Project-Token" => free_token.token }
+    body = {
+      events: [
+        { event_type: "error", data: { exception_class: "RuntimeError", message: "x" } }
+      ]
+    }.to_json
+
+    post "/api/v1/events/batch", params: body, headers: headers
+
+    assert_response :too_many_requests
+    json = JSON.parse(response.body)
+    assert_equal "quota_exceeded", json["error"]
+  end
+
+  test "POST /api/v1/events/errors accepts events when free plan is under quota" do
+    free_account = accounts(:free_account)
+    free_project = projects(:free_project)
+    free_token = api_tokens(:free_token)
+
+    free_account.update!(cached_events_used: 100)
+
+    headers = { "CONTENT_TYPE" => "application/json", "X-Project-Token" => free_token.token }
+    body = {
+      exception_class: "RuntimeError",
+      message: "Should be accepted",
+      backtrace: ["app/controllers/home_controller.rb:1:in `index'"],
+      occurred_at: Time.current.iso8601
+    }.to_json
+
+    post "/api/v1/events/errors", params: body, headers: headers
+
+    assert_response :created
+  end
+
+  test "POST /api/v1/events/errors accepts events for team plan even when over quota" do
+    # Default account is on team plan (trial) — no hard cap for paid plans
+    body = {
+      exception_class: "RuntimeError",
+      message: "Team plan — no cap",
+      backtrace: ["app/controllers/home_controller.rb:1:in `index'"],
+      occurred_at: Time.current.iso8601
+    }.to_json
+
+    @account.update!(cached_events_used: 999_999)
+
+    post "/api/v1/events/errors", params: body, headers: @headers
+
+    assert_response :created
+  end
+
   # Self-monitoring filter
 
   test "POST /api/v1/events/batch filters out self-monitoring API events" do

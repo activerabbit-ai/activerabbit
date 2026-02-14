@@ -8,6 +8,12 @@ class PerformanceBatchIngestJob
   def perform(project_id, payloads, batch_id = nil)
     project = ActsAsTenant.without_tenant { Project.find(project_id) }
 
+    # Hard cap: free plan stops accepting events once quota is reached
+    if project.account&.free_plan_events_capped?
+      Rails.logger.info "[PerfBatchIngest] Dropped batch: free plan cap reached for account #{project.account.id}"
+      return
+    end
+
     ActsAsTenant.with_tenant(project.account) do
       payloads.each do |payload|
         process_single_performance(project, payload)

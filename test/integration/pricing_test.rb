@@ -138,8 +138,8 @@ class PricingTest < ActionDispatch::IntegrationTest
     get plan_path
 
     assert_equal 5_000, assigns(:event_quota)
-    assert_equal 5, assigns(:ai_summaries_quota)
-    assert_equal 5, assigns(:pull_requests_quota)
+    assert_equal 0, assigns(:ai_summaries_quota)
+    assert_equal 0, assigns(:pull_requests_quota)
   end
 
   test "displays correct quotas for business plan" do

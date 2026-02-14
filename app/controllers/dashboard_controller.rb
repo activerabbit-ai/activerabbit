@@ -20,10 +20,11 @@ class DashboardController < ApplicationController
       # Use cached column instead of live COUNT(*) on potentially millions of rows
       total_events = current_account.cached_events_used || 0
 
-      # Use daily_event_counts roll-up table for 30-day count (much cheaper than scanning events)
+      # Use daily_event_counts roll-up table, scoped to the plan's retention period
+      retention_window = (current_account.data_retention_days || 31).days.ago.to_date
       events_last_30 = DailyEventCount
                          .where(account_id: current_account.id)
-                         .where("day >= ?", 30.days.ago.to_date)
+                         .where("day >= ?", retention_window)
                          .sum(:count)
 
       {
@@ -61,8 +62,9 @@ class DashboardController < ApplicationController
       nil
     end
 
-    # Recent activity (account-scoped)
-    @recent_events = Event.where("occurred_at > ?", 24.hours.ago).order(occurred_at: :desc).limit(10)
+    # Recent activity (account-scoped, respects data retention)
+    recent_cutoff = [24.hours.ago, retention_cutoff].compact.max
+    @recent_events = Event.where("occurred_at > ?", recent_cutoff).order(occurred_at: :desc).limit(10)
     @recent_projects = current_account.projects.order(created_at: :desc).limit(3)
 
     # ── Cached per-project stats (2-min TTL) ────────────────────────────

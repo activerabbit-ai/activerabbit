@@ -170,8 +170,10 @@ class TrialReminderCheckJobTest < ActiveSupport::TestCase
 
     mail_sent = false
 
-    # Stub active_subscription? to return true
-    Account.any_instance.stub(:active_subscription?, true) do
+    # Stub active_subscription? to return true for all Account instances
+    original_method = Account.instance_method(:active_subscription?)
+    Account.define_method(:active_subscription?) { true }
+    begin
       LifecycleMailer.stub(:trial_ending_soon, ->(**args) {
         mail_sent = true
         Minitest::Mock.new
@@ -180,6 +182,8 @@ class TrialReminderCheckJobTest < ActiveSupport::TestCase
           TrialReminderCheckJob.perform_now
         end
       end
+    ensure
+      Account.define_method(:active_subscription?, original_method)
     end
 
     refute mail_sent, "Should NOT send reminder if account has active subscription"
@@ -316,7 +320,10 @@ class TrialReminderCheckJobTest < ActiveSupport::TestCase
 
     warning_sent = false
 
-    Account.any_instance.stub(:active_subscription?, true) do
+    # Stub active_subscription? to return true for all Account instances
+    original_method = Account.instance_method(:active_subscription?)
+    Account.define_method(:active_subscription?) { true }
+    begin
       stub_all_mailers do
         LifecycleMailer.stub(:trial_expired_warning, ->(**args) {
           warning_sent = true
@@ -325,6 +332,8 @@ class TrialReminderCheckJobTest < ActiveSupport::TestCase
           TrialReminderCheckJob.perform_now
         end
       end
+    ensure
+      Account.define_method(:active_subscription?, original_method)
     end
 
     refute warning_sent, "Should NOT send post-expiry warning if account upgraded"

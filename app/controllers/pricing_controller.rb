@@ -109,6 +109,13 @@ class PricingController < ApplicationController
     @projects_quota = plan_quotas[:projects][:quota]
     @projects_used = plan_quotas[:projects][:used]
     @projects_remaining = plan_quotas[:projects][:remaining]
+
+    # Plan feature metadata (for usage page cards)
+    @data_retention_days = @account.data_retention_days
+    @slack_allowed = @account.slack_notifications_allowed?
+    @is_free_plan = @account.on_free_plan?
+    @users_quota = @account.on_free_plan? ? 1 : nil # nil = unlimited for paid plans
+    @users_used = ActsAsTenant.without_tenant { User.where(account_id: @account.id).count }
   end
 
   # Build comparison data showing what the user's current usage would look like

@@ -63,4 +63,38 @@ class SlackNotificationServiceTest < ActiveSupport::TestCase
       service.send_error_frequency_alert(issue, payload)
     end
   end
+
+  # ===========================================================================
+  # Free plan Slack blocking (project-level service)
+  # ===========================================================================
+
+  test "configured returns false when project belongs to free plan account" do
+    free_project = projects(:free_project)
+    free_project.update!(
+      slack_access_token: "xoxb-test-token",
+      slack_channel_id: "#alerts",
+      slack_team_name: "Test Team"
+    )
+    service = SlackNotificationService.new(free_project)
+
+    refute service.configured?,
+      "Project on free plan account should not have Slack configured"
+  end
+
+  test "send_new_issue_alert does nothing for free plan project" do
+    free_project = projects(:free_project)
+    free_project.update!(
+      slack_access_token: "xoxb-test-token",
+      slack_channel_id: "#alerts",
+      slack_team_name: "Test Team"
+    )
+
+    issue = issues(:open_issue)
+    service = SlackNotificationService.new(free_project)
+
+    # Should not raise and should return early without sending
+    assert_nothing_raised do
+      service.send_new_issue_alert(issue)
+    end
+  end
 end

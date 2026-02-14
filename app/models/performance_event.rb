@@ -13,6 +13,7 @@ class PerformanceEvent < ApplicationRecord
   scope :for_timerange, ->(start_time, end_time) { where(occurred_at: start_time..end_time) }
   scope :for_target, ->(target) { where(target: target) }
   scope :slow, -> { where("duration_ms > ?", 1000) } # > 1 second
+  scope :within_retention, ->(cutoff) { where("occurred_at >= ?", cutoff) }
 
   before_create :set_defaults
 
