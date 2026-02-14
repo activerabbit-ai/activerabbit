@@ -38,8 +38,8 @@ module ResourceQuotas
     },
     team: {
       events: 50_000,
-      ai_summaries: 100,
-      pull_requests: 100,
+      ai_summaries: 20,
+      pull_requests: 20,
       uptime_monitors: 20,
       status_pages: 5,
       projects: 10

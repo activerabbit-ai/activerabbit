@@ -38,13 +38,16 @@ class Issue < ApplicationRecord
 
     issue = find_by(project: project, fingerprint: fingerprint)
     if issue
-      # обновляем счетчик и статус
-      issue.update!(
-        count: issue.count + 1,
-        last_seen_at: Time.current,
-        status: issue.status == "closed" ? "open" : issue.status,
-        closed_at: issue.status == "closed" ? nil : issue.closed_at
+      # Atomic SQL increment — prevents lost updates when multiple Sidekiq
+      # workers process the same fingerprint concurrently.
+      # Ruby-level `count + 1` is a read-then-write race condition.
+      Issue.where(id: issue.id).update_all(
+        ["count = count + 1, last_seen_at = ?, " \
+         "status = CASE WHEN status = 'closed' THEN 'open' ELSE status END, " \
+         "closed_at = CASE WHEN status = 'closed' THEN NULL ELSE closed_at END",
+         Time.current]
       )
+      issue.reload
       return issue
     end
 
@@ -62,7 +65,20 @@ class Issue < ApplicationRecord
         status: "open"
       )
     rescue ActiveRecord::RecordNotUnique
-      find_by(project: project, fingerprint: fingerprint)
+      # Another worker created the issue between our find_by and create!
+      # Find it AND atomically increment (the old code just returned without
+      # incrementing — the event was invisible in the count).
+      issue = find_by(project: project, fingerprint: fingerprint)
+      if issue
+        Issue.where(id: issue.id).update_all(
+          ["count = count + 1, last_seen_at = ?, " \
+           "status = CASE WHEN status = 'closed' THEN 'open' ELSE status END, " \
+           "closed_at = CASE WHEN status = 'closed' THEN NULL ELSE closed_at END",
+           Time.current]
+        )
+        issue.reload
+      end
+      issue
     end
   end
 

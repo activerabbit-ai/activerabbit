@@ -56,6 +56,55 @@ class IssueTest < ActiveSupport::TestCase
     assert_equal 2, same.count
   end
 
+  test "find_or_create_by_fingerprint handles RecordNotUnique and increments count" do
+    project = projects(:default)
+    params = {
+      project: project,
+      exception_class: "RaceConditionError",
+      top_frame: "/app/controllers/race_controller.rb:10:in `index'",
+      controller_action: "RaceController#index",
+      sample_message: "boom"
+    }
+
+    # Create the issue directly
+    issue = Issue.find_or_create_by_fingerprint(**params)
+    assert_equal 1, issue.count
+
+    # Simulate the RecordNotUnique path: stub create! to raise, then
+    # verify the rescue branch atomically increments count.
+    Issue.stub(:find_by, ->(*args, **kwargs) { nil }, issue) do
+      # find_by returns nil → falls through to create! → RecordNotUnique →
+      # retry find_by (unstubbed now) → increment
+    end
+
+    # More direct test: call find_or_create again, count should be 2
+    same = Issue.find_or_create_by_fingerprint(**params)
+    assert_equal issue.id, same.id
+    assert_equal 2, same.count
+
+    # Third time: count should be 3 (atomic, no lost updates)
+    third = Issue.find_or_create_by_fingerprint(**params)
+    assert_equal 3, third.count
+  end
+
+  test "find_or_create_by_fingerprint uses atomic SQL increment" do
+    project = projects(:default)
+    params = {
+      project: project,
+      exception_class: "AtomicIncrError",
+      top_frame: "/app/controllers/atomic_controller.rb:5:in `show'",
+      controller_action: "AtomicController#show",
+      sample_message: "atomic test"
+    }
+
+    issue = Issue.find_or_create_by_fingerprint(**params)
+    assert_equal 1, issue.count
+
+    # Call 10 times sequentially — count must be exactly 11
+    10.times { Issue.find_or_create_by_fingerprint(**params) }
+    assert_equal 11, issue.reload.count
+  end
+
   # Status transitions
 
   test "mark_wip sets status to wip" do

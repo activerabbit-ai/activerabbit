@@ -6,7 +6,21 @@ class ErrorBatchIngestJob
 
   sidekiq_options queue: :ingest, retry: 1
 
+  # TTL for idempotency keys (10 minutes)
+  DEDUP_TTL = 600
+
   def perform(project_id, payloads, batch_id = nil)
+    # Batch-level idempotency: if Sidekiq retries the entire batch job,
+    # skip it if the batch was already processed.
+    if batch_id.present?
+      dedup_key = "batch_ingest_dedup:#{project_id}:#{batch_id}"
+      already_processed = Sidekiq.redis { |c| c.set(dedup_key, "1", nx: true, ex: DEDUP_TTL) }
+      unless already_processed
+        Rails.logger.info "[ErrorBatchIngest] Duplicate batch skipped: #{batch_id}"
+        return
+      end
+    end
+
     project = ActsAsTenant.without_tenant { Project.find(project_id) }
     ActsAsTenant.current_tenant = project.account
 

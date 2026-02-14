@@ -162,13 +162,16 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
       message: "Should only auto-generate on first occurrence",
       backtrace: ["app/models/dup.rb:1:in `run'"],
       controller_action: "DupController#run",
-      environment: "production"
+      environment: "production",
+      request_id: SecureRandom.uuid
     }
 
     ErrorIngestJob.new.perform(@project.id, payload)
     Sidekiq::Worker.clear_all
 
-    # Second occurrence of same error
+    # Second occurrence of same error — different request_id since
+    # it's a genuinely separate event (not a Sidekiq double-fire)
+    payload[:request_id] = SecureRandom.uuid
     ErrorIngestJob.new.perform(@project.id, payload)
 
     assert_equal 0, AiSummaryJob.jobs.size,
@@ -213,6 +216,61 @@ class ErrorIngestJobTest < ActiveSupport::TestCase
 
     assert_equal 0, AiSummaryJob.jobs.size,
       "AiSummaryJob should not be auto-enqueued for team plan without active subscription"
+  end
+
+  # ============================================================================
+  # Idempotency / deduplication tests
+  # ============================================================================
+
+  test "skips duplicate processing when same payload is performed twice" do
+    # Use SecureRandom to avoid collisions with parallel test processes
+    dedup_request_id = SecureRandom.uuid
+    payload = {
+      exception_class: "DedupTestError",
+      message: "Should only be ingested once",
+      backtrace: ["app/models/dedup.rb:1:in `run'"],
+      controller_action: "DedupController#run",
+      environment: "production",
+      request_id: dedup_request_id
+    }
+
+    # First call creates the event
+    assert_difference "Event.count", 1 do
+      ErrorIngestJob.new.perform(@project.id, payload)
+    end
+
+    # Second call with same payload is deduplicated — no new event
+    assert_no_difference "Event.count" do
+      ErrorIngestJob.new.perform(@project.id, payload)
+    end
+  ensure
+    Sidekiq.redis { |c| c.del("ingest_dedup:#{@project.id}:#{dedup_request_id}") }
+  end
+
+  test "processes events with different request_ids independently" do
+    req1 = SecureRandom.uuid
+    req2 = SecureRandom.uuid
+    base_payload = {
+      exception_class: "IndependentTestError",
+      message: "Same error, different requests",
+      backtrace: ["app/models/ind.rb:1:in `run'"],
+      controller_action: "IndController#run",
+      environment: "production"
+    }
+
+    assert_difference "Event.count", 2 do
+      ErrorIngestJob.new.perform(@project.id, base_payload.merge(request_id: req1))
+      ErrorIngestJob.new.perform(@project.id, base_payload.merge(request_id: req2))
+    end
+
+    # Issue count should be 2 (atomic increment for both events)
+    issue = Issue.find_by(exception_class: "IndependentTestError")
+    assert_equal 2, issue.count
+  ensure
+    Sidekiq.redis do |c|
+      c.del("ingest_dedup:#{@project.id}:#{req1}")
+      c.del("ingest_dedup:#{@project.id}:#{req2}")
+    end
   end
 
   test "auto-enqueues AiSummaryJob for free plan within quota" do

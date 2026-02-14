@@ -3,13 +3,29 @@ class ErrorIngestJob
 
   sidekiq_options queue: :ingest, retry: 1
 
+  # TTL for idempotency keys (10 minutes). Covers Sidekiq retries, inline
+  # fallback double-fires, and deploy-related duplicate enqueues.
+  DEDUP_TTL = 600
+
   def perform(project_id, payload, batch_id = nil)
+    # Convert string keys to symbols if needed
+    payload = payload.is_a?(Hash) ? payload.deep_symbolize_keys : payload
+
+    # Idempotency: prevent duplicate processing when Sidekiq executes the
+    # same job twice (retry after partial success, inline fallback + async,
+    # or Redis reconnect during deploy).
+    dedup_key = build_dedup_key(project_id, payload)
+    if dedup_key
+      already_processed = Sidekiq.redis { |c| c.set(dedup_key, "1", nx: true, ex: DEDUP_TTL) }
+      unless already_processed
+        Rails.logger.info "[ErrorIngestJob] Duplicate skipped: #{dedup_key}"
+        return
+      end
+    end
+
     # Find project without tenant scoping, then set the tenant
     project = ActsAsTenant.without_tenant { Project.find(project_id) }
     ActsAsTenant.current_tenant = project.account
-
-    # Convert string keys to symbols if needed
-    payload = payload.is_a?(Hash) ? payload.deep_symbolize_keys : payload
 
     # Ingest the error event
     event = Event.ingest_error(project: project, payload: payload)
@@ -83,6 +99,31 @@ class ErrorIngestJob
   end
 
   private
+
+  def build_dedup_key(project_id, payload)
+    # Prefer request_id (unique per HTTP request from Rails middleware)
+    request_id = payload[:request_id] || payload["request_id"]
+    if request_id.present?
+      return "ingest_dedup:#{project_id}:#{request_id}"
+    end
+
+    # Fallback: deterministic hash of payload content.
+    # Requires occurred_at to be present — without it we can't reliably
+    # distinguish separate events (e.g. two genuinely different errors with
+    # the same class/message). In production the client gem always sends
+    # occurred_at; on Sidekiq double-fire the duplicate has the same value.
+    occurred_at = payload[:occurred_at] || payload["occurred_at"]
+    return nil if occurred_at.blank?
+
+    key_data = [
+      project_id,
+      payload[:exception_class] || payload["exception_class"],
+      payload[:message] || payload["message"],
+      occurred_at,
+      payload[:controller_action] || payload["controller_action"]
+    ].compact.join("|")
+    "ingest_dedup:#{project_id}:#{Digest::SHA256.hexdigest(key_data)[0..15]}"
+  end
 
   def should_alert_for_issue?(issue)
     return false unless issue.status == "open"

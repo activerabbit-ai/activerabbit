@@ -37,7 +37,19 @@ class AlertJob
         end
       end
 
-      notification = AlertNotification.create!(
+      # Idempotent notification: on Sidekiq retry, reuse the existing
+      # "pending" record instead of creating a duplicate.  This prevents
+      # double Slack messages when the first attempt actually delivered
+      # but Sidekiq thought it failed (timeout, deploy, etc.).
+      fingerprint = payload["fingerprint"] || payload["alert_key"] || payload["issue_id"]
+      notification = AlertNotification
+        .where(alert_rule: alert_rule, status: "pending")
+        .where("payload ->> 'fingerprint' = ? OR payload ->> 'alert_key' = ? OR payload ->> 'issue_id' = ?",
+               fingerprint.to_s, fingerprint.to_s, payload["issue_id"].to_s)
+        .where("created_at > ?", 10.minutes.ago)
+        .first
+
+      notification ||= AlertNotification.create!(
         alert_rule: alert_rule,
         project: project,
         notification_type: "multi",
@@ -45,6 +57,12 @@ class AlertJob
         payload: payload,
         status: "pending"
       )
+
+      # Already delivered by a previous attempt — skip.
+      if notification.status == "sent"
+        Rails.logger.info "Alert already sent: #{alert_type} notification #{notification.id}"
+        return
+      end
 
       begin
         dispatch_alert(alert_type, project, issue, payload)
