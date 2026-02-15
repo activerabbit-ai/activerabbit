@@ -82,6 +82,16 @@ class LifecycleMailer < ApplicationMailer
     mail to: @user.email, subject: "You're at #{@percent}% of your monthly quota"
   end
 
+  def plan_upgraded(account:, new_plan:)
+    @account = account
+    @new_plan = new_plan
+    @user = confirmed_user_for(account)
+    return unless @user
+
+    plan_label = @new_plan.to_s.titleize
+    mail to: @user.email, subject: "Welcome to ActiveRabbit #{plan_label} — you're all set!"
+  end
+
   private
 
   # Find the first user with a confirmed email in the account

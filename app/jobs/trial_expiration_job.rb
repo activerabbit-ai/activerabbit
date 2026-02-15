@@ -35,9 +35,12 @@ class TrialExpirationJob < ApplicationJob
       event_quota: 5_000
     )
 
+    # Reset consumption-based usage counters so the user starts fresh on the free plan
+    account.reset_usage_counters!
+
     Rails.logger.info(
       "[TrialExpiration] Downgraded account #{account.id} (#{account.name}) " \
-      "from #{previous_plan} to free — trial expired at #{account.trial_ends_at}"
+      "from #{previous_plan} to free — trial expired at #{account.trial_ends_at}, usage counters reset"
     )
 
     # Send a final notification that the downgrade happened

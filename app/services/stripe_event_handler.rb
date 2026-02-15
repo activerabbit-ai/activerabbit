@@ -91,6 +91,13 @@ class StripeEventHandler
     end
     plan, interval = plan_interval_from_price(base_price_id)
 
+    # Detect plan upgrade: reset consumption-based usage counters when moving
+    # from free/trial to a paid plan so the user starts fresh with new quota.
+    # Projects and users carry over.
+    old_plan = account.current_plan
+    new_plan = plan || old_plan
+    plan_upgraded = old_plan.in?(%w[free trial]) && new_plan.in?(%w[team business])
+
     account.update!(
       trial_ends_at: trial_end,
       current_plan: plan || account.current_plan,
@@ -110,6 +117,19 @@ class StripeEventHandler
         ai_overage_item && ai_overage_item["id"]
                                        end
     )
+
+    # Reset usage counters after plan upgrade so user starts fresh
+    if plan_upgraded
+      account.reset_usage_counters!
+      Rails.logger.info("[StripeEventHandler] Plan upgraded from '#{old_plan}' to '#{new_plan}' — usage counters reset for account ##{account.id}")
+
+      # Send welcome email for the new plan
+      begin
+        LifecycleMailer.plan_upgraded(account: account, new_plan: new_plan).deliver_later
+      rescue => e
+        Rails.logger.error("[StripeEventHandler] Failed to send plan upgrade email for account ##{account.id}: #{e.message}")
+      end
+    end
 
     # Ensure Pay subscription record exists/updated so UI can detect active status
     sub_customer_id = if sub.respond_to?(:customer)

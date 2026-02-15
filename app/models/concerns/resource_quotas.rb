@@ -158,6 +158,30 @@ module ResourceQuotas
   end
 
   # ============================================================================
+  # USAGE RESET ON PLAN CHANGE
+  # Resets consumption-based counters (events, AI summaries, PRs) when a user
+  # upgrades/changes plan so they start fresh with new quota.
+  # Projects and users are NOT reset — they carry over.
+  # ============================================================================
+
+  def reset_usage_counters!
+    update!(
+      cached_events_used: 0,
+      cached_performance_events_used: 0,
+      cached_ai_summaries_used: 0,
+      cached_pull_requests_used: 0
+    )
+
+    # Clear any free-plan-capped Redis cache so ingestion resumes immediately
+    Rails.cache.delete("free_plan_capped:#{id}")
+
+    # Clear monthly AI summary enqueue counter in Redis
+    Sidekiq.redis { |c| c.del("ai_summary_enqueued:#{id}:#{Date.current.strftime('%Y-%m')}") } rescue nil
+
+    Rails.logger.info("[PlanChange] Reset usage counters for account ##{id} (#{name})")
+  end
+
+  # ============================================================================
   # USAGE TRACKING METHODS - Return current usage for each resource type
   # Reads from cached columns (updated hourly by UsageSnapshotJob)
   # Returns 0 if cache is empty - view should show "Calculating..." message

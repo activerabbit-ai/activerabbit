@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to ActiveRabbit <%= @new_plan.to_s.titleize %></title>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .content {
+      padding: 24px 20px;
+    }
+
+    h2 { margin: 24px 0 12px; font-size: 16px; }
+    p { margin: 0 0 16px 0; color: #333; font-size: 14px; }
+
+    .success-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .success-box p { color: #166534; margin: 0; font-size: 14px; }
+
+    .plan-box {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .feature-grid {
+      display: block;
+      margin: 12px 0 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .feature-grid li {
+      padding: 6px 0;
+      font-size: 14px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .feature-grid li:last-child { border-bottom: none; }
+    .feature-grid li strong { color: #111; }
+
+    .check {
+      color: #16a34a;
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    .button-wrapper {
+      text-align: center;
+      margin: 24px 0 8px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #667eea;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .tips {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .tips p { color: #1e40af; margin: 0 0 8px; font-size: 14px; }
+    .tips ul { margin: 0; padding-left: 20px; }
+    .tips li { font-size: 13px; color: #1e3a5f; padding: 3px 0; }
+
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 13px;
+      color: #777;
+      border-top: 1px solid #e5e5e5;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;">
+          <%= image_tag "faviicons/favicon-512.png",
+            width: 48,
+            height: 48,
+            style: "display:block;margin-right:16px;" %>
+
+          <div style="text-align:left;">
+            <div style="font-weight:700;font-size:16px;line-height:1.25;">
+              Welcome to <%= @new_plan.to_s.titleize %> Plan
+            </div>
+            <div style="font-size:13px;opacity:0.9;margin-top:2px;">
+              ActiveRabbit — AI-Powered Error Tracking for Rails
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="success-box">
+        <p><span class="check">&#10003;</span> <strong>You're all set!</strong> Your ActiveRabbit account
+        <strong><%= @account.name %></strong> has been upgraded to the
+        <strong><%= @new_plan.to_s.titleize %></strong> plan. Your usage counters have been reset — you're starting fresh.</p>
+      </div>
+
+      <% plan_key = @new_plan.to_s.downcase.to_sym %>
+      <% quotas = ResourceQuotas::PLAN_QUOTAS[plan_key] || ResourceQuotas::PLAN_QUOTAS[:team] %>
+
+      <div class="plan-box">
+        <strong>Your <%= @new_plan.to_s.titleize %> plan includes:</strong>
+        <ul class="feature-grid">
+          <li><span class="check">&#10003;</span> <strong><%= number_with_delimiter(quotas[:events]) %></strong> errors per month</li>
+          <li><span class="check">&#10003;</span> <strong><%= quotas[:ai_summaries] %></strong> AI error summaries per month</li>
+          <li><span class="check">&#10003;</span> <strong><%= quotas[:pull_requests] %></strong> pull requests per month</li>
+          <li><span class="check">&#10003;</span> <strong><%= quotas[:projects] %></strong> projects</li>
+          <li><span class="check">&#10003;</span> <strong><%= quotas[:data_retention_days] %></strong> days data retention</li>
+          <li><span class="check">&#10003;</span> <strong><%= quotas[:uptime_monitors] %></strong> uptime monitors</li>
+          <li><span class="check">&#10003;</span> <strong><%= quotas[:status_pages] %></strong> status pages</li>
+          <li><span class="check">&#10003;</span> Email &amp; Slack notifications</li>
+        </ul>
+      </div>
+
+      <div class="tips">
+        <p><strong>Get the most out of your plan:</strong></p>
+        <ul>
+          <li>Use <strong>AI Analysis</strong> on any error to get root cause analysis and fix suggestions</li>
+          <li>Connect <strong>Slack</strong> to get instant error alerts in your team channel</li>
+          <li>Set up <strong>Uptime Monitors</strong> to know when your app goes down</li>
+          <li>Generate <strong>Pull Requests</strong> directly from AI-suggested fixes</li>
+        </ul>
+      </div>
+
+      <div class="button-wrapper">
+        <a href="<%= dashboard_url(host: ENV.fetch('APP_HOST', 'localhost:3000'), protocol: Rails.env.production? ? 'https' : 'http') %>" class="button">Go to Dashboard</a>
+      </div>
+
+      <p style="color: #777; font-size: 13px; margin-top: 20px;">
+        Questions? Reply to this email — we're happy to help you get set up.
+      </p>
+    </div>
+
+    <div class="footer">
+      ActiveRabbit – AI-Powered Error Tracking for Rails
+    </div>
+  </div>
+</body>
+</html>

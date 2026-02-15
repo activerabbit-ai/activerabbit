@@ -796,23 +796,17 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
       "Free plan should not be eligible for auto AI summary"
 
     # Verify regenerate_ai_summary redirects to plan page for free plan
-    # Reset cached_events_used so we can create an issue for testing
-    free_account.update!(cached_events_used: 100)
-    Rails.cache.delete("free_plan_capped:#{free_account.id}")
-
-    post "/api/v1/events/errors", params: {
+    # Create an issue directly (avoid Sidekiq drain issues in parallel tests)
+    ActsAsTenant.current_tenant = free_account
+    ai_test_event = Event.ingest_error(project: free_project, payload: {
       exception_class: "FreeAiTestError",
       message: "Test issue for AI redirect",
       backtrace: ["app/models/test.rb:1:in `run'"],
-      occurred_at: Time.current.iso8601
-    }.to_json, headers: api_headers
+      controller_action: "TestController#run",
+      environment: "production"
+    })
 
-    assert_response :created
-
-    # Drain the background job so the Issue is actually created (Sidekiq::Testing.fake!)
-    ErrorIngestJob.drain
-
-    ai_test_issue = Issue.find_by(exception_class: "FreeAiTestError")
+    ai_test_issue = ai_test_event.issue
     assert ai_test_issue.present?, "Issue should have been created"
 
     # POST regenerate_ai_summary — should redirect to plan page (JSON)
@@ -917,5 +911,278 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
         environment: "production"
       })
     end
+  end
+
+  # ===========================================================================
+  # 11. Plan upgrade resets usage counters & sends welcome email E2E
+  # ===========================================================================
+
+  test "upgrading from free to team resets usage and sends welcome email end-to-end" do
+    account = accounts(:free_account)
+    user = users(:free_account_owner)
+    user.update!(confirmed_at: Time.current) unless user.confirmed_at.present?
+    sign_in user
+    ActsAsTenant.current_tenant = account
+
+    # --- Setup: free plan with accumulated usage ---
+    account.update!(
+      current_plan: "free",
+      trial_ends_at: 1.month.ago,
+      cached_events_used: 4_200,
+      cached_performance_events_used: 150,
+      cached_ai_summaries_used: 0,
+      cached_pull_requests_used: 0,
+      cached_projects_used: 3
+    )
+    Rails.cache.write("free_plan_capped:#{account.id}", true)
+
+    assert account.on_free_plan?, "Pre-check: account should be on free plan"
+    assert_equal 4_200, account.cached_events_used, "Pre-check: events usage should be 4200"
+    assert_equal 3, account.cached_projects_used, "Pre-check: projects should be 3"
+
+    # --- Simulate Stripe webhook: subscription created (free -> team) ---
+    pay_customer = Pay::Customer.find_or_create_by!(
+      owner: account, processor: "stripe"
+    ) { |c| c.processor_id = "cus_e2e_upgrade_#{SecureRandom.hex(4)}" }
+
+    team_price_id = "price_e2e_team_monthly_#{SecureRandom.hex(4)}"
+    original_env = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = team_price_id
+
+    ActionMailer::Base.deliveries.clear
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => pay_customer.processor_id,
+          "id" => "sub_e2e_upgrade_#{SecureRandom.hex(4)}",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => team_price_id }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    account.reload
+
+    # --- Verify plan changed ---
+    assert_equal "team", account.current_plan,
+      "Account should now be on team plan"
+    refute account.on_free_plan?,
+      "Account should no longer be on free plan"
+
+    # --- Verify usage counters were reset ---
+    assert_equal 0, account.cached_events_used,
+      "Events used should be reset to 0 on upgrade"
+    assert_equal 0, account.cached_performance_events_used,
+      "Performance events should be reset to 0"
+    assert_equal 0, account.cached_ai_summaries_used,
+      "AI summaries should be reset to 0"
+    assert_equal 0, account.cached_pull_requests_used,
+      "Pull requests should be reset to 0"
+
+    # --- Verify projects NOT reset (carry over) ---
+    assert_equal 3, account.cached_projects_used,
+      "Projects should NOT be reset — they carry over"
+
+    # --- Verify free_plan_capped cache cleared ---
+    assert_nil Rails.cache.read("free_plan_capped:#{account.id}"),
+      "Free plan capped cache should be cleared after upgrade"
+
+    # --- Verify welcome email was enqueued ---
+    # deliver_later enqueues via ActiveJob; check deliveries
+    perform_enqueued_jobs
+    welcome_email = ActionMailer::Base.deliveries.find { |e|
+      e.subject.include?("Welcome to ActiveRabbit Team")
+    }
+    assert welcome_email.present?,
+      "Should send welcome email on plan upgrade"
+    assert_equal [user.email], welcome_email.to,
+      "Welcome email should go to account owner"
+
+    # --- Verify new team quotas are active ---
+    assert_equal 50_000, account.event_quota_value,
+      "Should have team event quota"
+    assert_equal 20, account.ai_summaries_quota,
+      "Should have team AI quota"
+    assert_equal 20, account.pull_requests_quota,
+      "Should have team PR quota"
+    assert_equal 31, account.data_retention_days,
+      "Should have team data retention"
+    assert account.slack_notifications_allowed?,
+      "Slack should be available on team plan"
+
+    # --- Verify user can now use AI summaries ---
+    account.update!(cached_ai_summaries_used: 0)
+    assert account.within_quota?(:ai_summaries),
+      "Team plan should allow AI summaries (0/20 used)"
+    assert_equal 20, account.ai_summaries_quota,
+      "Team plan should have 20 AI summaries quota"
+
+    # --- Verify events are accepted again (no hard cap on team) ---
+    account.update!(cached_events_used: 60_000)
+    refute account.free_plan_events_capped?,
+      "Team plan should never be hard-capped"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
+  end
+
+  # ===========================================================================
+  # 12. Trial expiration resets usage counters E2E
+  # ===========================================================================
+
+  test "trial expiration resets usage counters when downgrading to free" do
+    account = accounts(:trial_account)
+    user = users(:trial_user)
+    user.update!(confirmed_at: Time.current) unless user.confirmed_at.present?
+    ActsAsTenant.current_tenant = account
+
+    # --- Setup: trial account with accumulated usage ---
+    account.update!(
+      trial_ends_at: 1.day.ago,
+      current_plan: "team",
+      event_quota: 100_000,
+      cached_events_used: 12_000,
+      cached_performance_events_used: 500,
+      cached_ai_summaries_used: 8,
+      cached_pull_requests_used: 3,
+      cached_projects_used: 2
+    )
+
+    assert_equal 12_000, account.cached_events_used, "Pre-check: events used"
+    assert_equal 8, account.cached_ai_summaries_used, "Pre-check: AI used"
+    assert_equal 3, account.cached_pull_requests_used, "Pre-check: PRs used"
+    assert_equal 2, account.cached_projects_used, "Pre-check: projects used"
+
+    # --- Run trial expiration job ---
+    orig_sub = Account.instance_method(:active_subscription?)
+    orig_pay = Account.instance_method(:has_payment_method?)
+    Account.define_method(:active_subscription?) { false }
+    Account.define_method(:has_payment_method?) { false }
+
+    ActionMailer::Base.deliveries.clear
+
+    begin
+      TrialExpirationJob.perform_now
+    ensure
+      Account.define_method(:active_subscription?, orig_sub)
+      Account.define_method(:has_payment_method?, orig_pay)
+    end
+
+    account.reload
+
+    # --- Verify downgraded to free ---
+    assert_equal "free", account.current_plan,
+      "Account should be downgraded to free"
+    assert_equal 5_000, account.event_quota,
+      "Event quota should be free plan level"
+
+    # --- Verify usage counters reset ---
+    assert_equal 0, account.cached_events_used,
+      "Events should be reset on downgrade"
+    assert_equal 0, account.cached_performance_events_used,
+      "Performance events should be reset"
+    assert_equal 0, account.cached_ai_summaries_used,
+      "AI summaries should be reset"
+    assert_equal 0, account.cached_pull_requests_used,
+      "Pull requests should be reset"
+
+    # --- Verify projects NOT reset ---
+    assert_equal 2, account.cached_projects_used,
+      "Projects should NOT be reset on downgrade"
+
+    # --- Verify downgrade email sent ---
+    downgrade_email = ActionMailer::Base.deliveries.find { |e|
+      e.subject.include?("Free plan")
+    }
+    assert downgrade_email.present?,
+      "Should send downgrade notification email"
+
+    # --- Verify free plan restrictions now apply ---
+    assert account.on_free_plan?, "Should now be on free plan"
+    assert_equal 0, account.ai_summaries_quota, "Free plan: 0 AI summaries"
+    assert_equal 0, account.pull_requests_quota, "Free plan: 0 PRs"
+    assert_equal 5, account.data_retention_days, "Free plan: 5 days retention"
+    refute account.slack_notifications_allowed?, "Free plan: no Slack"
+  end
+
+  # ===========================================================================
+  # 13. Full upgrade round-trip: free -> team -> usage -> renewal (no reset)
+  # ===========================================================================
+
+  test "same-plan renewal does NOT reset usage counters" do
+    account = accounts(:team_account)
+    user = users(:second_owner)
+    ActsAsTenant.current_tenant = account
+
+    # --- Setup: team plan with usage mid-cycle ---
+    account.update!(
+      current_plan: "team",
+      cached_events_used: 25_000,
+      cached_ai_summaries_used: 10,
+      cached_pull_requests_used: 7
+    )
+
+    pay_customer = Pay::Customer.find_or_create_by!(
+      owner: account, processor: "stripe"
+    ) { |c| c.processor_id = "cus_e2e_renew_#{SecureRandom.hex(4)}" }
+
+    team_price_id = "price_e2e_renew_team_#{SecureRandom.hex(4)}"
+    original_env = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = team_price_id
+
+    ActionMailer::Base.deliveries.clear
+
+    # Simulate subscription.updated (renewal, same plan)
+    renewal_event = {
+      "type" => "customer.subscription.updated",
+      "data" => {
+        "object" => {
+          "customer" => pay_customer.processor_id,
+          "id" => "sub_e2e_renew_#{SecureRandom.hex(4)}",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => team_price_id }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: renewal_event).call
+    account.reload
+
+    # --- Plan stays team ---
+    assert_equal "team", account.current_plan
+
+    # --- Usage counters should NOT be reset ---
+    assert_equal 25_000, account.cached_events_used,
+      "Events should NOT be reset on same-plan renewal"
+    assert_equal 10, account.cached_ai_summaries_used,
+      "AI summaries should NOT be reset"
+    assert_equal 7, account.cached_pull_requests_used,
+      "PRs should NOT be reset"
+
+    # --- No welcome email sent on renewal ---
+    perform_enqueued_jobs
+    welcome_email = ActionMailer::Base.deliveries.find { |e|
+      e.subject.include?("Welcome to ActiveRabbit")
+    }
+    assert_nil welcome_email,
+      "Should NOT send welcome email on same-plan renewal"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
   end
 end

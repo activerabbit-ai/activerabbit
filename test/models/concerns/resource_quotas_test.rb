@@ -645,4 +645,52 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal start_date, account.send(:billing_period_start)
     assert_equal end_date, account.send(:billing_period_end)
   end
+
+  # ============================================================================
+  # reset_usage_counters!
+  # ============================================================================
+
+  test "reset_usage_counters! zeroes consumption-based counters" do
+    account = accounts(:default)
+    account.update!(
+      cached_events_used: 4_500,
+      cached_performance_events_used: 200,
+      cached_ai_summaries_used: 15,
+      cached_pull_requests_used: 8
+    )
+
+    account.reset_usage_counters!
+    account.reload
+
+    assert_equal 0, account.cached_events_used
+    assert_equal 0, account.cached_performance_events_used
+    assert_equal 0, account.cached_ai_summaries_used
+    assert_equal 0, account.cached_pull_requests_used
+  end
+
+  test "reset_usage_counters! clears free plan capped cache" do
+    account = accounts(:free_account)
+    Rails.cache.write("free_plan_capped:#{account.id}", true)
+
+    account.reset_usage_counters!
+
+    assert_nil Rails.cache.read("free_plan_capped:#{account.id}"),
+      "free_plan_capped cache should be cleared after reset"
+  end
+
+  test "reset_usage_counters! does not affect projects or users" do
+    account = accounts(:default)
+    account.update!(
+      cached_events_used: 1_000,
+      cached_ai_summaries_used: 5,
+      cached_projects_used: 3
+    )
+
+    account.reset_usage_counters!
+    account.reload
+
+    assert_equal 0, account.cached_events_used, "Events should be reset"
+    assert_equal 0, account.cached_ai_summaries_used, "AI summaries should be reset"
+    assert_equal 3, account.cached_projects_used, "Projects should NOT be reset"
+  end
 end

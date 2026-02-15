@@ -13,7 +13,14 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
   # ============================================================================
 
   test "downgrades account to free when trial expired and no subscription" do
-    @account.update!(trial_ends_at: 1.day.ago, current_plan: "team", event_quota: 100_000)
+    @account.update!(
+      trial_ends_at: 1.day.ago,
+      current_plan: "team",
+      event_quota: 100_000,
+      cached_events_used: 8_000,
+      cached_ai_summaries_used: 15,
+      cached_pull_requests_used: 10
+    )
 
     mock_mail = Minitest::Mock.new
     mock_mail.expect(:deliver_now, true)
@@ -29,6 +36,11 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
     @account.reload
     assert_equal "free", @account.current_plan
     assert_equal 5_000, @account.event_quota
+
+    # Usage counters should be reset on downgrade
+    assert_equal 0, @account.cached_events_used, "Events should be reset on downgrade to free"
+    assert_equal 0, @account.cached_ai_summaries_used, "AI summaries should be reset"
+    assert_equal 0, @account.cached_pull_requests_used, "PRs should be reset"
   end
 
   test "does not downgrade account still on trial" do
