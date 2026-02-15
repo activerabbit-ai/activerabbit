@@ -12,15 +12,14 @@
       <div>
         <div class="flex items-center gap-3">
           <h2 class="text-lg font-semibold <%= needs_payment ? 'text-red-900' : 'text-indigo-900' %>">
-            Current Plan: <%= plan_display %>
+            Current Plan: <%= @account.current_plan.titleize %> plan
+            <% if @account.on_trial? %>
+              <span class="text-indigo-500 font-normal">(Free Trial)</span>
+            <% end %>
           </h2>
           <% if needs_payment %>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
               ⚠️ No Payment Method
-            </span>
-          <% elsif @account.on_trial? %>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-              Trial
             </span>
           <% end %>
         </div>
@@ -58,8 +57,7 @@
   <% if @account %>
     <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 border-2 border-indigo-200 shadow-lg mb-12">
       <div class="text-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Current Usage</h2>
-        <p class="text-gray-600">Real-time quota monitoring for <span class="font-semibold text-indigo-600"><%= @account.current_plan.titleize %></span> plan</p>
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Current Plan: <span class="text-indigo-600"><%= @account.current_plan.titleize %></span> plan<% if @account.on_trial? %> <span class="text-lg font-normal text-indigo-400">(Free Trial)</span><% end %></h2>
         <p class="text-sm text-gray-500 mt-1">
           Billing Period: <%= (@account.event_usage_period_start || Time.current.beginning_of_month).strftime('%b %d') %> - <%= (@account.event_usage_period_end || Time.current.end_of_month).strftime('%b %d, %Y') %>
         </p>
