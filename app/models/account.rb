@@ -262,8 +262,8 @@ class Account < ApplicationRecord
   def default_user_preferences
     {
       "error_notifications" => true,
-      "performance_notifications" => true,
-      "n_plus_one_notifications" => true,
+      "performance_notifications" => false,
+      "n_plus_one_notifications" => false,
       "new_issue_notifications" => true,
       "personal_channel" => nil # nil means use account default channel
     }

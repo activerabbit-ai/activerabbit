@@ -11,7 +11,9 @@ class ProjectSettingsController < ApplicationController
         @project.notification_preferences.find_or_create_by!(
           alert_type: type
         ) do |pref|
-          pref.enabled = true
+          # Only error-related alerts are enabled by default;
+          # performance and N+1 alerts are opt-in.
+          pref.enabled = %w[error_frequency new_issue].include?(type)
           pref.frequency = "every_2_hours"
         end
       end

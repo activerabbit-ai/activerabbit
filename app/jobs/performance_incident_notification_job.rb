@@ -17,6 +17,10 @@ class PerformanceIncidentNotificationJob
 
     return unless project.notifications_enabled?
 
+    # Respect per-type notification preference (performance alerts are off by default)
+    perf_pref = project.notification_pref_for("performance_regression")
+    return if perf_pref && !perf_pref.enabled
+
     ActsAsTenant.with_tenant(project.account) do
       case notification_type
       when "open"

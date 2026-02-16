@@ -65,7 +65,7 @@ class Project < ApplicationRecord
         threshold_value: 1500, # Critical threshold: 1500ms (for individual request alerts)
         time_window_minutes: 1,
         cooldown_minutes: 15,
-        enabled: true
+        enabled: false # Disabled by default - only error alerts are on by default
       },
       {
         name: "N+1 Query Detection",
@@ -73,7 +73,7 @@ class Project < ApplicationRecord
         threshold_value: 1, # Alert on any high-severity N+1
         time_window_minutes: 1,
         cooldown_minutes: 60,
-        enabled: true
+        enabled: false # Disabled by default - only error alerts are on by default
       },
       {
         name: "New Issues",
