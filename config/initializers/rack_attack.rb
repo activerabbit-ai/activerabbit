@@ -7,8 +7,10 @@ class Rack::Attack
   end
 
   # Allow higher limits for authenticated API requests
+  # Note: Rack stores HTTP headers as HTTP_UPPER_SNAKE env keys,
+  # so X-Project-Token becomes HTTP_X_PROJECT_TOKEN.
   safelist("api-authenticated") do |req|
-    req.path.start_with?("/api/") && req.get_header("X-Project-Token").present?
+    req.path.start_with?("/api/") && req.get_header("HTTP_X_PROJECT_TOKEN").present?
   end
 
   ### Throttles ###
@@ -141,8 +143,11 @@ end
 # Enable Rack::Attack only in environments where we actually want the
 # protection layer (production / staging). Keep it disabled in development
 # and test (including Docker rspec runs) to avoid interfering with specs.
+#
+# Set DISABLE_RACK_ATTACK=true to temporarily disable in production
+# (useful for debugging traffic issues).
 Rails.application.configure do
-  if Rails.env.production? || Rails.env.staging?
+  if (Rails.env.production? || Rails.env.staging?) && !ActiveModel::Type::Boolean.new.cast(ENV["DISABLE_RACK_ATTACK"])
     config.middleware.use Rack::Attack
   end
 end

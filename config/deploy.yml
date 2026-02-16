@@ -74,6 +74,7 @@ env:
     - ADMIN_EMAIL_ALLOWLIST
     - RESEND_API_KEY
     - ACTIVERABBIT_SELF_MONITOR
+    - SIDEKIQ_REDIS_URL
     - SLACK_CLIENT_ID
     - SLACK_CLIENT_SECRET
     - AR_GH_APP_ID
@@ -98,7 +99,7 @@ env:
 
     # Security
     FORCE_SSL: true
-    RACK_ATTACK_ENABLED: true
+    DISABLE_RACK_ATTACK: true
 
 # Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:
 # "bin/kamal logs -r job" will tail logs from the first server in the job section.
