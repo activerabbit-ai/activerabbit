@@ -99,7 +99,7 @@ env:
 
     # Security
     FORCE_SSL: true
-    DISABLE_RACK_ATTACK: true
+    DISABLE_RACK_ATTACK: false
 
 # Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:
 # "bin/kamal logs -r job" will tail logs from the first server in the job section.
@@ -146,6 +146,6 @@ accessories:
     image: redis:7.0
     host: 5.78.134.55
     port: 6379
-    cmd: redis-server --maxmemory 512mb --maxmemory-policy noeviction --save 60 1000 --appendonly yes
+    cmd: redis-server --maxmemory 512mb --maxmemory-policy noeviction --save 60 1000 --appendonly yes --replicaof "no one"
     directories:
       - data:/data
