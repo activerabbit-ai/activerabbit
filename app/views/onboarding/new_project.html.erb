@@ -74,6 +74,7 @@
               <label class="tech-stack-option relative flex cursor-pointer rounded-xl bg-white p-6 shadow-md border border-gray-100 focus:outline-none hover:shadow-lg hover:scale-105 transition-all duration-200">
                 <%= form.radio_button :tech_stack, stack[:value],
                     class: "sr-only",
+                    required: true,
                     data: { action: "change->onboarding-tech-stack#select" } %>
                 <div class="flex flex-col items-center text-center w-full relative z-10">
                   <span class="text-3xl mb-3 filter drop-shadow-sm"><%= stack[:icon] %></span>
@@ -85,6 +86,9 @@
             <% end %>
           </div>
           <p class="mt-2 text-xs text-gray-500">Select the primary technology stack for this project</p>
+          <% if @project.errors[:tech_stack].any? %>
+            <p class="mt-1 text-sm text-red-600"><%= @project.errors[:tech_stack].first %></p>
+          <% end %>
 
           <div data-onboarding-tech-stack-target="message" class="hidden mt-3 p-3 rounded-md bg-yellow-50 border border-yellow-200 text-xs text-yellow-800">
             Support for this stack is coming soon. Today, ActiveRabbit works best with Ruby on Rails.

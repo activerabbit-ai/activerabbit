@@ -24,6 +24,7 @@ class Project < ApplicationRecord
   validates :slug, presence: true, uniqueness: true
   validates :environment, presence: true
   validates :url, presence: true, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), message: "must be a valid URL" }
+  validates :tech_stack, presence: { message: "must be selected" }, on: :create
 
   before_validation :generate_slug, if: -> { slug.nil? && name.present? }
   after_create :update_account_name_from_first_project

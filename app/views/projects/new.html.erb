@@ -154,6 +154,7 @@
                 <label class="tech-stack-option relative flex cursor-pointer rounded-xl bg-white p-6 shadow-md border border-gray-100 focus:outline-none hover:shadow-lg hover:scale-105 transition-all duration-200">
                   <%= form.radio_button :tech_stack, stack[:value],
                       class: "sr-only",
+                      required: true,
                       data: { action: "change->tech-stack#select" } %>
                   <div class="flex flex-col items-center text-center w-full relative z-10">
                     <span class="text-3xl mb-3 filter drop-shadow-sm"><%= stack[:icon] %></span>
