@@ -7,16 +7,16 @@ image: nextsoft-io/activerabbit
 # Deploy to these servers.
 servers:
   web:
-    - 5.78.134.55
+    - 178.156.252.39
   # High-volume ingest worker — dedicated to processing SDK events
   job:
     hosts:
-      - 5.78.134.55
+      - 178.156.252.39
     cmd: bundle exec sidekiq -c 25 -q ingest
   # Mixed worker — alerts/default first, then helps with ingest overflow
   job-secondary:
     hosts:
-      - 5.78.134.55
+      - 178.156.252.39
     cmd: bundle exec sidekiq -c 15 -q alerts,5 -q default,3 -q analysis,2 -q mailers -q ingest
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
@@ -144,7 +144,7 @@ builder:
 accessories:
   redis:
     image: redis:7.0
-    host: 5.78.134.55
+    host: 178.156.252.39
     port: 6379
     cmd: redis-server --maxmemory 512mb --maxmemory-policy noeviction --save 60 1000 --appendonly yes --replicaof "no one"
     directories:
