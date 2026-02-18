@@ -36,11 +36,11 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       project: {
         name: "Onboarding Test Project #{SecureRandom.hex(4)}",
         environment: "production",
-        url: "https://onboardingtest#{SecureRandom.hex(4)}.example.com"
+        url: "https://onboardingtest#{SecureRandom.hex(4)}.example.com",
+        tech_stack: "rails"
       }
     }
 
-    # Should redirect to onboarding
     assert_response :redirect
   end
 
@@ -49,7 +49,8 @@ class ProjectsControllerTest < ActionDispatch::IntegrationTest
       project: {
         name: "Token Test Project #{SecureRandom.hex(4)}",
         environment: "production",
-        url: "https://tokentest#{SecureRandom.hex(4)}.example.com"
+        url: "https://tokentest#{SecureRandom.hex(4)}.example.com",
+        tech_stack: "rails"
       }
     }
 

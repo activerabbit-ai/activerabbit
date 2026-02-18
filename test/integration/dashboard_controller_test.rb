@@ -30,6 +30,50 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  # ── Root redirect tests ─────────────────────────────────────────────
+
+  test "root path redirects to first project errors page" do
+    get root_path
+    assert_redirected_to project_slug_errors_path(@project.slug)
+  end
+
+  test "root path redirects to last visited project from cookie" do
+    second_project = projects(:with_slack)
+    cookies[:last_project_slug] = second_project.slug
+
+    get root_path
+    assert_redirected_to project_slug_errors_path(second_project.slug)
+  end
+
+  test "root path falls back to first project if cookie project is deleted" do
+    cookies[:last_project_slug] = "deleted-project-slug"
+
+    get root_path
+    first_project = @account.projects.order(:name).first
+    assert_redirected_to project_slug_errors_path(first_project.slug)
+  end
+
+  test "dashboard path does not redirect" do
+    get dashboard_path
+    assert_response :success
+  end
+
+  # ── Cookie persistence tests ────────────────────────────────────────
+
+  test "visiting a project page sets last_project_slug cookie" do
+    get project_slug_errors_path(@project.slug)
+    assert_equal @project.slug, cookies[:last_project_slug]
+  end
+
+  test "switching projects updates last_project_slug cookie" do
+    get project_slug_errors_path(@project.slug)
+    assert_equal @project.slug, cookies[:last_project_slug]
+
+    second_project = projects(:with_slack)
+    get project_slug_errors_path(second_project.slug)
+    assert_equal second_project.slug, cookies[:last_project_slug]
+  end
+
   test "dashboard shows project stats" do
     get dashboard_path
     assert_response :success
@@ -53,6 +97,37 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     get dashboard_path
     assert_response :success
     assert assigns(:recent_projects).present?
+  end
+
+  # ── Sign-in redirect tests ───────────────────────────────────────────
+
+  test "after sign-in redirects to first project errors page" do
+    sign_out @user
+    post user_session_path, params: {
+      user: { email: @user.email, password: "password123" }
+    }
+    assert_redirected_to project_slug_errors_path(@account.projects.order(:name).first.slug)
+  end
+
+  test "after sign-in redirects to last visited project from cookie" do
+    second_project = projects(:with_slack)
+    sign_out @user
+    cookies[:last_project_slug] = second_project.slug
+
+    post user_session_path, params: {
+      user: { email: @user.email, password: "password123" }
+    }
+    assert_redirected_to project_slug_errors_path(second_project.slug)
+  end
+
+  test "after sign-in falls back to first project if cookie project invalid" do
+    sign_out @user
+    cookies[:last_project_slug] = "nonexistent-project"
+
+    post user_session_path, params: {
+      user: { email: @user.email, password: "password123" }
+    }
+    assert_redirected_to project_slug_errors_path(@account.projects.order(:name).first.slug)
   end
 
   test "project_dashboard redirects to errors page" do

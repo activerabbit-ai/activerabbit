@@ -54,22 +54,28 @@ class ApplicationController < ActionController::Base
   end
 
   def after_sign_in_path_for(resource)
-    # Safely check onboarding status
     begin
       if resource.needs_onboarding?
         new_project_path
       else
-        stored_location_for(resource) || dashboard_path
+        stored_location_for(resource) || default_project_path_for(resource)
       end
     rescue ActsAsTenant::Errors::NoTenantSet
-      # If tenant isn't set yet, check if user has projects without tenant scoping
       has_projects = ActsAsTenant.without_tenant { resource.account&.projects&.exists? }
       if has_projects
-        stored_location_for(resource) || dashboard_path
+        stored_location_for(resource) || default_project_path_for(resource)
       else
         stored_location_for(resource) || new_project_path
       end
     end
+  end
+
+  def default_project_path_for(resource)
+    projects = ActsAsTenant.without_tenant { resource.account&.projects }
+    last_slug = cookies[:last_project_slug]
+    project = projects&.find_by(slug: last_slug) if last_slug.present?
+    project ||= projects&.order(:name)&.first
+    project ? project_slug_errors_path(project.slug) : dashboard_path
   end
 
   def current_project
@@ -115,14 +121,13 @@ class ApplicationController < ActionController::Base
     if params[:project_slug].present?
       @current_project = current_account&.projects&.find_by(slug: params[:project_slug])
 
-      # If project not found or doesn't belong to current account, redirect to dashboard
       unless @current_project
         redirect_to dashboard_path, alert: "Project not found or access denied."
         return
       end
 
-      # Store selected project in session for dashboard menu
       session[:selected_project_slug] = @current_project.slug
+      cookies[:last_project_slug] = { value: @current_project.slug, expires: 1.year.from_now }
     else
       # When on dashboard or other non-project pages, try to use last selected project for menu
       if session[:selected_project_slug].present?

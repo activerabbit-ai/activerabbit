@@ -72,7 +72,7 @@ class ProjectTest < ActiveSupport::TestCase
   end
 
   test "validates URL format" do
-    project = Project.new(name: "Test", environment: "production", url: "not-a-url", account: accounts(:default))
+    project = Project.new(name: "Test", environment: "production", url: "not-a-url", account: accounts(:default), tech_stack: "rails")
     refute project.valid?
 
     project.url = "https://example.com"
@@ -86,9 +86,38 @@ class ProjectTest < ActiveSupport::TestCase
   end
 
   test "is valid without a user" do
-    project = Project.new(name: "Test", environment: "production", url: "http://example.com", account: accounts(:default), user: nil)
-    # Need unique slug
+    project = Project.new(name: "Test", environment: "production", url: "http://example.com", account: accounts(:default), user: nil, tech_stack: "rails")
     project.slug = "test-no-user-#{SecureRandom.hex(4)}"
+    assert project.valid?
+  end
+
+  # ---- tech_stack validation (on create) ----
+
+  test "validates presence of tech_stack on create" do
+    project = Project.new(
+      name: "No Stack",
+      environment: "production",
+      url: "http://example.com",
+      account: accounts(:default)
+    )
+    refute project.valid?
+    assert_includes project.errors[:tech_stack], "must be selected"
+  end
+
+  test "allows create with tech_stack set" do
+    project = Project.new(
+      name: "With Stack #{SecureRandom.hex(4)}",
+      environment: "production",
+      url: "http://example.com",
+      account: accounts(:default),
+      tech_stack: "rails"
+    )
+    assert project.valid?
+  end
+
+  test "does not require tech_stack on update" do
+    project = projects(:default)
+    project.tech_stack = nil
     assert project.valid?
   end
 

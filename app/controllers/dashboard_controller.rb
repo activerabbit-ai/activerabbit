@@ -3,7 +3,13 @@ class DashboardController < ApplicationController
   before_action :authenticate_user!
 
   def index
-    # Projects data for the projects grid (avoid preloading heavy associations)
+    if request.path == root_path
+      last_slug = cookies[:last_project_slug]
+      project = current_account.projects.find_by(slug: last_slug) if last_slug.present?
+      project ||= current_account.projects.order(:name).first
+      redirect_to project_slug_errors_path(project.slug) and return if project
+    end
+
     @projects = current_account.projects.includes(:api_tokens, :user)
                                .order(:name)
 
