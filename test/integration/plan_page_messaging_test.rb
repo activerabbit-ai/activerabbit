@@ -108,7 +108,7 @@ class PlanPageMessagingTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_includes response.body, "14-day free trial"
-    assert_includes response.body, "Add a payment method to start your subscription"
+    assert_includes response.body, "Subscribe to a plan to keep monitoring"
     assert_includes response.body, "remaining"
   end
 
@@ -125,7 +125,7 @@ class PlanPageMessagingTest < ActionDispatch::IntegrationTest
     get plan_path
     assert_response :success
 
-    assert_includes response.body, "start your subscription"
+    assert_includes response.body, "Subscribe to a plan"
     assert_includes response.body, "monitoring uninterrupted"
     assert_includes response.body, "Free Trial"
   end
@@ -152,7 +152,7 @@ class PlanPageMessagingTest < ActionDispatch::IntegrationTest
     get plan_path
     assert_response :success
 
-    refute_includes response.body, "start your subscription"
+    refute_includes response.body, "Subscribe to a plan to keep"
     refute_includes response.body, "trial ended"
   end
 
@@ -244,7 +244,7 @@ class PlanPageMessagingTest < ActionDispatch::IntegrationTest
     get plan_path
     assert_response :success
 
-    assert_includes response.body, "Add a payment method to keep monitoring uninterrupted"
+    assert_includes response.body, "Subscribe to a plan to keep monitoring"
     assert_select "a[href=?]", plan_path, text: "Choose Plan"
   end
 
@@ -306,7 +306,7 @@ class PlanPageMessagingTest < ActionDispatch::IntegrationTest
     get plan_path
     assert_response :success
 
-    refute_includes response.body, "payment method to keep monitoring"
+    refute_includes response.body, "Subscribe to a plan to keep monitoring"
     refute_includes response.body, "Trial expired"
   end
 

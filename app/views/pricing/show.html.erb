@@ -12,7 +12,7 @@
           <p class="text-xs text-indigo-700 mt-1">
             You're on a <span class="font-semibold">14-day free trial</span> with full access.
             <strong><%= trial_days_left %> day<%= "s" unless trial_days_left == 1 %></strong> remaining.
-            Add a payment method to start your subscription and keep monitoring uninterrupted.
+            Subscribe to a plan to keep monitoring uninterrupted after your trial ends.
           </p>
         <% end %>
         <% if @next_payment_date %>
@@ -93,7 +93,8 @@
     </div>
 
     <!-- Team Plan -->
-    <div class="group bg-white border rounded-xl p-6 shadow-sm flex flex-col ring-2 ring-indigo-500/20 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
+    <div class="group relative bg-white border rounded-xl p-6 shadow-sm flex flex-col ring-2 ring-indigo-500 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer">
+      <span class="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-indigo-600 text-white tracking-wide">Most Popular</span>
       <h3 class="text-xl font-semibold">Team</h3>
       <div class="mt-2">
         <span class="text-3xl font-extrabold tracking-tight text-gray-900">$29</span>
