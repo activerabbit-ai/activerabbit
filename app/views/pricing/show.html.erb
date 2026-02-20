@@ -10,9 +10,9 @@
         <% if @account.on_trial? %>
           <% trial_days_left = [(@account.trial_ends_at.to_date - Date.current).to_i, 0].max %>
           <p class="text-xs text-indigo-700 mt-1">
-            You're on a <span class="font-semibold">14-day free trial</span> with Team-level features.
+            You're on a <span class="font-semibold">14-day free trial</span> with full access.
             <strong><%= trial_days_left %> day<%= "s" unless trial_days_left == 1 %></strong> remaining.
-            Subscribe to a paid plan to keep access after the trial ends.
+            Add a payment method to start your subscription and keep monitoring uninterrupted.
           </p>
         <% end %>
         <% if @next_payment_date %>
@@ -110,11 +110,19 @@
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Slack notifications</span></li>
       </ul>
       <div class="mt-auto pt-4">
-        <%= button_to (@account&.current_plan == 'team' ? "Current Plan" : "Choose Team"),
-              checkouts_path,
-              params: { plan: "team", interval: "month" },
-              data: { turbo: false }, method: :post,
-              class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
+        <% if @account&.current_plan == 'team' && @account&.active_subscription? %>
+          <%= button_to "Current Plan",
+                checkouts_path,
+                params: { plan: "team", interval: "month" },
+                disabled: true,
+                class: "w-full bg-gray-400 text-white py-2 rounded-md cursor-not-allowed" %>
+        <% else %>
+          <%= button_to "Choose Team",
+                checkouts_path,
+                params: { plan: "team", interval: "month" },
+                data: { turbo: false }, method: :post,
+                class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
+        <% end %>
       </div>
     </div>
 
@@ -136,11 +144,19 @@
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Slack notifications</span></li>
         </ul>
         <div class="mt-auto pt-4">
-        <%= button_to (@account&.current_plan == 'business' ? "Current Plan" : "Choose Business"),
-              checkouts_path,
-              params: { plan: "business", interval: "month" },
-              data: { turbo: false }, method: :post,
-              class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
+        <% if @account&.current_plan == 'business' && @account&.active_subscription? %>
+          <%= button_to "Current Plan",
+                checkouts_path,
+                params: { plan: "business", interval: "month" },
+                disabled: true,
+                class: "w-full bg-gray-400 text-white py-2 rounded-md cursor-not-allowed" %>
+        <% else %>
+          <%= button_to "Choose Business",
+                checkouts_path,
+                params: { plan: "business", interval: "month" },
+                data: { turbo: false }, method: :post,
+                class: "w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors" %>
+        <% end %>
         </div>
       </div>
   </div>

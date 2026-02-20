@@ -13,19 +13,27 @@
         <div class="flex items-center gap-3">
           <h2 class="text-lg font-semibold <%= needs_payment ? 'text-red-900' : 'text-indigo-900' %>">
             Current Plan: <%= @account.effective_plan_name %>
+            <% if @account.on_trial? %>
+              <% trial_days = [(@account.trial_ends_at.to_date - Date.current).to_i, 0].max %>
+              <span class="ml-2 text-sm font-medium text-indigo-600"><%= trial_days %> <%= trial_days == 1 ? 'day' : 'days' %> left</span>
+            <% end %>
           </h2>
-          <% if needs_payment %>
+          <% if @account.trial_expired_without_payment? %>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              ⚠️ No Payment Method
+              Free plan
+            </span>
+          <% elsif @account.on_trial? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+              Trial
             </span>
           <% end %>
         </div>
         <% if needs_payment %>
           <p class="text-sm text-red-700 mt-1">
             <% if @account.trial_expired_without_payment? %>
-              Your trial ended. You're now on the Free plan. Upgrade for higher limits.
+              Your trial ended. You're now on the Free plan. Choose a plan to unlock higher limits.
             <% else %>
-              Add a payment method before your trial ends to keep full access.
+              Add a payment method to start your subscription and keep monitoring uninterrupted.
             <% end %>
           </p>
         <% elsif @next_payment_date %>
@@ -35,11 +43,7 @@
         <% end %>
       </div>
       <div class="flex space-x-2">
-        <% if needs_payment %>
-          <%= button_to "💳 Add Payment Method", billing_portal_index_path,
-                method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700" %>
-        <% end %>
-<%= link_to "🏷️ View Plans", plan_path, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700" %>
+        <%= link_to "Choose Plan", plan_path, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white #{needs_payment ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}" %>
         <% if @account.active_subscription? %>
           <%= button_to "View Invoices", billing_portal_index_path,
                 method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>

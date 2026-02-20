@@ -254,25 +254,25 @@
 
           <% if trial_active && !has_sub %>
             <% trial_days_left = [(current_account.trial_ends_at.to_date - Date.current).to_i, 0].max %>
-            <div class="mb-3 p-3 rounded-lg bg-indigo-950/40 border border-indigo-500/30" data-sidebar-target="trialBox">
-              <p class="text-xs font-semibold text-indigo-200">
+            <div class="mb-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200" data-sidebar-target="trialBox">
+              <p class="text-xs font-semibold text-yellow-800">
                 <%= current_account.effective_plan_name %> – <%= trial_days_left %> <%= trial_days_left == 1 ? 'day' : 'days' %> left
               </p>
-              <p class="text-[11px] text-indigo-300/80 mt-1">
-                Full access to all features during your trial.
+              <p class="text-[11px] text-yellow-700 mt-1">
+                Add a payment method to keep monitoring uninterrupted.
               </p>
-              <%= link_to "View Plans", plan_path, class: "mt-2 block w-full px-2 py-1.5 text-xs font-medium text-center text-white bg-indigo-600 border border-indigo-500 rounded shadow-sm hover:bg-indigo-500 transition-colors" %>
+              <%= link_to "Choose Plan", plan_path, class: "mt-2 block w-full px-2 py-1.5 text-xs font-medium text-center text-yellow-900 bg-yellow-300 border border-yellow-400 rounded shadow-sm hover:bg-yellow-400 transition-colors" %>
             </div>
           <% elsif (trial_expired && !has_sub) || on_free %>
-            <div class="mb-3 p-3 rounded-lg bg-red-950/40 border border-red-500/30" data-sidebar-target="trialBox">
-              <p class="text-xs font-semibold text-red-200">
+            <div class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200" data-sidebar-target="trialBox">
+              <p class="text-xs font-semibold text-red-800">
                 <% if trial_expired && current_account.current_plan != "free" %>
                   Trial expired – Free plan limits apply
                 <% else %>
                   You're on the Free plan
                 <% end %>
               </p>
-              <p class="text-[11px] text-red-300/80 mt-1">
+              <p class="text-[11px] text-red-700 mt-1">
                 Upgrade to unlock higher quotas and AI features.
               </p>
               <%= link_to "Upgrade", plan_path, class: "mt-2 block w-full px-2 py-1.5 text-xs font-medium text-center text-white bg-red-600 border border-red-500 rounded shadow-sm hover:bg-red-500 transition-colors" %>
@@ -281,9 +281,9 @@
 
           <%# Promo box — only for non-paying users %>
           <% unless has_sub %>
-            <div class="mt-auto p-4 rounded-lg bg-indigo-950/30 border border-indigo-500/20" data-sidebar-target="promoBox">
-              <h4 class="text-sm font-semibold text-indigo-200">Unlock more with Team</h4>
-              <p class="text-xs text-indigo-300/70 mt-1">Higher quotas, AI suggestions, advanced alerts.</p>
+            <div class="mt-auto p-4 rounded-lg bg-indigo-50 border border-indigo-100" data-sidebar-target="promoBox">
+              <h4 class="text-sm font-semibold text-indigo-900">Unlock more with Team</h4>
+              <p class="text-xs text-indigo-800 mt-1">Higher quotas, AI suggestions, advanced alerts.</p>
               <%= link_to plan_path, class: "mt-2 inline-flex items-center justify-center w-full px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 cursor-pointer space-x-2" do %>
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l6-6 4 4 8-8" />
