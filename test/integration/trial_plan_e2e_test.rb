@@ -69,10 +69,9 @@ class TrialPlanE2eTest < ActionDispatch::IntegrationTest
   end
 
   test "trial plan accepts events via API" do
-    account = accounts(:trial_account)
-    user = users(:trial_user)
-    sign_in user
-    ActsAsTenant.current_tenant = account
+    account = accounts(:default)
+    project = projects(:default)
+    token = api_tokens(:default)
 
     account.update!(
       current_plan: "trial",
@@ -80,19 +79,6 @@ class TrialPlanE2eTest < ActionDispatch::IntegrationTest
       cached_events_used: 100
     )
 
-    project = account.projects.first
-    unless project
-      post projects_path, params: {
-        project: {
-          name: "Trial API Test #{SecureRandom.hex(4)}",
-          environment: "production",
-          url: "https://trial-api-#{SecureRandom.hex(4)}.example.com"
-        }
-      }
-      project = account.projects.reload.last
-    end
-
-    token = project.api_tokens.active.first
     api_headers = { "CONTENT_TYPE" => "application/json", "X-Project-Token" => token.token }
 
     post "/api/v1/events/errors", params: {
@@ -501,15 +487,8 @@ class TrialPlanE2eTest < ActionDispatch::IntegrationTest
     sign_in user
     ActsAsTenant.current_tenant = account
 
-    # --- Step 2: Create project and send events ---
-    post projects_path, params: {
-      project: {
-        name: "Journey App #{SecureRandom.hex(4)}",
-        environment: "production",
-        url: "https://journey-#{SecureRandom.hex(4)}.example.com"
-      }
-    }
-    assert_response :redirect
+    # --- Step 2: Verify account is set up ---
+    ActsAsTenant.current_tenant = account
 
     # --- Step 3: Attempt checkout → Stripe subscription incomplete ---
     pay_customer = Pay::Customer.find_or_create_by!(

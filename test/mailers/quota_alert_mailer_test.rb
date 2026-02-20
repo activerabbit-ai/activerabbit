@@ -65,8 +65,7 @@ class QuotaAlertMailerTest < ActionMailer::TestCase
     mail = QuotaAlertMailer.free_plan_upgrade_reminder(@account, :events, 5)
 
     assert_includes mail.body.encoded, "Free Plan"
-    assert_includes mail.body.encoded, "Team"
-    assert_includes mail.body.encoded, "Upgrade"
+    assert_includes mail.body.encoded, "Upgrade Plan"
   end
 
   # Different resource types

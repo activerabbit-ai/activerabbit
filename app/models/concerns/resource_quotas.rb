@@ -348,12 +348,11 @@ module ResourceQuotas
     # but team-level quotas for everything else.
     return :trial if on_trial?
 
-    # After trial expires without payment method → Free plan
-    # (only if they don't have an active subscription)
-    # Use respond_to? to safely handle mock objects in tests
+    # After trial expires without payment or subscription → Free plan
+    # Check active_subscription? first (DB query) to avoid Stripe API call
     if respond_to?(:trial_expired?) && trial_expired? &&
-       respond_to?(:has_payment_method?) && !has_payment_method? &&
-       respond_to?(:active_subscription?) && !active_subscription?
+       respond_to?(:active_subscription?) && !active_subscription? &&
+       respond_to?(:has_payment_method?) && !has_payment_method?
       return :free
     end
 

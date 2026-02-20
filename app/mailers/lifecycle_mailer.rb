@@ -44,7 +44,7 @@ class LifecycleMailer < ApplicationMailer
     @user = confirmed_user_for(account)
     return unless @user
 
-    mail to: @user.email, subject: "Your trial expired #{@days_since_expired} days ago — upgrade to Team"
+    mail to: @user.email, subject: "Your trial expired #{@days_since_expired} days ago — upgrade now"
   end
 
   def trial_expired_downgraded(account:, previous_plan:)

@@ -99,16 +99,17 @@
     <div class="content">
       <div class="alert-box">
         <p><strong>Action required!</strong> Your ActiveRabbit trial for <strong><%= @account.name %></strong> expired <%= @days_since_expired %> days ago.
-        Upgrade to the <strong>Team plan</strong> to keep full access, or your account will be moved to the <strong>Free plan</strong>.</p>
+        Upgrade to a <strong>paid plan</strong> to keep full access, or your account will be moved to the <strong>Free plan</strong>.</p>
       </div>
 
       <div class="warning-box">
-        <strong>Upgrade to Team and keep:</strong>
+        <strong>Upgrade and keep:</strong>
         <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-          <li><strong>50,000</strong> events per month</li>
-          <li><strong>100</strong> AI-powered error summaries</li>
-          <li><strong>10</strong> projects</li>
+          <li><strong>50,000+</strong> events per month</li>
+          <li><strong>20+</strong> AI-powered error summaries</li>
+          <li><strong>10+</strong> projects</li>
           <li>Uptime monitoring & status pages</li>
+          <li>Slack notifications</li>
         </ul>
       </div>
 
@@ -125,7 +126,7 @@
       </div>
 
       <div class="button-wrapper">
-        <a href="<%= plan_url(host: ENV.fetch('APP_HOST', 'localhost:3000'), protocol: Rails.env.production? ? 'https' : 'http') %>" class="button">Upgrade to Team</a>
+        <a href="<%= plan_url(host: ENV.fetch('APP_HOST', 'localhost:3000'), protocol: Rails.env.production? ? 'https' : 'http') %>" class="button">View Plans & Upgrade</a>
       </div>
 
       <p style="color: #777; font-size: 13px; margin-top: 20px;">

@@ -64,7 +64,7 @@ class DeviseRoutesTest < ActionDispatch::IntegrationTest
   test "GET /signup routes to devise registrations#new" do
     assert_routing(
       { method: :get, path: "/signup" },
-      { controller: "devise/registrations", action: "new" }
+      { controller: "users/registrations", action: "new" }
     )
   end
 end

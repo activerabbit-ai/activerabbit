@@ -23,9 +23,9 @@
         <% if needs_payment %>
           <p class="text-sm text-red-700 mt-1">
             <% if @account.trial_expired_without_payment? %>
-              Your trial ended. You're now on the Free plan. Upgrade to Team for higher limits.
+              Your trial ended. You're now on the Free plan. Upgrade for higher limits.
             <% else %>
-              Add a payment method before your trial ends to keep Team plan benefits.
+              Add a payment method before your trial ends to keep full access.
             <% end %>
           </p>
         <% elsif @next_payment_date %>

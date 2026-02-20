@@ -3,9 +3,9 @@
     <h3 class="text-lg font-semibold mb-2">Upgrade for more headroom</h3>
     <% used_pct = ((account.events_used_in_period.to_f / account.event_quota.to_f) * 100).round rescue 0 %>
     <p class="mb-4">You're at <%= used_pct %>% of your monthly events on the <%= account.effective_plan_name %> plan.</p>
-    <p class="mb-6">Upgrade to Team for higher limits and advanced alerts.</p>
+    <p class="mb-6">Upgrade for higher limits and advanced alerts.</p>
     <div class="flex gap-2">
-      <%= button_to "Upgrade to Team", checkouts_path,
+      <%= button_to "Upgrade Now", checkouts_path,
             params: { plan: "team", interval: account.billing_interval || "month", ai: account.ai_mode_enabled },
             method: :post, class: "btn btn-primary" %>
       <button data-close-modal class="btn">Not now</button>
