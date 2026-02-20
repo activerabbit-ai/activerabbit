@@ -3,6 +3,8 @@ class DashboardController < ApplicationController
   before_action :authenticate_user!
 
   def index
+    handle_checkout_return if params[:subscribed] == "1"
+
     if request.path == root_path
       last_slug = cookies[:last_project_slug]
       project = current_account.projects.find_by(slug: last_slug) if last_slug.present?
@@ -120,5 +122,37 @@ class DashboardController < ApplicationController
 
     # Redirect to Errors by default when switching/landing on a project
     redirect_to project_slug_errors_path(@current_project.slug)
+  end
+
+  private
+
+  # Called when Stripe Checkout redirects back with ?subscribed=1&plan=team.
+  # Updates the account immediately so the UI reflects the new plan without
+  # waiting for the Stripe webhook (which may be delayed or absent locally).
+  # The webhook handler is idempotent and will reconcile if needed.
+  def handle_checkout_return
+    plan = params[:plan].to_s.downcase
+    return unless plan.in?(%w[team business])
+
+    account = current_account
+    old_plan = account.current_plan
+    needs_upgrade = old_plan != plan
+    needs_trial_cleanup = account.trial_ends_at.present?
+
+    return unless needs_upgrade || needs_trial_cleanup
+
+    quota = plan == "business" ? 100_000 : 50_000
+
+    account.update!(
+      current_plan: plan,
+      event_quota: quota,
+      billing_interval: params[:interval] || "month",
+      trial_ends_at: nil
+    )
+
+    account.reset_usage_counters! if needs_upgrade && old_plan.in?(%w[free trial])
+
+    flash[:notice] = "You're now on the #{plan.titleize} plan!" if needs_upgrade
+    Rails.logger.info("[DashboardController] Checkout return: account ##{account.id} plan=#{plan} (was #{old_plan})")
   end
 end

@@ -111,7 +111,7 @@
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Slack notifications</span></li>
       </ul>
       <div class="mt-auto pt-4">
-        <% if @account&.current_plan == 'team' && @account&.active_subscription? %>
+        <% if @account&.current_plan == 'team' %>
           <%= button_to "Current Plan",
                 checkouts_path,
                 params: { plan: "team", interval: "month" },
@@ -145,7 +145,7 @@
         <li class="flex items-start"><svg class="w-4 h-4 text-indigo-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>Slack notifications</span></li>
         </ul>
         <div class="mt-auto pt-4">
-        <% if @account&.current_plan == 'business' && @account&.active_subscription? %>
+        <% if @account&.current_plan == 'business' %>
           <%= button_to "Current Plan",
                 checkouts_path,
                 params: { plan: "business", interval: "month" },

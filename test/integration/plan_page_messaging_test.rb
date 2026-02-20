@@ -48,54 +48,34 @@ class PlanPageMessagingTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Choose Business"
   end
 
-  test "plan page shows Current Plan on Team button for paying team user" do
+  test "plan page shows Current Plan on Team button for team user" do
     user = users(:second_owner)
     account = accounts(:team_account)
     account.update!(current_plan: "team", trial_ends_at: nil)
 
-    pay_customer = Pay::Customer.find_or_create_by!(
-      owner: user, processor: "stripe"
-    ) { |c| c.processor_id = "cus_plan_test_team_#{SecureRandom.hex(4)}" }
-    Pay::Subscription.create!(
-      customer: pay_customer,
-      processor_id: "sub_plan_test_team_#{SecureRandom.hex(4)}",
-      name: "default",
-      processor_plan: "price_test",
-      status: "active",
-      quantity: 1
-    )
-
     sign_in user
 
     get plan_path
     assert_response :success
 
     assert_select "button[disabled]", text: "Current Plan"
+    assert_includes response.body, "Choose Free"
+    assert_includes response.body, "Choose Business"
   end
 
-  test "plan page shows Current Plan on Business button for paying business user" do
+  test "plan page shows Current Plan on Business button for business user" do
     user = users(:other_account_owner)
     account = accounts(:other_account)
     account.update!(current_plan: "business", trial_ends_at: nil)
 
-    pay_customer = Pay::Customer.find_or_create_by!(
-      owner: user, processor: "stripe"
-    ) { |c| c.processor_id = "cus_plan_test_biz_#{SecureRandom.hex(4)}" }
-    Pay::Subscription.create!(
-      customer: pay_customer,
-      processor_id: "sub_plan_test_biz_#{SecureRandom.hex(4)}",
-      name: "default",
-      processor_plan: "price_biz_test",
-      status: "active",
-      quantity: 1
-    )
-
     sign_in user
 
     get plan_path
     assert_response :success
 
     assert_select "button[disabled]", text: "Current Plan"
+    assert_includes response.body, "Choose Free"
+    assert_includes response.body, "Choose Team"
   end
 
   test "plan page shows trial info with subscribe CTA for trial user" do

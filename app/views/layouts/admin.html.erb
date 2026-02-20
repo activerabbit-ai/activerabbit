@@ -250,9 +250,10 @@
           <% trial_active = current_account.on_trial? %>
           <% trial_expired = current_account.trial_expired? %>
           <% has_sub = current_account.active_subscription? %>
+          <% on_paid = current_account.current_plan.in?(%w[team business]) && !current_account.on_trial? %>
           <% on_free = current_account.on_free_plan? %>
 
-          <% if trial_active && !has_sub %>
+          <% if trial_active && !has_sub && !on_paid %>
             <% trial_days_left = [(current_account.trial_ends_at.to_date - Date.current).to_i, 0].max %>
             <div class="mb-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200" data-sidebar-target="trialBox">
               <p class="text-xs font-semibold text-yellow-800">
@@ -263,7 +264,7 @@
               </p>
               <%= link_to "Choose Plan", plan_path, class: "mt-2 block w-full px-2 py-1.5 text-xs font-medium text-center text-yellow-900 bg-yellow-300 border border-yellow-400 rounded shadow-sm hover:bg-yellow-400 transition-colors" %>
             </div>
-          <% elsif (trial_expired && !has_sub) || on_free %>
+          <% elsif !on_paid && ((trial_expired && !has_sub) || on_free) %>
             <div class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200" data-sidebar-target="trialBox">
               <p class="text-xs font-semibold text-red-800">
                 <% if trial_expired && current_account.current_plan != "free" %>
@@ -280,7 +281,7 @@
           <% end %>
 
           <%# Promo box — only for non-paying users %>
-          <% unless has_sub %>
+          <% unless has_sub || on_paid %>
             <div class="mt-auto p-4 rounded-lg bg-indigo-50 border border-indigo-100" data-sidebar-target="promoBox">
               <h4 class="text-sm font-semibold text-indigo-900">Unlock more with Team</h4>
               <p class="text-xs text-indigo-800 mt-1">Higher quotas, AI suggestions, advanced alerts.</p>
