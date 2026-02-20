@@ -15,8 +15,8 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
   test "downgrades account to free when trial expired and no subscription" do
     @account.update!(
       trial_ends_at: 1.day.ago,
-      current_plan: "team",
-      event_quota: 100_000,
+      current_plan: "trial",
+      event_quota: 50_000,
       cached_events_used: 8_000,
       cached_ai_summaries_used: 15,
       cached_pull_requests_used: 10
@@ -27,7 +27,7 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
 
     LifecycleMailer.stub(:trial_expired_downgraded, ->(**args) {
       assert_equal @account, args[:account]
-      assert_equal "team", args[:previous_plan]
+      assert_equal "trial", args[:previous_plan]
       mock_mail
     }) do
       TrialExpirationJob.perform_now
@@ -44,12 +44,12 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
   end
 
   test "does not downgrade account still on trial" do
-    @account.update!(trial_ends_at: 5.days.from_now, current_plan: "team")
+    @account.update!(trial_ends_at: 5.days.from_now, current_plan: "trial")
 
     TrialExpirationJob.perform_now
 
     @account.reload
-    assert_equal "team", @account.current_plan
+    assert_equal "trial", @account.current_plan
   end
 
   test "does not downgrade account already on free plan" do
@@ -62,16 +62,16 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
   end
 
   test "does not downgrade inactive accounts" do
-    @account.update!(trial_ends_at: 1.day.ago, current_plan: "team", active: false)
+    @account.update!(trial_ends_at: 1.day.ago, current_plan: "trial", active: false)
 
     TrialExpirationJob.perform_now
 
     @account.reload
-    assert_equal "team", @account.current_plan
+    assert_equal "trial", @account.current_plan
   end
 
   test "does not downgrade accounts with active subscription" do
-    @account.update!(trial_ends_at: 1.day.ago, current_plan: "team")
+    @account.update!(trial_ends_at: 1.day.ago, current_plan: "trial")
 
     # Create a user and Pay::Subscription to simulate active subscription
     user = User.find_by(account_id: @account.id)
@@ -97,7 +97,7 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
     TrialExpirationJob.perform_now
 
     @account.reload
-    assert_equal "team", @account.current_plan
+    assert_equal "trial", @account.current_plan
   end
 
   # ============================================================================
@@ -105,7 +105,7 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
   # ============================================================================
 
   test "sends downgrade notification email" do
-    @account.update!(trial_ends_at: 1.day.ago, current_plan: "team")
+    @account.update!(trial_ends_at: 1.day.ago, current_plan: "trial")
 
     email_sent = false
     mock_mail = Minitest::Mock.new
@@ -113,7 +113,7 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
 
     LifecycleMailer.stub(:trial_expired_downgraded, ->(**args) {
       email_sent = true
-      assert_equal "team", args[:previous_plan]
+      assert_equal "trial", args[:previous_plan]
       mock_mail
     }) do
       TrialExpirationJob.perform_now
@@ -127,7 +127,7 @@ class TrialExpirationJobTest < ActiveSupport::TestCase
   # ============================================================================
 
   test "continues processing if email delivery fails" do
-    @account.update!(trial_ends_at: 1.day.ago, current_plan: "team")
+    @account.update!(trial_ends_at: 1.day.ago, current_plan: "trial")
 
     LifecycleMailer.stub(:trial_expired_downgraded, ->(**args) {
       raise "Mailer error"

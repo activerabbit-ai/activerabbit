@@ -14,7 +14,7 @@ class UserTrialTest < ActiveSupport::TestCase
 
       assert account.present?
       assert_in_delta Rails.configuration.x.trial_days.days.from_now, account.trial_ends_at, 5.seconds
-      assert_equal "team", account.current_plan
+      assert_equal "trial", account.current_plan
       assert_equal "month", account.billing_interval
     end
   end

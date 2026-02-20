@@ -37,8 +37,9 @@
         <div>
           <dt class="text-sm font-medium text-gray-500">Plan</dt>
           <dd class="mt-1">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= @account.current_plan == 'team' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800' %>">
-              <%= @account.current_plan&.titleize || 'Free' %>
+            <% plan_key = @account.send(:effective_plan_key) %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= %i[team business].include?(plan_key) ? 'bg-indigo-100 text-indigo-800' : plan_key == :trial ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800' %>">
+              <%= @account.effective_plan_name %>
             </span>
             <% if @account.on_trial? %>
               <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">

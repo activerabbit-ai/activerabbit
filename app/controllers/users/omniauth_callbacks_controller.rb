@@ -17,11 +17,17 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
       return
     end
 
+    just_created = !User.exists?(provider: auth.provider, uid: auth.uid) &&
+                   (auth.info.email.blank? || !User.exists?(email: auth.info.email))
     @user = User.from_omniauth(auth)
 
     if @user.persisted?
+      if just_created
+        flash[:notice] = "Welcome to ActiveRabbit! Your 14-day free trial has started — enjoy full access to all features."
+      else
+        set_flash_message(:notice, :success, kind: kind) if is_navigational_format?
+      end
       sign_in_and_redirect @user, event: :authentication
-      set_flash_message(:notice, :success, kind: kind) if is_navigational_format?
     else
       session["devise.#{kind.downcase}_data"] = auth.except(:extra)
 

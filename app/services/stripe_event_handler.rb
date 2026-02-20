@@ -91,19 +91,22 @@ class StripeEventHandler
     end
     plan, interval = plan_interval_from_price(base_price_id)
 
-    # Detect plan upgrade: reset consumption-based usage counters when moving
-    # from free/trial to a paid plan so the user starts fresh with new quota.
-    # Projects and users carry over.
+    sub_status = sub.respond_to?(:status) ? sub.status : sub["status"]
+    subscription_billable = sub_status.in?(%w[active trialing])
+
+    # Only upgrade the account plan when the subscription is actually
+    # billable (active or trialing). Incomplete/past_due subscriptions
+    # should NOT grant paid plan access — this prevents the bug where
+    # a checkout that was never completed still sets current_plan.
+    effective_plan = subscription_billable ? (plan || account.current_plan) : account.current_plan
+    effective_interval = subscription_billable ? (interval || account.billing_interval) : account.billing_interval
+
     old_plan = account.current_plan
-    new_plan = plan || old_plan
+    new_plan = effective_plan
     plan_upgraded = old_plan.in?(%w[free trial]) && new_plan.in?(%w[team business])
 
-    account.update!(
-      trial_ends_at: trial_end,
-      current_plan: plan || account.current_plan,
-      billing_interval: interval || account.billing_interval,
-      ai_mode_enabled: ai_item.present?,
-      event_quota: quota_for(plan || account.current_plan),
+    account_attrs = {
+      ai_mode_enabled: subscription_billable && ai_item.present?,
       event_usage_period_start: current_period_start,
       event_usage_period_end: current_period_end,
       overage_subscription_item_id: if overage_item.respond_to?(:id)
@@ -116,7 +119,16 @@ class StripeEventHandler
                                        else
         ai_overage_item && ai_overage_item["id"]
                                        end
-    )
+    }
+
+    if subscription_billable
+      account_attrs[:trial_ends_at] = trial_end
+      account_attrs[:current_plan] = effective_plan
+      account_attrs[:billing_interval] = effective_interval
+      account_attrs[:event_quota] = quota_for(effective_plan)
+    end
+
+    account.update!(**account_attrs)
 
     # Reset usage counters after plan upgrade so user starts fresh
     if plan_upgraded

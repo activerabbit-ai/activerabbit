@@ -139,9 +139,9 @@ class User < ApplicationRecord
       name: base_name
     ) do |a|
       a.trial_ends_at = Rails.configuration.x.trial_days.days.from_now
-      a.current_plan = "team"
+      a.current_plan = "trial"
       a.billing_interval = "month"
-      a.event_quota = 100_000
+      a.event_quota = 50_000
       a.events_used_in_period = 0
     end
   end

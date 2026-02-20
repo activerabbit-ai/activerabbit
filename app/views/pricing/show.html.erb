@@ -6,11 +6,13 @@
   <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6 mx-auto" style="width: 85%">
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-lg font-semibold text-indigo-900">Current Plan: <%= @account.current_plan&.titleize %></h2>
+        <h2 class="text-lg font-semibold text-indigo-900">Current Plan: <%= @account.effective_plan_name %></h2>
         <% if @account.on_trial? %>
+          <% trial_days_left = [(@account.trial_ends_at.to_date - Date.current).to_i, 0].max %>
           <p class="text-xs text-indigo-700 mt-1">
-            You’re currently using <span class="font-semibold"><%= @account.effective_plan_name %></span> limits on a trial.
-            After the trial ends, you’ll stay on the <span class="font-semibold"><%= @account.current_plan&.titleize %></span> plan unless you upgrade.
+            You're on a <span class="font-semibold">14-day free trial</span> with Team-level features.
+            <strong><%= trial_days_left %> day<%= "s" unless trial_days_left == 1 %></strong> remaining.
+            Subscribe to a paid plan to keep access after the trial ends.
           </p>
         <% end %>
         <% if @next_payment_date %>
@@ -24,16 +26,18 @@
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           View Your Usage & Quotas
         <% end %>
-        <%= button_to "View Invoices", billing_portal_index_path,
-              method: :post,
-              data: { turbo: false },
-              form: { target: "_blank" },
-              class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>
-        <%= button_to "Manage Plan", billing_portal_index_path,
-              method: :post,
-              data: { turbo: false },
-              form: { target: "_blank" },
-              class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
+        <% if @account.active_subscription? %>
+          <%= button_to "View Invoices", billing_portal_index_path,
+                method: :post,
+                data: { turbo: false },
+                form: { target: "_blank" },
+                class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>
+          <%= button_to "Manage Plan", billing_portal_index_path,
+                method: :post,
+                data: { turbo: false },
+                form: { target: "_blank" },
+                class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
+        <% end %>
       </div>
     </div>
   </div>
@@ -214,4 +218,3 @@
     </div>
   </div>
 </div>
-

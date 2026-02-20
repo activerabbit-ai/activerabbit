@@ -49,7 +49,7 @@ class DataRetentionJob < ApplicationJob
 
   # Find account IDs on the free plan (no active subscription, trial expired or never started)
   def free_plan_account_ids
-    Account.where(current_plan: %w[free developer]).where(
+    Account.where(current_plan: %w[free developer trial]).where(
       "trial_ends_at IS NULL OR trial_ends_at < ?", Time.current
     ).pluck(:id)
   end

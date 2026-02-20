@@ -41,12 +41,12 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
 
     account = user.account
     assert account.present?, "Account should have been auto-created"
-    assert_equal "team", account.current_plan, "New account should start on team plan"
+    assert_equal "trial", account.current_plan, "New account should start on trial plan"
     assert account.on_trial?, "New account should be on trial"
     assert account.trial_ends_at > Time.current, "Trial should end in the future"
     assert_in_delta 14.days.from_now, account.trial_ends_at, 30.seconds,
       "Trial should be 14 days"
-    assert_equal 100_000, account.event_quota, "Should have full event quota during trial"
+    assert_equal 50_000, account.event_quota, "Should have trial event quota"
     assert_equal "owner", user.role, "First user should be owner"
   end
 
@@ -398,8 +398,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     account = accounts(:trial_account)
     account.update!(
       trial_ends_at: 10.days.ago,
-      current_plan: "team",
-      event_quota: 100_000
+      current_plan: "trial",
+      event_quota: 50_000
     )
 
     # Stub active_subscription? and has_payment_method? so downgrade happens
@@ -434,8 +434,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     user = users(:trial_user)
     account.update!(
       trial_ends_at: 10.days.ago,
-      current_plan: "team",
-      event_quota: 100_000
+      current_plan: "trial",
+      event_quota: 50_000
     )
 
     # Create a real Pay::Customer + Pay::Subscription so the SQL scope
@@ -456,9 +456,9 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     TrialExpirationJob.perform_now
 
     account.reload
-    assert_equal "team", account.current_plan,
+    assert_equal "trial", account.current_plan,
       "Account with subscription should NOT be downgraded"
-    assert_equal 100_000, account.event_quota,
+    assert_equal 50_000, account.event_quota,
       "Quota should remain unchanged for subscribed accounts"
   end
 
@@ -466,7 +466,7 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     account = accounts(:trial_account)
 
     # During trial
-    account.update!(trial_ends_at: 5.days.from_now, current_plan: "team")
+    account.update!(trial_ends_at: 5.days.from_now, current_plan: "trial")
     assert account.on_trial?, "Should be on trial"
     refute account.trial_expired?, "Should NOT be expired"
 
@@ -574,7 +574,7 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     assert user.present?, "Step 1: User created"
     account = user.account
     assert account.on_trial?, "Step 1: Account is on trial"
-    assert_equal "team", account.current_plan, "Step 1: Trial plan is team"
+    assert_equal "trial", account.current_plan, "Step 1: Account starts on trial plan"
 
     # Confirm user so they can sign in and receive emails
     user.update!(confirmed_at: Time.current)
@@ -1048,8 +1048,8 @@ class FullLifecycleTest < ActionDispatch::IntegrationTest
     # --- Setup: trial account with accumulated usage ---
     account.update!(
       trial_ends_at: 1.day.ago,
-      current_plan: "team",
-      event_quota: 100_000,
+      current_plan: "trial",
+      event_quota: 50_000,
       cached_events_used: 12_000,
       cached_performance_events_used: 500,
       cached_ai_summaries_used: 8,

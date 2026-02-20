@@ -12,10 +12,7 @@
       <div>
         <div class="flex items-center gap-3">
           <h2 class="text-lg font-semibold <%= needs_payment ? 'text-red-900' : 'text-indigo-900' %>">
-            Current Plan: <%= @account.current_plan.titleize %> plan
-            <% if @account.on_trial? %>
-              <span class="text-indigo-500 font-normal">(Free Trial)</span>
-            <% end %>
+            Current Plan: <%= @account.effective_plan_name %>
           </h2>
           <% if needs_payment %>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -43,10 +40,12 @@
                 method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700" %>
         <% end %>
 <%= link_to "🏷️ View Plans", plan_path, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700" %>
-        <%= button_to "View Invoices", billing_portal_index_path,
-              method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>
-        <%= button_to "Manage Plan", billing_portal_index_path,
-              method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
+        <% if @account.active_subscription? %>
+          <%= button_to "View Invoices", billing_portal_index_path,
+                method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" %>
+          <%= button_to "Manage Plan", billing_portal_index_path,
+                method: :post, data: { turbo: false }, form: { target: "_blank" }, class: "inline-flex items-center px-3 py-1.5 border border-indigo-700 text-xs font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50" %>
+        <% end %>
       </div>
     </div>
   </div>
@@ -57,7 +56,7 @@
   <% if @account %>
     <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 border-2 border-indigo-200 shadow-lg mb-12">
       <div class="text-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900 mb-2">Current Plan: <span class="text-indigo-600"><%= @account.current_plan.titleize %></span> plan<% if @account.on_trial? %> <span class="text-lg font-normal text-indigo-400">(Free Trial)</span><% end %></h2>
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Current Plan: <span class="text-indigo-600"><%= @account.effective_plan_name %></span></h2>
         <p class="text-sm text-gray-500 mt-1">
           Billing Period: <%= (@account.event_usage_period_start || Time.current.beginning_of_month).strftime('%b %d') %> - <%= (@account.event_usage_period_end || Time.current.end_of_month).strftime('%b %d, %Y') %>
         </p>

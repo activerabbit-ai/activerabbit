@@ -31,7 +31,7 @@ team_account:
 trial_account:
   name: "Trial Account"
   active: true
-  current_plan: "team"
+  current_plan: "trial"
   trial_ends_at: <%= 14.days.from_now %>
 
 other_account:

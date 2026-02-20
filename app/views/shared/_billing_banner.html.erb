@@ -3,7 +3,7 @@
   <% suppress_once = session[:suppress_billing_banner] == true %>
   <%
     # Valid plans that don't need generic "choose a plan" warning
-    valid_plans = ["free", "team", "business"]
+    valid_plans = ["free", "trial", "team", "business"]
     has_chosen_plan = valid_plans.include?(account.current_plan.to_s.downcase)
 
     # Trial state

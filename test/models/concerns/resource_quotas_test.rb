@@ -95,9 +95,9 @@ class ResourceQuotasTest < ActiveSupport::TestCase
     assert_equal 0, account.pull_requests_quota
   end
 
-  test "pull_requests_quota returns 100 for trial plan" do
+  test "pull_requests_quota returns 20 for trial plan" do
     account = accounts(:trial_account)
-    assert_equal 100, account.pull_requests_quota
+    assert_equal 20, account.pull_requests_quota
   end
 
   test "pull_requests_quota returns 20 for team plan" do

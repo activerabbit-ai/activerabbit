@@ -225,6 +225,166 @@ class StripeEventHandlerTest < ActiveSupport::TestCase
     ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
   end
 
+  # ============================================================================
+  # Incomplete subscription should NOT upgrade plan
+  # ============================================================================
+
+  test "does NOT upgrade plan when subscription is incomplete" do
+    @account.update!(
+      current_plan: "trial",
+      trial_ends_at: 7.days.from_now,
+      cached_events_used: 1_000
+    )
+
+    team_price_id = ENV["STRIPE_PRICE_TEAM_MONTHLY"] || "price_team_monthly_test"
+    original_env = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = team_price_id
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_incomplete_1",
+          "status" => "incomplete",
+          "trial_end" => nil,
+          "current_period_start" => nil,
+          "current_period_end" => nil,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => team_price_id }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal "trial", @account.current_plan, "Plan should remain trial when subscription is incomplete"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
+  end
+
+  test "does NOT upgrade plan when subscription is past_due" do
+    @account.update!(
+      current_plan: "trial",
+      trial_ends_at: 7.days.from_now
+    )
+
+    team_price_id = ENV["STRIPE_PRICE_TEAM_MONTHLY"] || "price_team_monthly_test"
+    original_env = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = team_price_id
+
+    subscription_event = {
+      "type" => "customer.subscription.updated",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_past_due_1",
+          "status" => "past_due",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => team_price_id }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal "trial", @account.current_plan, "Plan should remain trial when subscription is past_due"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
+  end
+
+  test "DOES upgrade plan when subscription is active" do
+    @account.update!(
+      current_plan: "trial",
+      trial_ends_at: 7.days.from_now,
+      cached_events_used: 1_000
+    )
+
+    team_price_id = ENV["STRIPE_PRICE_TEAM_MONTHLY"] || "price_team_monthly_test"
+    original_env = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = team_price_id
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_active_1",
+          "status" => "active",
+          "trial_end" => nil,
+          "current_period_start" => Time.current.to_i,
+          "current_period_end" => 1.month.from_now.to_i,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => team_price_id }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+    @account.reload
+
+    assert_equal "team", @account.current_plan, "Plan should be upgraded to team when subscription is active"
+    assert_equal 0, @account.cached_events_used, "Usage counters should be reset on upgrade"
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
+  end
+
+  test "still creates Pay::Subscription record for incomplete subscriptions" do
+    @account.update!(
+      current_plan: "trial",
+      trial_ends_at: 7.days.from_now
+    )
+
+    team_price_id = ENV["STRIPE_PRICE_TEAM_MONTHLY"] || "price_team_monthly_test"
+    original_env = ENV["STRIPE_PRICE_TEAM_MONTHLY"]
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = team_price_id
+
+    subscription_event = {
+      "type" => "customer.subscription.created",
+      "data" => {
+        "object" => {
+          "customer" => "cus_123",
+          "id" => "sub_incomplete_track",
+          "status" => "incomplete",
+          "trial_end" => nil,
+          "current_period_start" => nil,
+          "current_period_end" => nil,
+          "items" => {
+            "data" => [
+              { "price" => { "id" => team_price_id }, "quantity" => 1 }
+            ]
+          }
+        }
+      }
+    }
+
+    StripeEventHandler.new(event: subscription_event).call
+
+    pay_sub = Pay::Subscription.find_by(processor_id: "sub_incomplete_track")
+    assert pay_sub.present?, "Pay::Subscription record should be created even for incomplete subscriptions"
+    assert_equal "incomplete", pay_sub.status
+  ensure
+    ENV["STRIPE_PRICE_TEAM_MONTHLY"] = original_env
+  end
+
+  # ============================================================================
+  # Welcome email (existing tests)
+  # ============================================================================
+
   test "does NOT send welcome email on same-plan renewal" do
     @account.update!(
       current_plan: "team",
