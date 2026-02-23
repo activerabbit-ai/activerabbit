@@ -48,6 +48,8 @@ class OnboardingController < ApplicationController
   def install_gem
     @project = current_account.projects.find(params[:project_id])
   end
+rescue ActiveRecord::RecordNotFound
+  redirect_to onboarding_path, alert: "Project not found or access denied"
 
   def verify_gem
     @project = current_account.projects.find(params[:project_id])
