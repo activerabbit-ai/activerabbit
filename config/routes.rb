@@ -186,6 +186,27 @@ Rails.application.routes.draw do
       end
 
       resources :deploys, only: [:create]
+
+      # CLI API endpoints
+      namespace :cli do
+        # List all apps
+        get "apps", to: "apps#index"
+
+        # App-scoped endpoints
+        scope "apps/:slug" do
+          get "status", to: "apps#status"
+          get "deploy_check", to: "apps#deploy_check"
+
+          # Incidents (issues)
+          get "incidents", to: "incidents#index"
+          get "incidents/:id", to: "incidents#show"
+          get "incidents/:id/explain", to: "incidents#explain"
+
+          # Traces
+          get "traces", to: "traces#index"
+          get "traces/:id", to: "traces#show"
+        end
+      end
     end
   end
 
