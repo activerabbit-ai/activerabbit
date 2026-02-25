@@ -125,6 +125,21 @@ module Github
 
       # Track if actual fix was applied from commit result
       actual_fix_applied = commit_result.is_a?(Hash) && commit_result[:actual_fix_applied]
+      unapplied_fixes = commit_result.is_a?(Hash) ? (commit_result[:unapplied_fixes] || []) : []
+
+      unless actual_fix_applied
+        manual_review_banner = <<~BANNER
+          > **⚠️ Needs Manual Review** — The AI-generated code fix could not be applied automatically.
+          > Please review the suggested fix in the description below and apply it manually.
+
+        BANNER
+        pr_body = manual_review_banner + pr_body
+        pr_title = "[Review Needed] #{pr_title}"
+      end
+
+      if unapplied_fixes.any?
+        pr_body += unapplied_fixes_section(unapplied_fixes)
+      end
 
       pr = api_client.post("/repos/#{owner}/#{repo}/pulls", {
         title: pr_title,
@@ -162,48 +177,66 @@ module Github
       end
     end
 
-    # Create a commit with actual code fix or fallback to suggestion file
+    # Create a commit with actual code fix applied to source files
     def create_fix_commit(api_client, code_fix_applier, owner, repo, branch, base_sha, issue, code_fix, before_code, pr_body, file_fixes = [])
-      # Get base commit tree
       base_commit = api_client.get("/repos/#{owner}/#{repo}/git/commits/#{base_sha}")
       base_tree_sha = base_commit.is_a?(Hash) ? base_commit["tree"]&.dig("sha") : nil
       return { error: "Failed to read base commit" } unless base_tree_sha
 
       tree_entries = []
       commit_msg_parts = []
+      unapplied_fixes = []
 
-      # Try to apply actual code fix to the source file
       sample_event = issue.events.order(occurred_at: :desc).first
       actual_fix_applied = false
       files_fixed = []
 
+      # --- Primary file fix (try multiple strategies) ---
+      primary_file_path = nil
+
       if sample_event&.has_structured_stack_trace?
-        # Pass the existing AI summary fix code to try_apply_actual_fix (primary error file)
         fix_result = code_fix_applier.try_apply_actual_fix(owner, repo, sample_event, issue, code_fix, before_code)
         if fix_result[:success]
           tree_entries << fix_result[:tree_entry]
           commit_msg_parts << "fix: #{fix_result[:file_path]}"
           files_fixed << fix_result[:file_path]
           actual_fix_applied = true
+          primary_file_path = fix_result[:file_path]
           Rails.logger.info "[GitHub API] Applied actual code fix to #{fix_result[:file_path]}"
         else
-          Rails.logger.info "[GitHub API] Could not apply actual fix to primary file: #{fix_result[:reason]}"
+          Rails.logger.info "[GitHub API] Smart fix failed for primary file: #{fix_result[:reason]}"
+          primary_file_path = fix_result[:file_path]
         end
       end
 
-      # Try to apply additional file fixes (multi-file support)
-      # Safety limit: max 3 files total (AiSummaryService::MAX_FILES_PER_FIX)
+      # Fallback: try simpler try_apply_fix_to_file on the primary file
+      if !actual_fix_applied && code_fix.present?
+        fallback_path = primary_file_path || file_fixes&.first&.dig(:file_path)
+        if fallback_path.present?
+          Rails.logger.info "[GitHub API] Trying fallback fix on #{fallback_path}"
+          fix_result = code_fix_applier.try_apply_fix_to_file(owner, repo, fallback_path, before_code, code_fix)
+          if fix_result[:success]
+            tree_entries << fix_result[:tree_entry]
+            commit_msg_parts << "fix: #{fix_result[:file_path]}"
+            files_fixed << fix_result[:file_path]
+            actual_fix_applied = true
+            Rails.logger.info "[GitHub API] Fallback fix succeeded for #{fix_result[:file_path]}"
+          else
+            Rails.logger.info "[GitHub API] Fallback fix also failed for #{fallback_path}: #{fix_result[:reason]}"
+            unapplied_fixes << { file_path: fallback_path, before_code: before_code, after_code: code_fix }
+          end
+        end
+      end
+
+      # --- Additional file fixes (multi-file support) ---
       max_files = AiSummaryService::MAX_FILES_PER_FIX
 
       if file_fixes.present? && file_fixes.size > 1 && files_fixed.size < max_files
         remaining_slots = max_files - files_fixed.size
-        Rails.logger.info "[GitHub API] Processing up to #{remaining_slots} additional file fixes (safety limit: #{max_files} files max)"
-
-        # Skip the first one if it was already handled above
         additional_fixes = file_fixes.drop(1).first(remaining_slots)
 
         additional_fixes.each do |file_fix|
-          break if files_fixed.size >= max_files  # Double-check safety limit
+          break if files_fixed.size >= max_files
           next if files_fixed.include?(file_fix[:file_path])
           next unless file_fix[:after_code].present?
 
@@ -222,29 +255,27 @@ module Github
             Rails.logger.info "[GitHub API] Applied additional fix to #{fix_result[:file_path]}"
           else
             Rails.logger.info "[GitHub API] Could not apply fix to #{file_fix[:file_path]}: #{fix_result[:reason]}"
+            unapplied_fixes << file_fix
           end
         end
-      elsif file_fixes.present? && file_fixes.size > max_files
-        Rails.logger.warn "[GitHub API] AI suggested #{file_fixes.size} files but limiting to #{max_files} for safety"
       end
 
-      # If no actual fix was applied, don't create the PR
-      unless actual_fix_applied
-        return { error: "Could not apply code fix automatically. The AI-generated fix may need manual adjustment." }
+      Rails.logger.info "[GitHub API] Files fixed: #{files_fixed.size} (#{files_fixed.join(', ')}), unapplied: #{unapplied_fixes.size}"
+
+      # Create commit — either with real fixes or an empty commit so the PR has a branch
+      if tree_entries.any?
+        tree = api_client.post("/repos/#{owner}/#{repo}/git/trees", {
+          base_tree: base_tree_sha,
+          tree: tree_entries
+        })
+        new_tree_sha = tree.is_a?(Hash) ? tree["sha"] : nil
+        return { error: "Failed to create tree" } unless new_tree_sha
+
+        commit_msg = "fix: #{issue.exception_class} in #{issue.controller_action.to_s.split('#').last}\n\n#{commit_msg_parts.join("\n")}"
+      else
+        new_tree_sha = base_tree_sha
+        commit_msg = "chore: investigate #{issue.exception_class} in #{issue.controller_action.to_s.split('#').last}\n\nAI-suggested fix needs manual review"
       end
-
-      Rails.logger.info "[GitHub API] Total files fixed: #{files_fixed.size} (#{files_fixed.join(', ')})"
-
-      # Create tree with all entries
-      tree = api_client.post("/repos/#{owner}/#{repo}/git/trees", {
-        base_tree: base_tree_sha,
-        tree: tree_entries
-      })
-      new_tree_sha = tree.is_a?(Hash) ? tree["sha"] : nil
-      return { error: "Failed to create tree" } unless new_tree_sha
-
-      # Create commit with the actual fix
-      commit_msg = "fix: #{issue.exception_class} in #{issue.controller_action.to_s.split('#').last}\n\n#{commit_msg_parts.join("\n")}"
 
       commit = api_client.post("/repos/#{owner}/#{repo}/git/commits", {
         message: commit_msg,
@@ -254,7 +285,6 @@ module Github
       new_commit_sha = commit.is_a?(Hash) ? commit["sha"] : nil
       return { error: "Failed to create commit" } unless new_commit_sha
 
-      # Update branch ref
       ref_update = api_client.patch("/repos/#{owner}/#{repo}/git/refs/heads/#{branch}", {
         sha: new_commit_sha,
         force: false
@@ -263,8 +293,31 @@ module Github
         return { error: ref_update[:error] }
       end
 
-      Rails.logger.info "[GitHub API] Created fix commit #{new_commit_sha[0, 7]} on #{branch} (actual_fix: #{actual_fix_applied})"
-      { success: true, commit_sha: new_commit_sha, actual_fix_applied: actual_fix_applied }
+      Rails.logger.info "[GitHub API] Created commit #{new_commit_sha[0, 7]} on #{branch} (actual_fix: #{actual_fix_applied})"
+      { success: true, commit_sha: new_commit_sha, actual_fix_applied: actual_fix_applied, unapplied_fixes: unapplied_fixes }
+    end
+
+    def unapplied_fixes_section(unapplied_fixes)
+      lines = ["\n\n## 🔧 Additional Fixes (Manual Application Required)\n"]
+      lines << "> The following file changes could not be applied automatically. Please apply them manually.\n"
+
+      unapplied_fixes.each_with_index do |fix, idx|
+        lines << "### #{idx + 1}. `#{fix[:file_path]}`\n"
+        if fix[:before_code].present?
+          lines << "**Before:**"
+          lines << "```ruby"
+          lines << fix[:before_code].strip
+          lines << "```\n"
+        end
+        if fix[:after_code].present?
+          lines << "**After:**"
+          lines << "```ruby"
+          lines << fix[:after_code].strip
+          lines << "```\n"
+        end
+      end
+
+      lines.join("\n")
     end
 
     def generate_optimization_suggestions(sql_fingerprint)

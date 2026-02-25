@@ -35,7 +35,7 @@ module Github
       Rails.logger.info "[SimpleFixApplier] Fetching file: #{file_url}"
 
       file_response = @api_client.get(file_url)
-      return { success: false, reason: "File not found: #{normalized_path}" } unless file_response.is_a?(Hash) && file_response["content"]
+      return { success: false, reason: "File not found: #{normalized_path}", file_path: normalized_path } unless file_response.is_a?(Hash) && file_response["content"]
 
       current_content = Base64.decode64(file_response["content"])
       current_lines = current_content.lines
@@ -46,7 +46,7 @@ module Github
 
       # Generate a precise fix using AI with extended context
       fix_instructions = generate_precise_fix(issue, sample_event, error_frame, current_content, existing_fix_code, before_code, related_files_context)
-      return { success: false, reason: "Could not generate fix instructions" } unless fix_instructions
+      return { success: false, reason: "Could not generate fix instructions", file_path: normalized_path } unless fix_instructions
 
       Rails.logger.info "[SimpleFixApplier] Fix instructions: #{fix_instructions.inspect}"
 
@@ -57,22 +57,22 @@ module Github
           Rails.logger.info "[SimpleFixApplier] Redirecting to correct file: #{correct_file}"
           return apply_fix_to_different_file(owner, repo, correct_file, issue, existing_fix_code)
         else
-          return { success: false, reason: "Fix requires different file but path not specified" }
+          return { success: false, reason: "Fix requires different file but path not specified", file_path: normalized_path }
         end
       end
 
       # Apply the fix
       new_content = apply_line_replacements(current_lines, fix_instructions)
-      return { success: false, reason: "Could not apply fix" } unless new_content
+      return { success: false, reason: "Could not apply fix", file_path: normalized_path } unless new_content
 
       if new_content == current_content
-        return { success: false, reason: "Fix produced no changes" }
+        return { success: false, reason: "Fix produced no changes", file_path: normalized_path }
       end
 
       # Validate the result (for Ruby files)
       if normalized_path.end_with?(".rb") && !valid_ruby_syntax?(new_content)
         Rails.logger.error "[SimpleFixApplier] Generated invalid Ruby syntax"
-        return { success: false, reason: "Generated invalid Ruby syntax" }
+        return { success: false, reason: "Generated invalid Ruby syntax", file_path: normalized_path }
       end
 
       # Create blob with new content

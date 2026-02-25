@@ -2,7 +2,8 @@ import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="sidebar"
 export default class extends Controller {
-  static targets = ["sidebar", "content", "toggleButton", "toggleTooltip", "brandText", "navText", "promoBox", "trialBox"]
+  static targets = ["sidebar", "content", "toggleButton", "toggleTooltip", "brandText", "navText", "promoBox", "trialBox", "quotaBox"]
+  static values = { accountId: String }
 
   connect() {
     // The inline <script> in admin.html.erb already applies collapsed classes
@@ -102,12 +103,15 @@ export default class extends Controller {
     this.brandTextTargets.forEach(el => el.classList.add('hidden'))
     this.navTextTargets.forEach(el => el.classList.add('hidden'))
     
-    // Hide promo and trial boxes
+    // Hide promo, trial, and quota boxes
     if (this.hasPromoBoxTarget) {
       this.promoBoxTarget.classList.add('hidden')
     }
     if (this.hasTrialBoxTarget) {
       this.trialBoxTarget.classList.add('hidden')
+    }
+    if (this.hasQuotaBoxTarget) {
+      this.quotaBoxTarget.classList.add('hidden')
     }
     
     // Center nav icons when collapsed
@@ -145,12 +149,18 @@ export default class extends Controller {
     this.brandTextTargets.forEach(el => el.classList.remove('hidden'))
     this.navTextTargets.forEach(el => el.classList.remove('hidden'))
     
-    // Show promo and trial boxes
+    // Show promo, trial, and quota boxes
     if (this.hasPromoBoxTarget) {
       this.promoBoxTarget.classList.remove('hidden')
     }
     if (this.hasTrialBoxTarget) {
       this.trialBoxTarget.classList.remove('hidden')
+    }
+    if (this.hasQuotaBoxTarget) {
+      const quotaDismissed = this.hasAccountIdValue && localStorage.getItem(`quotaNotificationDismissed_${this.accountIdValue}`) === 'true'
+      if (!quotaDismissed) {
+        this.quotaBoxTarget.classList.remove('hidden')
+      }
     }
     
     // Restore nav icons alignment
