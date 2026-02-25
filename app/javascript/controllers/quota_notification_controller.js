@@ -12,7 +12,8 @@ export default class extends Controller {
     }
   }
 
-  dismiss() {
+  dismiss(event) {
+    if (event) event.preventDefault()
     const key = this.storageKey
     localStorage.setItem(key, "true")
     this.element.classList.add("hidden")

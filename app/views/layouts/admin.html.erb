@@ -658,6 +658,9 @@
           </div>
         <% end %>
 
+        <%# Quota exceeded banner (dismissible; close = do not show again) %>
+        <%= render "shared/quota_alert_banner" %>
+
         <!-- Email Confirmation Banner -->
         <div class="mx-6 mt-4">
           <%= render "shared/email_confirmation_banner" %>

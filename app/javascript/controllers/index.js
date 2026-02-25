@@ -12,3 +12,6 @@ application.register("notifications", NotificationsController)
 
 import SidebarController from "controllers/sidebar_controller"
 application.register("sidebar", SidebarController)
+
+import QuotaNotificationController from "controllers/quota_notification_controller"
+application.register("quota-notification", QuotaNotificationController)

@@ -179,10 +179,10 @@ class ApplicationController < ActionController::Base
     # Skip quota check when super admin is viewing another account
     return if viewing_as_super_admin?
 
-    # Show on every page until plan is upgraded
+    # Show quota banner at top (dismissible with close button; persistence in localStorage)
     message = current_account.quota_exceeded_flash_message
     if message
-      flash.now[:alert] = view_context.link_to(message, plan_path, class: "underline hover:text-red-800").html_safe
+      @quota_exceeded_message = message
     end
   end
 

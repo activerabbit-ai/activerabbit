@@ -157,10 +157,7 @@ export default class extends Controller {
       this.trialBoxTarget.classList.remove('hidden')
     }
     if (this.hasQuotaBoxTarget) {
-      const quotaDismissed = this.hasAccountIdValue && localStorage.getItem(`quotaNotificationDismissed_${this.accountIdValue}`) === 'true'
-      if (!quotaDismissed) {
-        this.quotaBoxTarget.classList.remove('hidden')
-      }
+      this.quotaBoxTarget.classList.remove('hidden')
     }
     
     // Restore nav icons alignment
