@@ -78,7 +78,51 @@ namespace :stripe do
       StripeEventHandler.new(event: event).call
 
       account.reload
+      # Re-enable Slack so notifications continue after subscribe (app may have treated account as free before sync)
+      if account.current_plan.in?(%w[team business]) && account.slack_configured?
+        account.enable_slack_notifications!
+        puts "Slack notifications re-enabled for account (slack_configured? was true)."
+      end
       puts "Done. Account current_plan=#{account.current_plan}, active_subscription?=#{account.active_subscription?}"
+    end
+  end
+
+  desc "Ensure Slack notifications are enabled for a paid account (by account name). " \
+       "Use when Slack stopped after subscribing. Optionally set plan to team if account is already paid. " \
+       "Usage: rake stripe:ensure_slack_for_account[\"Rescuehub Account\"]"
+  task :ensure_slack_for_account, [:account_name] => :environment do |_t, args|
+    account_name = args[:account_name].presence || ENV["ACCOUNT_NAME"]
+    unless account_name.present?
+      puts "Usage: rake stripe:ensure_slack_for_account[\"Rescuehub Account\"]"
+      puts "   or: ACCOUNT_NAME='Rescuehub Account' rake stripe:ensure_slack_for_account"
+      exit 1
+    end
+
+    ActsAsTenant.without_tenant do
+      account = Account.find_by(name: account_name)
+      unless account
+        puts "Account not found: #{account_name}"
+        exit 1
+      end
+
+      puts "Account: #{account.name} (id=#{account.id}), current_plan=#{account.current_plan}, slack_configured?=#{account.slack_configured?}"
+
+      if account.current_plan.blank? || account.current_plan.to_s.downcase == "free"
+        puts "Setting current_plan to 'team' so Slack is allowed (paid account)."
+        account.update!(
+          current_plan: "team",
+          billing_interval: "month",
+          event_quota: 50_000
+        )
+      end
+
+      unless account.slack_configured?
+        puts "Slack not configured (no webhook URL). Configure Slack in account settings first."
+        exit 1
+      end
+
+      account.enable_slack_notifications!
+      puts "Slack notifications enabled. slack_notifications_enabled?=#{account.slack_notifications_enabled?}"
     end
   end
 end
