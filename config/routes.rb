@@ -52,6 +52,7 @@ Rails.application.routes.draw do
 
   # Public integration landing pages (for Slack App Directory review)
   get "integrations/slack", to: "integrations#slack", as: :slack_integration
+  get "support", to: "integrations#support", as: :support
 
   # GitHub App installation callback and webhook
   get  "github/app/callback",   to: "github_app#callback"

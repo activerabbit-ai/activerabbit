@@ -5,4 +5,7 @@ class IntegrationsController < ApplicationController
   def slack
     @slack_client_id = ENV["SLACK_CLIENT_ID"]
   end
+
+  def support
+  end
 end
