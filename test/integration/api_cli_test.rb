@@ -149,6 +149,7 @@ class ApiCliTest < ActionDispatch::IntegrationTest
     incident = incidents.first
     assert incident["id"].start_with?("inc_")
     assert incident["severity"].present?
+    assert_includes %w[low medium high critical], incident["severity"], "Severity should be one of: low, medium, high, critical"
     assert incident["title"].present?
     assert incident.key?("endpoint")
     assert incident.key?("count")

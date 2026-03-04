@@ -11,6 +11,15 @@ class Issue < ApplicationRecord
   validates :top_frame, presence: true
   validates :controller_action, presence: true
   validates :status, inclusion: { in: %w[open wip closed] }
+  validates :severity, inclusion: { in: %w[low medium high critical] }, allow_nil: true
+
+  # Severity levels for display
+  SEVERITIES = %w[low medium high critical].freeze
+  SEVERITY_THRESHOLDS = {
+    critical: { events_24h: 100, total: 1000 },
+    high:     { events_24h: 20,  total: 100 },
+    medium:   { events_24h: 5,   total: 20 }
+  }.freeze
 
   scope :open, -> { where(status: "open") }
   scope :wip, -> { where(status: "wip") }
@@ -28,6 +37,7 @@ class Issue < ApplicationRecord
   }
 
   before_save :detect_job_failure
+  before_save :calculate_severity!
 
   def github_pr_url
     read_attribute(:github_pr_url).presence || project&.settings&.dig("issue_pr_urls", id.to_s)
@@ -96,6 +106,47 @@ class Issue < ApplicationRecord
 
   def title
     "#{exception_class} in #{controller_action}"
+  end
+
+  # Calculate severity based on event counts
+  def calculated_severity
+    count_24h = events_last_24h
+
+    if count_24h > SEVERITY_THRESHOLDS[:critical][:events_24h] || count > SEVERITY_THRESHOLDS[:critical][:total]
+      "critical"
+    elsif count_24h > SEVERITY_THRESHOLDS[:high][:events_24h] || count > SEVERITY_THRESHOLDS[:high][:total]
+      "high"
+    elsif count_24h > SEVERITY_THRESHOLDS[:medium][:events_24h] || count > SEVERITY_THRESHOLDS[:medium][:total]
+      "medium"
+    else
+      "low"
+    end
+  end
+
+  # Update severity and save (use for background jobs)
+  def update_severity!
+    new_severity = calculated_severity
+    update_column(:severity, new_severity) if severity != new_severity
+    new_severity
+  end
+
+  # Severity badge helpers for UI
+  def severity_color
+    case severity
+    when "critical" then "red"
+    when "high" then "orange"
+    when "medium" then "yellow"
+    else "gray"
+    end
+  end
+
+  def severity_icon
+    case severity
+    when "critical" then "🔴"
+    when "high" then "🟠"
+    when "medium" then "🟡"
+    else "⚪"
+    end
   end
 
   def source_location
@@ -183,7 +234,7 @@ class Issue < ApplicationRecord
     ["account_id", "ai_summary", "ai_summary_generated_at", "closed_at",
     "controller_action", "count", "created_at", "exception_class",
     "fingerprint", "first_seen_at", "id", "id_value", "last_seen_at",
-    "project_id", "sample_message", "status", "top_frame", "updated_at"]
+    "project_id", "sample_message", "severity", "status", "top_frame", "updated_at"]
   end
 
   def self.ransackable_associations(auth_object = nil)
@@ -199,6 +250,14 @@ class Issue < ApplicationRecord
     return unless controller_action_changed? || new_record?
 
     self.is_job_failure = controller_action.present? && !controller_action.include?("Controller#")
+  end
+
+  # Calculate severity on save (only if count changed or new record)
+  def calculate_severity!
+    return unless has_attribute?(:severity)
+    return unless count_changed? || new_record? || severity.nil?
+
+    self.severity = calculated_severity
   end
 
   # Exception classes that should be grouped by originating code location

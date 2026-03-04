@@ -73,6 +73,11 @@ class ErrorIngestJob
     # Check if this error should trigger an alert
     issue = event.issue
 
+    # Update severity after new event (quick check, no expensive queries)
+    if issue && issue.respond_to?(:update_severity!)
+      issue.update_severity!
+    end
+
     if issue && should_alert_for_issue?(issue)
       IssueAlertJob.perform_async(issue.id, issue.project.account_id)
     end

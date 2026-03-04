@@ -157,4 +157,81 @@ class IssueTest < ActiveSupport::TestCase
     regular_issue = issues(:open_issue)
     assert_match(/Controller#/, regular_issue.controller_action)
   end
+
+  # Severity calculation
+
+  test "calculated_severity returns low for low event counts" do
+    issue = issues(:old_issue)
+    issue.count = 5
+    assert_equal "low", issue.calculated_severity
+  end
+
+  test "calculated_severity returns medium for moderate event counts" do
+    issue = issues(:open_issue)
+    issue.count = 50
+    assert_equal "medium", issue.calculated_severity
+  end
+
+  test "calculated_severity returns high for high event counts" do
+    issue = issues(:open_issue)
+    issue.count = 500
+    assert_equal "high", issue.calculated_severity
+  end
+
+  test "calculated_severity returns critical for very high event counts" do
+    issue = issues(:open_issue)
+    issue.count = 2000
+    assert_equal "critical", issue.calculated_severity
+  end
+
+  test "severity is set on save" do
+    project = projects(:default)
+    issue = Issue.new(
+      project: project,
+      fingerprint: "test-severity-#{SecureRandom.hex(8)}",
+      exception_class: "SeverityTestError",
+      top_frame: "/app/test.rb:1",
+      controller_action: "TestController#test",
+      count: 500,
+      status: "open",
+      first_seen_at: Time.current,
+      last_seen_at: Time.current
+    )
+    issue.save!
+
+    # Should have severity set based on count
+    assert_includes %w[low medium high critical], issue.severity
+  end
+
+  test "update_severity! updates stored severity" do
+    issue = issues(:open_issue)
+    issue.update_column(:count, 2000)
+    issue.update_column(:severity, "low") # Force wrong severity
+
+    issue.update_severity!
+
+    assert_equal "critical", issue.reload.severity
+  end
+
+  test "severity validation allows valid values" do
+    issue = issues(:open_issue)
+
+    %w[low medium high critical].each do |sev|
+      issue.severity = sev
+      assert issue.valid?, "Expected severity '#{sev}' to be valid"
+    end
+  end
+
+  test "severity validation rejects invalid values" do
+    issue = issues(:open_issue)
+    issue.severity = "invalid"
+    refute issue.valid?
+    assert_includes issue.errors[:severity], "is not included in the list"
+  end
+
+  test "severity can be nil" do
+    issue = issues(:open_issue)
+    issue.severity = nil
+    assert issue.valid?, "Severity should allow nil for existing issues"
+  end
 end

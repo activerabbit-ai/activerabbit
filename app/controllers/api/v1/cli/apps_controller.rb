@@ -123,6 +123,10 @@ module Api
         end
 
         def calculate_severity(issue)
+          # Use stored severity if available, otherwise calculate
+          return issue.severity if issue.respond_to?(:severity) && issue.severity.present?
+
+          # Fallback calculation for issues without stored severity
           count_24h = issue.events.where("occurred_at > ?", 24.hours.ago).count
 
           if count_24h > 100 || issue.count > 1000

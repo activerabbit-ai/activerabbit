@@ -199,7 +199,14 @@
               <td class="px-4 py-4 overflow-hidden">
                 <div class="flex items-start">
                   <div class="flex-shrink-0 mt-1">
-                    <div class="w-2 h-2 rounded-full <%= issue.status == 'open' ? 'bg-red-400' : issue.status == 'wip' ? 'bg-yellow-400' : 'bg-green-400' %>"></div>
+                    <% severity = issue.severity || 'low' %>
+                    <% severity_classes = {
+                      'critical' => 'bg-red-500',
+                      'high' => 'bg-orange-500',
+                      'medium' => 'bg-yellow-400',
+                      'low' => 'bg-gray-300'
+                    } %>
+                    <div class="w-2.5 h-2.5 rounded-full <%= severity_classes[severity] %>" title="<%= severity.capitalize %> severity"></div>
                   </div>
                   <div class="ml-3 min-w-0">
                     <div class="flex items-center space-x-2 mb-1 flex-wrap gap-1">
