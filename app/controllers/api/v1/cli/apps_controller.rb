@@ -33,9 +33,9 @@ module Api
                                   .where("timestamp > ?", 1.hour.ago)
           p95_latency_ms = if recent_rollups.any?
                              recent_rollups.average(:p95_duration_ms)&.round || 0
-                           else
+          else
                              0
-                           end
+          end
 
           # Deploy status
           last_deploy = project.deploys.order(created_at: :desc).first
@@ -72,9 +72,9 @@ module Api
           last_deploy = project.deploys.order(created_at: :desc).first
           new_errors_since_deploy = if last_deploy
                                       project.issues.where("first_seen_at > ?", last_deploy.created_at).count
-                                    else
+          else
                                       0
-                                    end
+          end
 
           warnings = []
 
