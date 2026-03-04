@@ -50,9 +50,13 @@ Rails.application.routes.draw do
   get  "slack/oauth/authorize", to: "slack_auth#authorize"
   get  "slack/oauth/callback",  to: "slack_auth#callback"
 
-  # Public integration landing pages (for Slack App Directory review)
+  get  "discord/oauth/authorize", to: "discord_auth#authorize"
+  get  "discord/oauth/callback",  to: "discord_auth#callback", as: :discord_oauth_callback
+
+  # Public integration landing pages
   get "integrations/slack", to: "integrations#slack", as: :slack_integration
   get "support", to: "integrations#support", as: :support
+  get "integrations/discord", to: "integrations#discord", as: :discord_integration
 
   # GitHub App installation callback and webhook
   get  "github/app/callback",   to: "github_app#callback"
@@ -105,6 +109,7 @@ Rails.application.routes.draw do
       post :test_fizzy_sync
       post :sync_all_errors
       delete :disconnect_github
+      delete :disconnect_discord
     end
 
     resources :issues do

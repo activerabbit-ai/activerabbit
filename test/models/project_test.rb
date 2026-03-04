@@ -239,4 +239,59 @@ class ProjectTest < ActiveSupport::TestCase
     project.account.settings = { "slack_webhook_url" => "https://hooks.slack.com/services/test" }
     assert project.notify_via_slack?
   end
+
+  # ---- discord_configured? ----
+
+  test "discord_configured? returns true when webhook URL is present" do
+    project = projects(:default)
+    project.settings = { "discord_webhook_url" => "https://discord.com/api/webhooks/123/abc" }
+    assert project.discord_configured?
+  end
+
+  test "discord_configured? returns false when webhook URL is missing" do
+    project = projects(:default)
+    project.settings = {}
+    refute project.discord_configured?
+  end
+
+  # ---- notify_via_discord? ----
+
+  test "notify_via_discord? returns true when configured and channel enabled" do
+    project = projects(:default)
+    project.settings = {
+      "discord_webhook_url" => "https://discord.com/api/webhooks/123/abc",
+      "notifications" => { "channels" => { "discord" => true } }
+    }
+    assert project.notify_via_discord?
+  end
+
+  test "notify_via_discord? defaults to true when configured with no channel settings" do
+    project = projects(:default)
+    project.settings = { "discord_webhook_url" => "https://discord.com/api/webhooks/123/abc" }
+    assert project.notify_via_discord?
+  end
+
+  test "notify_via_discord? returns false when explicitly disabled" do
+    project = projects(:default)
+    project.settings = {
+      "discord_webhook_url" => "https://discord.com/api/webhooks/123/abc",
+      "notifications" => { "channels" => { "discord" => false } }
+    }
+    refute project.notify_via_discord?
+  end
+
+  test "notify_via_discord? returns false when notifications globally disabled" do
+    project = projects(:default)
+    project.settings = {
+      "discord_webhook_url" => "https://discord.com/api/webhooks/123/abc",
+      "notifications" => { "enabled" => false, "channels" => { "discord" => true } }
+    }
+    refute project.notify_via_discord?
+  end
+
+  test "notify_via_discord? returns false when webhook not configured" do
+    project = projects(:default)
+    project.settings = {}
+    refute project.notify_via_discord?
+  end
 end

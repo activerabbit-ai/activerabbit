@@ -44,52 +44,13 @@ class ProjectSettingsController < ApplicationController
   end
 
   def test_notification
-    unless @project.notify_via_slack?
-      redirect_to project_settings_path(@project),
-                  alert: "Slack notifications are disabled or Slack is not configured."
-      return
-    end
+    channel = params[:channel] || "slack"
 
-    begin
-      slack_service = SlackNotificationService.new(@project)
-
-      # Try to send real notification with actual project data
-      latest_issue = @project.issues.recent.first
-
-      if latest_issue
-        # Send real notification about the latest issue
-        slack_service.send_new_issue_alert(latest_issue)
-        redirect_to project_settings_path(@project),
-                    notice: "Real notification sent successfully with latest issue data! Check your Slack channel."
-      else
-        # If no issues, send notification with real project statistics
-        issue_count = @project.issues.count
-        event_count = @project.events.count
-        last_event_at = @project.events.maximum(:occurred_at)
-
-        stats_message = "Project Statistics:\n" \
-                       "• Total Issues: #{issue_count}\n" \
-                       "• Total Events: #{event_count}\n" \
-                       "• Environment: #{@project.environment}\n"
-
-        if last_event_at
-          stats_message += "• Last Event: #{last_event_at.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-        else
-          stats_message += "• No events recorded yet"
-        end
-
-        slack_service.send_custom_alert(
-          "📊 *Project Status: #{@project.name}*",
-          stats_message,
-          color: "good"
-        )
-
-        redirect_to project_settings_path(@project),
-                    notice: "Notification sent with real project data! Check your Slack channel."
-      end
-    rescue StandardError => e
-      Rails.logger.error "Slack test failed: #{e.message}"
-      redirect_to project_settings_path(@project), alert: "Failed to send notification: #{e.message}"
+    case channel
+    when "discord"
+      test_discord_notification
+    else
+      test_slack_notification_action
     end
   end
 
@@ -115,6 +76,29 @@ class ProjectSettingsController < ApplicationController
   def sync_all_errors
     redirect_to project_settings_path(@project),
                 alert: "Fizzy sync is no longer available."
+  end
+
+  def disconnect_discord
+    settings = @project.settings || {}
+
+    %w[
+      discord_webhook_url
+      discord_webhook_id
+      discord_channel_id
+      discord_guild_id
+      discord_guild_name
+      discord_webhook_name
+    ].each { |key| settings.delete(key) }
+
+    @project.settings = settings
+
+    if @project.save
+      redirect_to project_settings_path(@project),
+                  notice: "Discord disconnected successfully."
+    else
+      redirect_to project_settings_path(@project),
+                  alert: "Failed to disconnect Discord."
+    end
   end
 
   def disconnect_github
@@ -159,13 +143,79 @@ class ProjectSettingsController < ApplicationController
     end
   end
 
+  def test_slack_notification_action
+    unless @project.notify_via_slack?
+      redirect_to project_settings_path(@project),
+                  alert: "Slack notifications are disabled or Slack is not configured."
+      return
+    end
+
+    begin
+      service = SlackNotificationService.new(@project)
+      send_test_via_service(service, "Slack")
+    rescue StandardError => e
+      Rails.logger.error "Slack test failed: #{e.message}"
+      redirect_to project_settings_path(@project), alert: "Failed to send Slack notification: #{e.message}"
+    end
+  end
+
+  def test_discord_notification
+    unless @project.notify_via_discord?
+      redirect_to project_settings_path(@project),
+                  alert: "Discord notifications are disabled or Discord webhook is not configured."
+      return
+    end
+
+    begin
+      service = DiscordNotificationService.new(@project)
+      send_test_via_service(service, "Discord")
+    rescue StandardError => e
+      Rails.logger.error "Discord test failed: #{e.message}"
+      redirect_to project_settings_path(@project), alert: "Failed to send Discord notification: #{e.message}"
+    end
+  end
+
+  def send_test_via_service(service, channel_name)
+    latest_issue = @project.issues.recent.first
+
+    if latest_issue
+      service.send_new_issue_alert(latest_issue)
+      redirect_to project_settings_path(@project),
+                  notice: "Test notification sent to #{channel_name} with latest issue data!"
+    else
+      issue_count = @project.issues.count
+      event_count = @project.events.count
+      last_event_at = @project.events.maximum(:occurred_at)
+
+      stats_message = "Project Statistics:\n" \
+                     "- Total Issues: #{issue_count}\n" \
+                     "- Total Events: #{event_count}\n" \
+                     "- Environment: #{@project.environment}\n"
+
+      stats_message += if last_event_at
+                         "- Last Event: #{last_event_at.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+      else
+                         "- No events recorded yet"
+      end
+
+      service.send_custom_alert(
+        "Project Status: #{@project.name}",
+        stats_message,
+        color: "good"
+      )
+
+      redirect_to project_settings_path(@project),
+                  notice: "Test notification sent to #{channel_name} with project data!"
+    end
+  end
+
   def update_notification_settings
     return true unless params[:project]
 
     notif_params = params
       .require(:project)
       .fetch(:notifications, {})
-      .permit(:enabled, channels: [:slack, :email])
+      .permit(:enabled, channels: [:slack, :discord, :email])
 
     settings = @project.settings || {}
     settings["notifications"] ||= {}
@@ -174,8 +224,9 @@ class ProjectSettingsController < ApplicationController
       notif_params[:enabled] == "1"
 
     settings["notifications"]["channels"] = {
-      "slack" => notif_params.dig(:channels, :slack) == "1",
-      "email" => notif_params.dig(:channels, :email) == "1"
+      "slack"   => notif_params.dig(:channels, :slack) == "1",
+      "discord" => notif_params.dig(:channels, :discord) == "1",
+      "email"   => notif_params.dig(:channels, :email) == "1"
     }
 
     @project.settings = settings

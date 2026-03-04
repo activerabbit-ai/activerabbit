@@ -1,0 +1,245 @@
+<% content_for :title, "Discord Integration - ActiveRabbit" %>
+
+<div class="min-h-screen bg-[#0a0a0f]">
+  <!-- Header -->
+  <header class="py-4 px-4 sm:px-6 lg:px-8 border-b border-white/5">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <a href="https://www.activerabbit.ai/" class="flex items-center space-x-3">
+        <%= image_tag "faviicons/favicon-32.png", class: "rounded-full", alt: "ActiveRabbit" %>
+        <span class="text-xl font-bold text-white">ActiveRabbit</span>
+      </a>
+      <div class="flex items-center space-x-3">
+        <% if user_signed_in? %>
+          <%= link_to "Dashboard", dashboard_path, class: "text-gray-400 hover:text-white transition text-sm" %>
+        <% else %>
+          <%= link_to "Login", new_user_session_path, class: "text-gray-400 hover:text-white transition text-sm" %>
+          <%= link_to "Start Free Trial", new_user_registration_path, class: "px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-medium rounded-lg transition" %>
+        <% end %>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-indigo-600/10 via-transparent to-transparent"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/20 blur-[120px] rounded-full"></div>
+
+    <div class="max-w-4xl mx-auto text-center relative z-10">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-white/5 backdrop-blur border border-white/10 rounded-2xl mb-4">
+        <svg class="w-12 h-12 text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286z"/>
+        </svg>
+      </div></br>
+
+      <div class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
+        <span class="text-indigo-400 text-sm font-medium">INTEGRATION</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+        Discord Integration
+      </h1>
+      <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Get instant error alerts in your Discord server. One click to connect, zero configuration.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <% if user_signed_in? %>
+          <%= link_to dashboard_path, class: "inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium rounded-lg transition shadow-lg shadow-indigo-500/25" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Go to Project Settings
+          <% end %>
+        <% else %>
+          <%= link_to new_user_registration_path, class: "inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium rounded-lg transition shadow-lg shadow-indigo-500/25" do %>
+            Get Started Free
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">How It Works</h2>
+        <p class="text-gray-400 max-w-2xl mx-auto">Connect your Discord server in seconds and start receiving real-time error alerts.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="relative group">
+          <div class="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/50 transition">
+            <div class="w-12 h-12 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mb-6">1</div>
+            <h3 class="text-xl font-semibold text-white mb-3">Click "Add to Discord"</h3>
+            <p class="text-gray-400 leading-relaxed">
+              In your project settings, click the "Add to Discord" button to start the authorization flow.
+            </p>
+          </div>
+        </div>
+
+        <div class="relative group">
+          <div class="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/50 transition">
+            <div class="w-12 h-12 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mb-6">2</div>
+            <h3 class="text-xl font-semibold text-white mb-3">Select Server & Channel</h3>
+            <p class="text-gray-400 leading-relaxed">
+              Choose which Discord server and channel should receive notifications. Everything is configured automatically.
+            </p>
+          </div>
+        </div>
+
+        <div class="relative group">
+          <div class="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/50 transition">
+            <div class="w-12 h-12 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mb-6">3</div>
+            <h3 class="text-xl font-semibold text-white mb-3">Get Real-time Alerts</h3>
+            <p class="text-gray-400 leading-relaxed">
+              Receive rich embed notifications with error details, stack traces, and direct links to your dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-indigo-600/5 to-transparent">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">What You Get</h2>
+        <p class="text-gray-400 max-w-2xl mx-auto">Everything you need to stay on top of production errors, right in Discord.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-indigo-500/30 transition">
+          <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">One-Click Setup</h3>
+          <p class="text-gray-400 text-sm">No manual webhook configuration. Just click, authorize, done.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-indigo-500/30 transition">
+          <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Rich Embeds</h3>
+          <p class="text-gray-400 text-sm">Beautiful, color-coded embed messages with structured error details.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-indigo-500/30 transition">
+          <div class="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Instant Notifications</h3>
+          <p class="text-gray-400 text-sm">Get alerted within seconds when new errors occur in production.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-indigo-500/30 transition">
+          <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Customizable Alerts</h3>
+          <p class="text-gray-400 text-sm">Configure which errors trigger notifications and how often.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-indigo-500/30 transition">
+          <div class="w-10 h-10 bg-pink-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">Direct Links</h3>
+          <p class="text-gray-400 text-sm">Click through from Discord directly to the full error details in ActiveRabbit.</p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-indigo-500/30 transition">
+          <div class="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2">All Alert Types</h3>
+          <p class="text-gray-400 text-sm">Error frequency, new issues, performance regressions, and N+1 query alerts.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Support -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-white mb-4">Need Help?</h2>
+      <p class="text-gray-400 mb-8">Our team is here to help you get the most out of ActiveRabbit.</p>
+
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-8 mb-8">
+        <a href="mailto:support@activerabbit.app" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium rounded-lg transition shadow-lg shadow-indigo-500/25">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+          Contact Support
+        </a>
+        <p class="text-gray-500 text-sm mt-4">
+          Email: <a href="mailto:support@activerabbit.app" class="text-indigo-400 hover:underline">support@activerabbit.app</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <a href="https://www.activerabbit.ai/" class="flex items-center space-x-2 mb-4">
+            <%= image_tag "faviicons/favicon-32.png", class: "w-8 h-8 rounded-lg", alt: "ActiveRabbit" %>
+            <span class="text-lg font-bold text-white">ActiveRabbit</span>
+          </a>
+          <p class="text-gray-500 text-sm">AI-powered bug detection and fixing for modern development teams.</p>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Product</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="https://www.activerabbit.ai/#features" class="text-gray-500 hover:text-white transition">Features</a></li>
+            <li><a href="https://www.activerabbit.ai/pricing" class="text-gray-500 hover:text-white transition">Pricing</a></li>
+            <li><a href="<%= slack_integration_path %>" class="text-gray-500 hover:text-white transition">Slack</a></li>
+            <li><a href="<%= discord_integration_path %>" class="text-gray-500 hover:text-white transition">Discord</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Developers</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="https://docs.activerabbit.ai" class="text-gray-500 hover:text-white transition">Documentation</a></li>
+            <li><a href="https://github.com/activerabbit/activerabbit" class="text-gray-500 hover:text-white transition">GitHub</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Company</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="mailto:support@activerabbit.app" class="text-gray-500 hover:text-white transition">Support</a></li>
+            <li><a href="https://www.activerabbit.ai/privacy" class="text-gray-500 hover:text-white transition">Privacy Policy</a></li>
+            <li><a href="https://www.activerabbit.ai/terms" class="text-gray-500 hover:text-white transition">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pt-8 border-t border-white/5 text-center text-gray-500 text-sm">
+        <p>&copy; <%= Date.current.year %> ActiveRabbit. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</div>

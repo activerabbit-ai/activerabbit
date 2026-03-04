@@ -100,6 +100,10 @@ class AlertJob
       slack_service(project).send_error_frequency_alert(issue, payload)
     end
 
+    if project.notify_via_discord?
+      discord_service(project).send_error_frequency_alert(issue, payload)
+    end
+
     if project.notify_via_email?
       send_email_alert(
         project,
@@ -117,6 +121,7 @@ class AlertJob
     return unless event
 
     slack_service(project).send_performance_alert(event, payload) if project.notify_via_slack?
+    discord_service(project).send_performance_alert(event, payload) if project.notify_via_discord?
 
     send_email_alert(
       project,
@@ -128,6 +133,7 @@ class AlertJob
 
   def deliver_n_plus_one(project, payload)
     slack_service(project).send_n_plus_one_alert(payload) if project.notify_via_slack?
+    discord_service(project).send_n_plus_one_alert(payload) if project.notify_via_discord?
 
     send_email_alert(
       project,
@@ -140,6 +146,7 @@ class AlertJob
     issue = ActsAsTenant.without_tenant { Issue.find(payload["issue_id"]) }
 
     slack_service(project).send_new_issue_alert(issue) if project.notify_via_slack?
+    discord_service(project).send_new_issue_alert(issue) if project.notify_via_discord?
 
     send_email_alert(
       project,
@@ -150,10 +157,14 @@ class AlertJob
   end
 
   # ------------------------
-  # Slack sending methods
+  # Notification services
   # ------------------------
   def slack_service(project)
     SlackNotificationService.new(project)
+  end
+
+  def discord_service(project)
+    DiscordNotificationService.new(project)
   end
 
   # ------------------------
