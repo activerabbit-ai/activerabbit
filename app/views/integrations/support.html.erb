@@ -1,0 +1,222 @@
+<% content_for :title, "Support - ActiveRabbit" %>
+
+<div class="min-h-screen bg-[#0a0a0f]">
+  <!-- Header -->
+  <header class="py-4 px-4 sm:px-6 lg:px-8 border-b border-white/5">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <a href="https://www.activerabbit.ai/" class="flex items-center space-x-3">
+        <%= image_tag "faviicons/favicon-32.png", class: "rounded-full", alt: "ActiveRabbit" %>
+        <span class="text-xl font-bold text-white">ActiveRabbit</span>
+      </a>
+      <div class="flex items-center space-x-3">
+        <% if user_signed_in? %>
+          <%= link_to "Dashboard", dashboard_path, class: "text-gray-400 hover:text-white transition text-sm" %>
+        <% else %>
+          <%= link_to "Login", new_user_session_path, class: "text-gray-400 hover:text-white transition text-sm" %>
+          <%= link_to "Start Free Trial", new_user_registration_path, class: "px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-medium rounded-lg transition" %>
+        <% end %>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-violet-600/10 via-transparent to-transparent"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/20 blur-[120px] rounded-full"></div>
+
+    <div class="max-w-4xl mx-auto text-center relative z-10">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-white/5 backdrop-blur border border-white/10 rounded-2xl mb-4">
+        <svg class="w-10 h-10 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+      </div></br>
+
+      <div class="inline-flex items-center px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 mb-6">
+        <span class="text-violet-400 text-sm font-medium">SUPPORT</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+        How Can We Help?
+      </h1>
+      <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Our team is here to help you get the most out of ActiveRabbit. Reach out anytime — we'd love to hear from you.
+      </p>
+    </div>
+  </section>
+
+  <!-- Contact Options -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Email Support -->
+        <div class="relative group">
+          <div class="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-violet-500/50 transition h-full">
+            <div class="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center mb-6">
+              <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-3">Email Support</h3>
+            <p class="text-gray-400 leading-relaxed mb-6">
+              Send us an email and we'll get back to you as soon as possible. We typically respond within 24 hours on business days.
+            </p>
+            <a href="mailto:support@activerabbit.ai" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-lg transition shadow-lg shadow-violet-500/25 text-sm">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+              support@activerabbit.ai
+            </a>
+          </div>
+        </div>
+
+        <!-- GitHub Issues -->
+        <div class="relative group">
+          <div class="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-indigo-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-violet-500/50 transition h-full">
+            <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
+              <svg class="w-6 h-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-3">GitHub Issues</h3>
+            <p class="text-gray-400 leading-relaxed mb-6">
+              Found a bug or have a feature request? Open an issue on our GitHub repository and our engineering team will take a look.
+            </p>
+            <a href="https://github.com/activerabbit/activerabbit/issues" class="inline-flex items-center px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium rounded-lg transition text-sm">
+              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              Open an Issue
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-violet-600/5 to-transparent">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Frequently Asked Questions</h2>
+        <p class="text-gray-400">Quick answers to common questions.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-white mb-2">How do I connect Slack to my project?</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Go to your Project Settings and click the "Add to Slack" button. You'll be redirected to Slack to authorize ActiveRabbit. 
+            Once authorized, we'll automatically create a <code class="bg-white/10 px-1.5 py-0.5 rounded text-violet-300">#active_rabbit_alert</code> channel for notifications.
+          </p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-white mb-2">How do I install the ActiveRabbit gem?</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Add <code class="bg-white/10 px-1.5 py-0.5 rounded text-violet-300">gem 'active_rabbit'</code> to your Gemfile, run <code class="bg-white/10 px-1.5 py-0.5 rounded text-violet-300">bundle install</code>, 
+            and configure it with the API token from your project settings. Check our <a href="https://docs.activerabbit.ai" class="text-violet-400 hover:underline">documentation</a> for detailed setup instructions.
+          </p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-white mb-2">Can I customize which notifications I receive?</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Yes! In your Project Settings you can configure alert rules to control which errors trigger notifications, 
+            set frequency limits, and choose notification channels.
+          </p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-white mb-2">What data does ActiveRabbit collect?</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            ActiveRabbit collects error data, stack traces, and performance metrics from your application. We do not read your Slack messages or access 
+            any other data in your workspace. See our <a href="https://www.activerabbit.ai/privacy" class="text-violet-400 hover:underline">Privacy Policy</a> for full details.
+          </p>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-white mb-2">How do I disconnect Slack from my project?</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Go to your Project Settings and use the disconnect option in the integration for Slack section. 
+            You can also remove ActiveRabbit directly from your Slack workspace's app management page.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Still need help -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-white mb-4">Still Need Help?</h2>
+      <p class="text-gray-400 mb-8">Don't hesitate to reach out. We're happy to assist with any questions or issues.</p>
+
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-8">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="mailto:support@activerabbit.ai" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-lg transition shadow-lg shadow-violet-500/25">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            Email Us
+          </a>
+          <a href="https://github.com/activerabbit/activerabbit/issues" class="inline-flex items-center px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium rounded-lg transition">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            GitHub Issues
+          </a>
+        </div>
+        <p class="text-gray-500 text-sm mt-6">
+          Email: <a href="mailto:support@activerabbit.ai" class="text-violet-400 hover:underline">support@activerabbit.ai</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <a href="https://www.activerabbit.ai/" class="flex items-center space-x-2 mb-4">
+            <%= image_tag "faviicons/favicon-32.png", class: "w-8 h-8 rounded-lg", alt: "ActiveRabbit" %>
+            <span class="text-lg font-bold text-white">ActiveRabbit</span>
+          </a>
+          <p class="text-gray-500 text-sm">AI-powered bug detection and fixing for modern development teams.</p>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Product</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="https://www.activerabbit.ai/#features" class="text-gray-500 hover:text-white transition">Features</a></li>
+            <li><a href="https://www.activerabbit.ai/pricing" class="text-gray-500 hover:text-white transition">Pricing</a></li>
+            <li><a href="<%= slack_integration_path %>" class="text-gray-500 hover:text-white transition">Integrations</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Developers</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="https://docs.activerabbit.ai" class="text-gray-500 hover:text-white transition">Documentation</a></li>
+            <li><a href="https://github.com/activerabbit/activerabbit" class="text-gray-500 hover:text-white transition">GitHub</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-white font-semibold mb-4">Company</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="<%= support_path %>" class="text-gray-500 hover:text-white transition">Support</a></li>
+            <li><a href="https://www.activerabbit.ai/privacy" class="text-gray-500 hover:text-white transition">Privacy Policy</a></li>
+            <li><a href="https://www.activerabbit.ai/terms" class="text-gray-500 hover:text-white transition">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pt-8 border-t border-white/5 text-center text-gray-500 text-sm">
+        <p>&copy; <%= Date.current.year %> ActiveRabbit. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</div>
