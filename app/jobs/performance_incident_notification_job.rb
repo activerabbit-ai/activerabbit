@@ -45,12 +45,14 @@ class PerformanceIncidentNotificationJob
   def send_open_notification(incident, project)
     return if incident.open_notification_sent?
 
-    # Send via Slack if configured
     if project.notify_via_slack?
       send_slack_open_notification(incident, project)
     end
 
-    # Send via email if configured
+    if project.notify_via_discord?
+      DiscordNotificationService.new(project).send_incident_open(incident)
+    end
+
     if project.notify_via_email?
       send_email_open_notification(incident, project)
     end
@@ -62,12 +64,14 @@ class PerformanceIncidentNotificationJob
   def send_close_notification(incident, project)
     return if incident.close_notification_sent?
 
-    # Send via Slack if configured
     if project.notify_via_slack?
       send_slack_close_notification(incident, project)
     end
 
-    # Send via email if configured
+    if project.notify_via_discord?
+      DiscordNotificationService.new(project).send_incident_close(incident)
+    end
+
     if project.notify_via_email?
       send_email_close_notification(incident, project)
     end

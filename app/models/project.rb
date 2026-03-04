@@ -156,6 +156,25 @@ class Project < ApplicationRecord
     settings.dig("notifications", "channels", "email") != false
   end
 
+  def discord_configured?
+    discord_webhook_url.present?
+  end
+
+  def discord_webhook_url
+    settings&.dig("discord_webhook_url")
+  end
+
+  def discord_guild_name
+    settings&.dig("discord_guild_name")
+  end
+
+  def notify_via_discord?
+    return false unless notifications_enabled?
+    return false unless discord_configured?
+
+    settings.dig("notifications", "channels", "discord") != false
+  end
+
   def notification_pref_for(alert_type)
     notification_preferences.find_by(alert_type: alert_type)
   end

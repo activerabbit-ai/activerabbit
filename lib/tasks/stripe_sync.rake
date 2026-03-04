@@ -51,9 +51,9 @@ namespace :stripe do
       else
         user = if customer_email.present?
                  account.users.find_by(email: customer_email)
-               else
+        else
                  account.users.order(:id).first
-               end
+        end
         unless user
           puts "No user in account to attach Stripe customer to. Add CUSTOMER_EMAIL=devops@grittyfactor.com or ensure account has users."
           exit 1

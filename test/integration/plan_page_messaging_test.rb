@@ -14,7 +14,6 @@ require "test_helper"
 #   - Business plan with active subscription
 #
 class PlanPageMessagingTest < ActionDispatch::IntegrationTest
-
   # ---------------------------------------------------------------------------
   # Plan page button states
   # ---------------------------------------------------------------------------
