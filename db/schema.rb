@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_19_200000) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_25_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -263,6 +263,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_19_200000) do
     t.text "ai_summary"
     t.datetime "ai_summary_generated_at"
     t.boolean "is_job_failure", default: false, null: false
+    t.string "severity"
     t.index ["account_id", "status", "last_seen_at"], name: "idx_issues_account_status_last_seen"
     t.index ["account_id"], name: "index_issues_on_account_id"
     t.index ["closed_at"], name: "index_issues_on_closed_at"
@@ -272,6 +273,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_19_200000) do
     t.index ["project_id", "fingerprint"], name: "index_issues_on_project_id_and_fingerprint", unique: true
     t.index ["project_id", "last_seen_at"], name: "idx_issues_project_last_seen", order: { last_seen_at: :desc }
     t.index ["project_id"], name: "index_issues_on_project_id"
+    t.index ["severity"], name: "index_issues_on_severity"
     t.index ["status"], name: "index_issues_on_status"
   end
 
