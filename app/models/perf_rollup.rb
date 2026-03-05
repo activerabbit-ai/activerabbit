@@ -77,7 +77,12 @@ class PerfRollup < ApplicationRecord
         hdr_histogram: nil
       )
 
-      rollup.save!
+      begin
+        rollup.save!
+      rescue Sidekiq::Shutdown
+        Rails.logger.info "Sidekiq shutdown detected, stopping rollup processing"
+        break
+      end
     end
   end
 
