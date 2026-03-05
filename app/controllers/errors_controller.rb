@@ -104,10 +104,19 @@ class ErrorsController < ApplicationController
         .where("controller_action NOT LIKE '%Controller#%'")
         .pluck(:id)
         .to_set
+
+      # Latest release version per issue (PostgreSQL DISTINCT ON)
+      @release_by_issue_id = Event
+        .where(issue_id: issue_ids)
+        .where.not(release_version: [nil, ""])
+        .select("DISTINCT ON (issue_id) issue_id, release_version")
+        .order("issue_id, occurred_at DESC")
+        .each_with_object({}) { |e, h| h[e.issue_id] = e.release_version }
     else
       @total_events_24h = 0
       @events_24h_by_issue_id = {}
       @issue_ids_with_job_failures = Set.new
+      @release_by_issue_id = {}
     end
 
     # Optional: build graph data across all errors

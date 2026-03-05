@@ -60,10 +60,20 @@ class Event < ApplicationRecord
       event_context[:culprit_frame] = payload[:culprit_frame]
     end
 
+    # Link to Release and Deploy records when release_version is provided
+    release = nil
+    deploy = nil
+    if payload[:release_version].present?
+      release = project.releases.find_by(version: payload[:release_version])
+      deploy = release ? project.deploys.where(release: release).order(started_at: :desc).first : nil
+    end
+
     # Create event (individual occurrence)
     create!(
       project: project,
       issue: issue,
+      release: release,
+      deploy_id: deploy&.id,
       exception_class: exception_class,
       message: message,
       backtrace: backtrace,
