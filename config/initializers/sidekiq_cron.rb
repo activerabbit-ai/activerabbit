@@ -96,6 +96,14 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
   }
 
   begin
+    # Remove stale cron jobs that no longer exist in the current definition
+    existing_names = Sidekiq::Cron::Job.all.map(&:name)
+    stale = existing_names - jobs.keys
+    stale.each do |name|
+      Sidekiq::Cron::Job.find(name)&.destroy
+      Rails.logger.info("[Sidekiq::Cron] Removed stale cron job: #{name}")
+    end
+
     Sidekiq::Cron::Job.load_from_hash(jobs)
     Rails.logger.info("[Sidekiq::Cron] Loaded #{jobs.size} cron jobs: #{jobs.keys.join(', ')}")
   rescue StandardError => e
