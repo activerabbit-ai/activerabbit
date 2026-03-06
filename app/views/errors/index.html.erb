@@ -159,28 +159,25 @@
       <table class="w-full divide-y divide-gray-200 table-fixed" style="position: relative;">
         <thead class="bg-white border-b border-gray-200">
           <tr>
-            <th class="w-[36%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[40%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :exception_class, class: "inline-flex items-center gap-2") do %>
                 <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-indigo-50 text-sm leading-none">🐰</span>
                 <span>Error & Action</span>
               <% end %>
             </th>
-            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Release
-            </th>
             <th class="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :last_seen_at, "Last Seen", class: "inline-flex items-center") %>
             </th>
-            <th class="w-[7%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :count, "Total", class: "inline-flex items-center") %>
             </th>
-            <th class="w-[9%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Impact %
             </th>
-            <th class="w-[7%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[8%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               PR
             </th>
-            <th class="w-[9%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= sort_link(@q, :ai_summary, "AI", class: "inline-flex items-center") %>
             </th>
             <th class="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -230,18 +227,6 @@
                     <% end %>
                   </div>
                 </div>
-              </td>
-
-              <!-- Release -->
-              <td class="px-4 py-4">
-                <% rel_version = (@release_by_issue_id || {})[issue.id] %>
-                <% if rel_version.present? %>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 font-mono">
-                    <%= rel_version %>
-                  </span>
-                <% else %>
-                  <span class="text-xs text-gray-400">—</span>
-                <% end %>
               </td>
 
               <!-- Last Seen -->
