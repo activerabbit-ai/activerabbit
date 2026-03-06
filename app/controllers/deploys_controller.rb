@@ -8,10 +8,11 @@ class DeploysController < ApplicationController
     @project_scope = @current_project || @project
 
     if @project_scope
-      @deploys = @project_scope.deploys
-                              .includes(:release, :user)
-                              .recent
-                              .to_a
+      @deploys = Deploy.includes(:project, :release, :user)
+                  .where(project_id: @project_scope.id, account_id: current_account&.id)
+                  .recent
+                  .limit(10)
+                  .to_a
 
       @max_live_seconds =
         @deploys.each_with_index.map do |deploy, i|

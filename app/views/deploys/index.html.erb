@@ -24,63 +24,36 @@
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
         <% if @deploys.any? %>
-          <% @deploys.each_with_index do |deploy, index| %>
-            <% next_deploy = index.positive? ? @deploys[index - 1] : nil %>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= deploy.release.version&.slice(0, 7) %>
+          <% @deploys.each_with_index do |deploy, i| %>
+            <% next_deploy = i.positive? ? @deploys[i - 1] : nil %>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 font-mono text-sm text-indigo-600">
+                <%= deploy.release&.version || "unknown" %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= deploy[:status] == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                  <%= deploy.status.capitalize %>
+              <td class="px-6 py-4">
+                <% status = deploy.status || "completed" %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  <%= status == 'completed' ? 'bg-green-100 text-green-800' : status == 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' %>">
+                  <%= status %>
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <div class="text-gray-900 font-medium">
-                  <%= live_for_human(deploy, next_deploy) %>
-                </div>
-
-                <div class="h-1 bg-gray-200 rounded">
-                  <div
-                    class="h-1 bg-gray-400 rounded"
-                    style="width: <%= progress_percent(
-                      deploy.live_for_seconds(next_deploy),
-                      @max_live_seconds
-                    ) %>%">
-                  </div>
-                </div>
+              <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                <%= distance_of_time_in_words(deploy.live_for_seconds(next_deploy)) %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= deploy.started_at.strftime("%b %eth %H:%M") %>
+              <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                <%= time_ago_in_words(deploy.started_at) %> ago
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div class="space-y-1">
-                  <div class="text-gray-900">
-                    <%= deploy.errors_count %>
-                  </div>
-                  <div class="h-1 bg-gray-200 rounded">
-                    <div
-                      class="h-1 bg-gray-400 rounded"
-                      style="width: <%= progress_percent(deploy.errors_count, @max_errors) %>%">
-                    </div>
-                  </div>
-                </div>
+              <td class="px-6 py-4 text-sm text-gray-500">
+                <%= deploy.errors_count %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <td class="px-6 py-4 text-sm text-gray-500">
                 <%= deploy.errors_per_hour %>
-
-                <div class="h-1 bg-gray-200 rounded">
-                  <div
-                    class="h-1 bg-gray-400 rounded"
-                    style="width: <%= progress_percent(deploy.errors_per_hour, @max_errors_per_hour) %>%">
-                  </div>
-                </div>
               </td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="7" class="px-6 py-12 text-center">
+            <td colspan="6" class="px-6 py-12 text-center">
               <div class="mx-auto">
                 <div class="w-12 h-12 mx-auto mb-4 text-gray-400">
                   🚢

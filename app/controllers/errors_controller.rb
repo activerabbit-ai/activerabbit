@@ -104,6 +104,7 @@ class ErrorsController < ApplicationController
         .where("controller_action NOT LIKE '%Controller#%'")
         .pluck(:id)
         .to_set
+
     else
       @total_events_24h = 0
       @events_24h_by_issue_id = {}
