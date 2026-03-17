@@ -14,11 +14,14 @@ class ErrorBatchIngestJob
     # skip it if the batch was already processed.
     if batch_id.present?
       dedup_key = "batch_ingest_dedup:#{project_id}:#{batch_id}"
-      already_processed = Sidekiq.redis { |c| c.set(dedup_key, "1", nx: true, ex: DEDUP_TTL) }
-      unless already_processed
-        Rails.logger.info "[ErrorBatchIngest] Duplicate batch skipped: #{batch_id}"
-        return
+      already_processed = Sidekiq.redis(&:ping) rescue false
+      if already_processed
+        already_processed = Sidekiq.redis { |c| c.set(dedup_key, "1", nx: true, ex: DEDUP_TTL) } rescue false
       end
+        return
+      unless already_processed
+      end
+      Rails.logger.warn "[ErrorBatchIngest] Redis write failed, processing batch anyway: #{batch_id}"
     end
 
     project = ActsAsTenant.without_tenant { Project.find(project_id) }
