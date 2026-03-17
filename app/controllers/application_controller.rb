@@ -71,13 +71,15 @@ class ApplicationController < ActionController::Base
   end
 
   def default_project_path_for(resource)
-    projects = ActsAsTenant.without_tenant { resource.account&.projects }
+    ActsAsTenant.without_tenant do
+    projects = resource.account&.projects
     last_slug = cookies[:last_project_slug]
     project = projects&.find_by(slug: last_slug) if last_slug.present?
     project ||= projects&.order(:name)&.first
-    project ? project_slug_errors_path(project.slug) : dashboard_path
+  project ? project_slug_errors_path(project.slug) : dashboard_path
   end
 
+  end
   def current_project
     @current_project
   end
