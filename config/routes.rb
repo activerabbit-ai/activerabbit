@@ -314,6 +314,8 @@ Rails.application.routes.draw do
   get ":project_slug/performance", to: "performance#index", as: "project_slug_performance"
   get ":project_slug/performance/:id", to: "performance#show", as: "project_slug_performance_issue"
   get ":project_slug/performance/actions/:target", to: "performance#action_detail", as: "project_slug_performance_action_detail", constraints: { target: /[^\/]+/ }, format: false
+  post ":project_slug/performance/actions/:target/create_pr", to: "performance#create_pr", as: "project_slug_performance_action_create_pr", constraints: { target: /[^\/]+/ }, format: false
+  post ":project_slug/performance/actions/:target/reopen_pr", to: "performance#reopen_pr", as: "project_slug_performance_action_reopen_pr", constraints: { target: /[^\/]+/ }, format: false
   get ":project_slug/deploys", to: "deploys#index", as: "project_slug_deploys"
   get ":project_slug/uptime", to: "uptime/monitors#index", as: "project_slug_uptime"
   get ":project_slug/uptime/:id", to: "uptime/monitors#show", as: "project_slug_uptime_monitor"
