@@ -819,7 +819,7 @@ class PerformanceController < ApplicationController
   end
 
   def performance_action_detail_redirect_path(target)
-    if @current_project
+    if @current_project && @current_project.persisted?
       project_slug_performance_action_detail_path(@current_project.slug, target: target)
     elsif @project
       project_performance_action_detail_path(@project, target: target)
