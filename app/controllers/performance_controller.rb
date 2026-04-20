@@ -719,27 +719,31 @@ class PerformanceController < ApplicationController
   end
 
   def create_pr
-    project_scope = @current_project || @project
+    project_scope = performance_project_scope
     target = params[:target]
 
+    unless project_scope
+      redirect_to performance_path, alert: "Select a project to open a PR."
+      return
+    end
+
     pr_service = Github::PrService.new(project_scope)
+    perf_issue_attrs = performance_pr_pseudo_issue_attributes(project_scope, target)
     # Build a pseudo-issue for performance with minimal attributes used by service body
     issue_like = OpenStruct.new(
-      id: "perf-#{target.gsub(/[^a-zA-Z0-9_-]/, '-')}",
-      exception_class: "Performance: #{target}",
-      ai_summary: "Auto-detected performance regression for #{target}."
+      {
+        id: "perf-#{target.gsub(/[^a-zA-Z0-9_-]/, '-')}",
+        exception_class: "Performance: #{target}",
+        controller_action: target,
+        project: project_scope,
+        # PrService / PrContentGenerator expect an AR-like `events` relation (see #order chain).
+        events: project_scope.events.none
+      }.merge(perf_issue_attrs)
     )
 
     result = pr_service.create_pr_for_issue(issue_like)
 
-    redirect_path =
-      if @current_project
-        performance_action_detail_path(target: target)
-      elsif @project
-        project_performance_action_detail_path(@project, target: target)
-      else
-        performance_action_detail_path(target: target)
-      end
+    redirect_path = performance_action_detail_redirect_path(target)
 
     if result[:success]
       # Persist PR URL for this performance target to show a direct link next time
@@ -759,18 +763,17 @@ class PerformanceController < ApplicationController
   end
 
   def reopen_pr
-    project_scope = @current_project || @project
+    project_scope = performance_project_scope
     target = params[:target]
 
-    pr_url = project_scope&.settings&.dig("perf_pr_urls", target.to_s)
-
-    redirect_path = if @current_project
-                      performance_action_detail_path(target: target)
-    elsif @project
-                      project_performance_action_detail_path(@project, target: target)
-    else
-                      performance_action_detail_path(target: target)
+    unless project_scope
+      redirect_to performance_path, alert: "Select a project to reopen a PR."
+      return
     end
+
+    pr_url = project_scope.settings&.dig("perf_pr_urls", target.to_s)
+
+    redirect_path = performance_action_detail_redirect_path(target)
 
     unless pr_url.present?
       redirect_to redirect_path, alert: "No existing PR found for this action"
@@ -788,7 +791,12 @@ class PerformanceController < ApplicationController
   end
 
   def create_n_plus_one_pr
-    project_scope = @current_project || @project
+    project_scope = performance_project_scope
+    unless project_scope
+      redirect_to performance_path, alert: "Select a project to create a PR."
+      return
+    end
+
     @sql_fingerprint = project_scope.sql_fingerprints.find(params[:id])
 
     # This is a stub for GitHub integration
@@ -798,25 +806,58 @@ class PerformanceController < ApplicationController
     result = pr_service.create_n_plus_one_fix_pr(@sql_fingerprint)
 
     if result[:success]
-      redirect_path =
-        if @current_project
-          "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
-        else
-          project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
-        end
-      redirect_to redirect_path, notice: "PR created: #{result[:pr_url]}"
+      redirect_to sql_fingerprint_redirect_path(project_scope), notice: "PR created: #{result[:pr_url]}"
     else
-      redirect_path =
-        if @current_project
-          "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
-        else
-          project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
-        end
-      redirect_to redirect_path, alert: "Failed to create PR: #{result[:error]}"
+      redirect_to sql_fingerprint_redirect_path(project_scope), alert: "Failed to create PR: #{result[:error]}"
     end
   end
 
   private
+
+  def performance_project_scope
+    @current_project || @project || selected_project_for_menu
+  end
+
+  def performance_action_detail_redirect_path(target)
+    if @current_project
+      project_slug_performance_action_detail_path(@current_project.slug, target: target)
+    elsif @project
+      project_performance_action_detail_path(@project, target: target)
+    elsif (p = selected_project_for_menu)
+      project_slug_performance_action_detail_path(p.slug, target: target)
+    else
+      performance_action_detail_path(target: target)
+    end
+  end
+
+  # Metrics + cached AI summary so GitHub PR bodies match what the Performance "AI" tab generated.
+  def performance_pr_pseudo_issue_attributes(project_scope, target)
+    summary_text = PerformanceSummary.find_by(project: project_scope, target: target)&.summary
+    window_start = 30.days.ago
+    pe = PerformanceEvent.where(project: project_scope, target: target).where("occurred_at > ?", window_start)
+    count = pe.count
+    avg_ms = pe.average(:duration_ms)
+    sample_lines = ["Performance target: #{target}"]
+    sample_lines << "Requests (last 30 days): #{count}" if count.positive?
+    sample_lines << "Avg duration: #{avg_ms.round(1)} ms" if avg_ms
+    {
+      ai_summary: summary_text.presence || "Auto-detected performance regression for #{target}.",
+      count: count,
+      first_seen_at: pe.minimum(:occurred_at),
+      last_seen_at: pe.maximum(:occurred_at),
+      sample_message: sample_lines.join("\n")
+    }
+  end
+
+  def sql_fingerprint_redirect_path(project_scope)
+    if @current_project
+      "/#{@current_project.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
+    elsif @project
+      project_performance_sql_fingerprint_path(@project, @sql_fingerprint)
+    else
+      "/#{project_scope.slug}/performance/sql_fingerprints/#{@sql_fingerprint.id}"
+    end
+  end
 
   def set_project
     @project = current_account.projects.find(params[:project_id])

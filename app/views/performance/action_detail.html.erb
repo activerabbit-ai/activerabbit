@@ -55,9 +55,11 @@
           AI summary
         <% end %>
         <% create_pr_path = if @current_project
-                              performance_create_pr_path(target: @target)
+                              project_slug_performance_action_create_pr_path(@current_project.slug, target: @target)
                             elsif @project
                               project_performance_action_create_pr_path(@project, target: @target)
+                            elsif selected_project_for_menu
+                              project_performance_action_create_pr_path(selected_project_for_menu, target: @target)
                             else
                               performance_create_pr_path(target: @target)
                             end %>
@@ -72,9 +74,11 @@
             View PR
           <% end %>
           <% reopen_pr_path = if @current_project
-                                 performance_reopen_pr_path(target: @target)
+                                 project_slug_performance_action_reopen_pr_path(@current_project.slug, target: @target)
                                elsif @project
                                  project_performance_action_reopen_pr_path(@project, target: @target)
+                               elsif selected_project_for_menu
+                                 project_performance_action_reopen_pr_path(selected_project_for_menu, target: @target)
                                else
                                  performance_reopen_pr_path(target: @target)
                                end %>

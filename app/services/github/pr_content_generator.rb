@@ -8,7 +8,7 @@ module Github
     end
 
     def generate(issue)
-      sample_event = issue.events.order(occurred_at: :desc).first
+      sample_event = issue.events&.order(occurred_at: :desc)&.first
 
       # If we have existing AI summary, parse it for the fix section
       if issue.ai_summary.present?
@@ -51,12 +51,13 @@ module Github
     def generate_pr_title(issue, root_cause)
       # Create a concise, descriptive title based on the root cause
       if root_cause.present?
-        # Extract first sentence of root cause for title
-        short_cause = root_cause.split(/[.\n]/).first.to_s.strip
-        if short_cause.length > 60
-          short_cause = short_cause[0, 57] + "..."
-        end
-        "fix: #{short_cause}"
+        # First non-empty line reads better than split-on-period (decimals like 46.15% break titles).
+        short_cause = root_cause.lines.map(&:strip).find(&:present?).to_s
+        short_cause = short_cause.gsub(/\*\*/, "").sub(/\A(?:[-*]+\s*|\d+\.\s*)/, "").strip
+        short_cause = short_cause[0, 72].strip + "..." if short_cause.length > 72
+        "fix: #{short_cause.presence || 'performance regression'}"
+      elsif issue.exception_class.to_s.start_with?("Performance:") && issue.controller_action.present?
+        "fix: performance — #{issue.controller_action}"
       else
         "fix: #{issue.exception_class} in #{issue.controller_action.to_s.split('#').last}"
       end
@@ -70,8 +71,17 @@ module Github
       sections = summary.split(/^##\s+/m)
 
       sections.each do |section|
-        if section.start_with?("Root Cause")
-          result[:root_cause] = section.sub(/^Root Cause\s*\n/, "").strip
+        if section.match?(/\ARoot Cause/i)
+          # Strip first heading line (e.g. "Root Cause Analysis (RCA)")
+          result[:root_cause] = section.sub(/\A[^\n]+\n+/, "").strip
+        elsif section.match?(/\AOptimization Steps/i)
+          # Performance summaries from AiPerformanceSummaryService use this section for fixes.
+          fix_content = section.sub(/\A[^\n]+\n+/, "").strip
+          result[:fix] = fix_content
+          Rails.logger.info "[GitHub API] Optimization Steps section (first 500 chars): #{fix_content[0..500]}"
+          parsed_fix = parse_single_file_fix(fix_content)
+          result[:fix_code] = parsed_fix[:fix_code]
+          result[:before_code] = parsed_fix[:before_code]
         elsif section.start_with?("Suggested Fix") || section.start_with?("Fix")
           fix_content = section.sub(/^(?:Suggested )?Fix\s*\n/, "").strip
           result[:fix] = fix_content
@@ -266,9 +276,12 @@ module Github
       lines << ""
       lines << "**Issue ID:** [##{issue.id}](#{error_url(issue)})"
       lines << "**Controller:** `#{issue.controller_action}`"
-      lines << "**Occurrences:** #{issue.count} times"
-      lines << "**First seen:** #{issue.first_seen_at&.strftime('%Y-%m-%d %H:%M')}"
-      lines << "**Last seen:** #{issue.last_seen_at&.strftime('%Y-%m-%d %H:%M')}"
+      occ = issue.respond_to?(:count) ? issue.count : nil
+      lines << "**Occurrences:** #{occ.nil? ? '—' : "#{occ} times"}"
+      first_seen = issue.respond_to?(:first_seen_at) ? issue.first_seen_at : nil
+      last_seen = issue.respond_to?(:last_seen_at) ? issue.last_seen_at : nil
+      lines << "**First seen:** #{first_seen ? first_seen.strftime('%Y-%m-%d %H:%M') : '—'}"
+      lines << "**Last seen:** #{last_seen ? last_seen.strftime('%Y-%m-%d %H:%M') : '—'}"
       lines << ""
 
       # Root Cause Analysis
@@ -516,7 +529,22 @@ module Github
     def error_url(issue)
       host = Rails.env.development? ? "http://localhost:3000" : ENV.fetch("APP_HOST", "https://activerabbit.com")
       host = "https://#{host}" unless host.start_with?("http://", "https://")
-      "#{host}/#{issue.project.slug}/errors/#{issue.id}"
+      project = issue.respond_to?(:project) ? issue.project : nil
+      slug = project&.slug
+      return host if slug.blank?
+
+      # Performance "Open PR" uses a pseudo-issue (id perf-...) — link to action detail, not errors.
+      if issue.id.to_s.start_with?("perf-")
+        target = issue.respond_to?(:controller_action) ? issue.controller_action : nil
+        if target.present?
+          segment = target.to_s.gsub(" ", "%20").gsub("#", "%23")
+          "#{host}/#{slug}/performance/actions/#{segment}"
+        else
+          "#{host}/#{slug}/performance"
+        end
+      else
+        "#{host}/#{slug}/errors/#{issue.id}"
+      end
     end
   end
 end

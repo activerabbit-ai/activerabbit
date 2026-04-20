@@ -347,7 +347,7 @@ module Github
       commit_msg_parts = []
       unapplied_fixes = []
 
-      sample_event = issue.events.order(occurred_at: :desc).first
+      sample_event = issue.events&.order(occurred_at: :desc)&.first
       actual_fix_applied = false
       files_fixed = []
 
