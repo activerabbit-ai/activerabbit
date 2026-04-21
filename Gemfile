@@ -63,6 +63,9 @@ gem "jwt", "~> 2.8"
 # Slack notifications
 gem "slack-notifier"
 
+# AI provider abstraction
+gem "ruby_llm"
+
 # Markdown rendering
 gem "redcarpet"
 

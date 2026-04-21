@@ -17,7 +17,7 @@ module Github
       @project_app_pk = settings["github_app_pk"]
       @env_app_id = ENV["AR_GH_APP_ID"]
       @env_app_pk = Github::TokenManager.resolve_env_private_key
-      @anthropic_key = ENV["ANTHROPIC_API_KEY"]
+      @account = @project.account
 
       # Initialize service dependencies
       @token_manager = Github::TokenManager.new(
@@ -29,8 +29,8 @@ module Github
         env_app_id: @env_app_id,
         env_app_pk: @env_app_pk
       )
-      @branch_name_generator = Github::BranchNameGenerator.new(anthropic_key: @anthropic_key)
-      @pr_content_generator = Github::PrContentGenerator.new(anthropic_key: @anthropic_key)
+      @branch_name_generator = Github::BranchNameGenerator.new(account: @account)
+      @pr_content_generator = Github::PrContentGenerator.new(account: @account)
     end
 
     def create_n_plus_one_fix_pr(sql_fingerprint)
@@ -207,7 +207,7 @@ module Github
 
       # Create commit with suggested fix if available
       # Use SimpleCodeFixApplier for reliable line-based fixes
-      code_fix_applier = Github::SimpleCodeFixApplier.new(api_client: api_client, anthropic_key: @anthropic_key, source_branch: source_branch)
+      code_fix_applier = Github::SimpleCodeFixApplier.new(api_client: api_client, account: @account, source_branch: source_branch)
       commit_result = create_fix_commit(api_client, code_fix_applier, owner, repo, branch, head_sha, issue, code_fix, before_code, pr_body, file_fixes)
       if commit_result.is_a?(Hash) && commit_result[:error]
         return { success: false, error: commit_result[:error] }

@@ -6,12 +6,11 @@ RSpec.describe AiPerformanceSummaryService, type: :service do
   let(:target) { "UsersController#index" }
   let(:stats) do
     {
-      avg_duration: 2500,
-      p95_duration: 5000,
-      request_count: 100,
-      slow_endpoints: [
-        { endpoint: "/api/users", avg_duration: 2500, p95_duration: 5000 }
-      ]
+      total_requests: 100,
+      total_errors: 5,
+      error_rate: 5.0,
+      avg_ms: 2500,
+      p95_ms: 5000
     }
   end
 
@@ -20,78 +19,65 @@ RSpec.describe AiPerformanceSummaryService, type: :service do
   end
 
   describe '#initialize' do
-    it 'accepts target and stats' do
-      service = described_class.new(target: target, stats: stats)
+    it 'accepts account, target, and stats' do
+      service = described_class.new(account: account, target: target, stats: stats)
       expect(service).to be_a(AiPerformanceSummaryService)
     end
 
     it 'accepts optional sample_event' do
       event = create(:event, project: project, account: account)
-      service = described_class.new(target: target, stats: stats, sample_event: event)
+      service = described_class.new(account: account, target: target, stats: stats, sample_event: event)
       expect(service).to be_a(AiPerformanceSummaryService)
     end
   end
 
   describe '#call' do
-    context 'when ANTHROPIC_API_KEY is missing' do
-      before do
-        allow(ENV).to receive(:[]).and_call_original
-        allow(ENV).to receive(:[]).with("ANTHROPIC_API_KEY").and_return(nil)
-      end
-
-      it 'returns error' do
-        service = described_class.new(target: target, stats: stats)
+    context 'when no AI provider is configured' do
+      it 'returns missing_config error' do
+        service = described_class.new(account: account, target: target, stats: stats)
         result = service.call
 
-        expect(result[:error]).to eq("missing_api_key")
+        expect(result[:error]).to eq("missing_config")
       end
     end
 
-    context 'when ANTHROPIC_API_KEY is present' do
-      let(:api_response) do
-        {
-          "content" => [
-            {
-              "type" => "text",
-              "text" => "## Performance Analysis\n\nThe endpoint is slow due to..."
-            }
-          ]
-        }
+    context 'when AI provider is configured' do
+      let!(:ai_config) do
+        create(:ai_provider_config,
+          account: account,
+          provider: "anthropic",
+          fast_model: "claude-haiku-4-5-20251001",
+          power_model: "claude-sonnet-4-6",
+          active: true)
       end
 
-      before do
-        allow(ENV).to receive(:[]).and_call_original
-        allow(ENV).to receive(:[]).with("ANTHROPIC_API_KEY").and_return("test-api-key")
+      it 'returns performance summary via RubyLLM' do
+        mock_message = double(content: "## Performance Analysis\n\nThe endpoint is slow due to...")
+        mock_chat = double(with_instructions: nil)
+        allow(mock_chat).to receive(:with_instructions).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).and_return(mock_message)
+        allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
 
-        stub_request(:post, "https://api.anthropic.com/v1/messages")
-          .to_return(
-            status: 200,
-            body: api_response.to_json,
-            headers: { 'Content-Type' => 'application/json' }
-          )
-      end
-
-      it 'returns performance summary' do
-        service = described_class.new(target: target, stats: stats)
+        service = described_class.new(account: account, target: target, stats: stats)
         result = service.call
 
         expect(result[:summary]).to include("Performance Analysis")
       end
 
-      it 'uses claude-opus-4 model' do
-        service = described_class.new(target: target, stats: stats)
-        service.call
+      it 'uses the fast_model from the active config' do
+        mock_message = double(content: "analysis")
+        mock_chat = double
+        allow(mock_chat).to receive(:with_instructions).and_return(mock_chat)
+        allow(mock_chat).to receive(:ask).and_return(mock_message)
 
-        expect(WebMock).to have_requested(:post, "https://api.anthropic.com/v1/messages")
-          .with(body: hash_including("model" => "claude-opus-4-20250514"))
-      end
+        mock_ctx = double
+        allow(RubyLLM).to receive(:context).and_yield(double.as_null_object).and_return(mock_ctx)
+        allow(mock_ctx).to receive(:chat).with(model: "claude-haiku-4-5-20251001").and_return(mock_chat)
 
-      it 'includes target in request' do
-        service = described_class.new(target: target, stats: stats)
-        service.call
+        service = described_class.new(account: account, target: target, stats: stats)
+        result = service.call
 
-        expect(WebMock).to have_requested(:post, "https://api.anthropic.com/v1/messages")
-          .with { |req| req.body.include?("UsersController#index") }
+        expect(result[:summary]).to eq("analysis")
       end
     end
   end

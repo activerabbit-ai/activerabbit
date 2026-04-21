@@ -28,20 +28,22 @@ RSpec.describe Github::SimpleCodeFixApplier, type: :service do
     )
   end
 
-  let(:service) { described_class.new(api_client: api_client, anthropic_key: "test-key") }
+  let(:service) { described_class.new(api_client: api_client, account: account) }
+
+  let!(:ai_config) { create(:ai_provider_config, account: account, active: true) }
 
   before do
     ActsAsTenant.current_tenant = account
   end
 
   describe '#initialize' do
-    it 'accepts api_client and anthropic_key' do
-      service = described_class.new(api_client: api_client, anthropic_key: "test-key")
+    it 'accepts api_client and account' do
+      service = described_class.new(api_client: api_client, account: account)
       expect(service).to be_a(Github::SimpleCodeFixApplier)
     end
 
     it 'accepts optional source_branch' do
-      service = described_class.new(api_client: api_client, anthropic_key: "test-key", source_branch: "develop")
+      service = described_class.new(api_client: api_client, account: account, source_branch: "develop")
       expect(service).to be_a(Github::SimpleCodeFixApplier)
     end
   end
@@ -111,10 +113,11 @@ RSpec.describe Github::SimpleCodeFixApplier, type: :service do
           .with("/repos/owner/repo/contents/app/models/user.rb")
           .and_return({ "content" => Base64.encode64("class User < ApplicationRecord\nend") })
 
-        # Stub any POST to Anthropic API
-        stub_request(:post, "https://api.anthropic.com/v1/messages")
-          .with(headers: { 'X-Api-Key' => 'test-key' })
-          .to_return(status: 200, body: ai_response.to_json, headers: { 'Content-Type' => 'application/json' })
+        # Mock AI chat to return fix response
+        mock_message = double(content: ai_response.dig("content", 0, "text"))
+        mock_chat = double
+        allow(mock_chat).to receive(:ask).and_return(mock_message)
+        allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
       end
 
       it 'returns success with tree entry' do
@@ -161,10 +164,11 @@ RSpec.describe Github::SimpleCodeFixApplier, type: :service do
           .with("/repos/owner/repo/contents/app/models/user.rb")
           .and_return({ "content" => Base64.encode64("class User < ApplicationRecord\nend") })
 
-        # Still stub Anthropic in case fast path fails
-        stub_request(:post, "https://api.anthropic.com/v1/messages")
-          .with(headers: { 'X-Api-Key' => 'test-key' })
-          .to_return(status: 200, body: ai_response.to_json, headers: { 'Content-Type' => 'application/json' })
+        # Mock AI chat in case fast path fails
+        mock_message = double(content: ai_response.dig("content", 0, "text"))
+        mock_chat = double
+        allow(mock_chat).to receive(:ask).and_return(mock_message)
+        allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
       end
 
       it 'attempts to apply fix (may use fast path or AI fallback)' do

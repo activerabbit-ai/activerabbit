@@ -1,4 +1,6 @@
 class AiSummaryService
+  include AiProviderChat
+
   # Maximum number of files that can be auto-fixed in a single PR (safety limit)
   # Additional file suggestions will be shown to user for manual review
   MAX_FILES_PER_FIX = 1
@@ -62,7 +64,8 @@ class AiSummaryService
     7. If other files also need changes, add a "## Related Changes" section listing them with brief descriptions - these will be shown as suggestions for the user to fix locally before creating the PR
   PROMPT
 
-  def initialize(issue:, sample_event: nil, github_client: nil)
+  def initialize(account:, issue:, sample_event: nil, github_client: nil)
+    @account = account
     @issue = issue
     @event = sample_event
     @github_client = github_client
@@ -70,51 +73,18 @@ class AiSummaryService
   end
 
   def call
-    return { error: "missing_api_key", message: "ANTHROPIC_API_KEY not configured" } if api_key.blank?
+    chat = ai_chat(@account)
+    return { error: "missing_config", message: "No AI provider configured" } unless chat
 
     content = build_content
-    response = client_completion(content)
-    { summary: response }
+    response = chat.with_instructions(SYSTEM_PROMPT).ask(content)
+    { summary: response.content }
   rescue => e
     Rails.logger.error("AI summary failed: #{e.class}: #{e.message}")
     { error: "ai_error", message: e.message }
   end
 
   private
-
-  def api_key
-    ENV["ANTHROPIC_API_KEY"]
-  end
-
-  def client_completion(content)
-    require "net/http"
-    require "json"
-
-    uri = URI.parse("https://api.anthropic.com/v1/messages")
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-
-    body = {
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 5000,
-      system: SYSTEM_PROMPT,
-      messages: [
-        { role: "user", content: content }
-      ]
-    }
-
-    req = Net::HTTP::Post.new(uri.request_uri)
-    req["x-api-key"] = api_key
-    req["anthropic-version"] = "2023-06-01"
-    req["Content-Type"] = "application/json"
-    req.body = JSON.dump(body)
-
-    res = http.request(req)
-    raise "Claude error: #{res.code} #{res.body}" unless res.code.to_i.between?(200, 299)
-
-    json = JSON.parse(res.body)
-    json.dig("content", 0, "text")
-  end
 
   def build_content
     parts = []

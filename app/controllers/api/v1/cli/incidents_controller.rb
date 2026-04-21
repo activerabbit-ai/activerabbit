@@ -87,7 +87,7 @@ module Api
           else
             # Generate new AI summary
             sample_event = issue.events.order(occurred_at: :desc).first
-            service = AiSummaryService.new(issue: issue, sample_event: sample_event)
+            service = AiSummaryService.new(account: issue.account, issue: issue, sample_event: sample_event)
             result = service.call
 
             if result[:error]

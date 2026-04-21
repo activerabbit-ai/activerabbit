@@ -194,78 +194,152 @@
     </div>
   </div>
 
-  <!-- Personal Notification Preferences Card -->
+  <!-- AI Provider Configuration Card -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
     <div class="px-6 py-4 border-b border-gray-200">
-      <h3 class="text-lg font-medium text-gray-900">Your Personal Notification Preferences</h3>
-      <p class="text-sm text-gray-500">Configure which notifications you want to receive and where</p>
-    </div>
-    <div class="p-6">
-      <% user_preferences = @account.user_notification_preferences(current_user) %>
-      <%= form_with(url: update_user_preferences_account_settings_path, method: :patch, local: true, class: "space-y-4") do |form| %>
-
-        <!-- Personal Channel Override -->
-        <div>
-          <label for="preferences_personal_channel" class="block text-sm font-medium text-gray-700 mb-2">
-            Personal Slack Channel (Optional)
-          </label>
-          <%= form.text_field :personal_channel,
-                value: user_preferences['personal_channel'],
-                placeholder: "Leave empty to use account default (#{@account.slack_channel})",
-                class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %>
-          <p class="mt-1 text-xs text-gray-500">
-            Set a personal channel (e.g., #my-alerts or @username) to receive notifications separately from the team
-          </p>
-        </div>
-
-        <!-- Notification Type Preferences -->
-        <div class="space-y-3">
-          <h4 class="text-sm font-medium text-gray-900">Notification Types</h4>
-
-          <div class="space-y-2">
-            <div class="flex items-center">
-              <%= form.check_box :error_notifications,
-                    checked: user_preferences['error_notifications'],
-                    class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
-              <label for="preferences_error_notifications" class="ml-2 text-sm text-gray-700">
-                Error frequency alerts
-              </label>
-            </div>
-
-            <div class="flex items-center">
-              <%= form.check_box :performance_notifications,
-                    checked: user_preferences['performance_notifications'],
-                    class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
-              <label for="preferences_performance_notifications" class="ml-2 text-sm text-gray-700">
-                Performance alerts (slow response times)
-              </label>
-            </div>
-
-            <div class="flex items-center">
-              <%= form.check_box :n_plus_one_notifications,
-                    checked: user_preferences['n_plus_one_notifications'],
-                    class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
-              <label for="preferences_n_plus_one_notifications" class="ml-2 text-sm text-gray-700">
-                N+1 query detection alerts
-              </label>
-            </div>
-
-            <div class="flex items-center">
-              <%= form.check_box :new_issue_notifications,
-                    checked: user_preferences['new_issue_notifications'],
-                    class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
-              <label for="preferences_new_issue_notifications" class="ml-2 text-sm text-gray-700">
-                New issue alerts
-              </label>
-            </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-indigo-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">AI Provider</h3>
+            <p class="text-sm text-gray-500">Configure which AI provider powers summaries, code fixes, and PR generation</p>
           </div>
         </div>
+        <div>
+          <% if @account.ai_configured? %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              Active
+            </span>
+          <% else %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              Not Configured
+            </span>
+          <% end %>
+        </div>
+      </div>
+    </div>
 
-        <div class="pt-4">
-          <%= form.submit "Save My Preferences",
-                class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" %>
+    <div class="p-6">
+      <!-- Existing provider configs -->
+      <% if @account.ai_provider_configs.any? %>
+        <div class="space-y-3 mb-6">
+          <% @account.ai_provider_configs.order(:created_at).each do |config| %>
+            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg <%= 'bg-indigo-50 border-indigo-200' if config.active? %>">
+              <div class="flex items-center">
+                <% if config.active? %>
+                  <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                <% else %>
+                  <span class="w-2 h-2 bg-gray-300 rounded-full mr-3"></span>
+                <% end %>
+                <div>
+                  <p class="text-sm font-medium text-gray-900"><%= config.provider.titleize %></p>
+                  <p class="text-xs text-gray-500">
+                    Fast: <%= config.fast_model || "default" %> &middot; Power: <%= config.power_model || "default" %>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <% unless config.active? %>
+                  <%= button_to "Set Active",
+                        activate_account_settings_ai_provider_config_path(config),
+                        method: :post,
+                        class: "inline-flex items-center px-3 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+                <% end %>
+                <%= button_to "Remove",
+                      account_settings_ai_provider_config_path(config),
+                      method: :delete,
+                      data: { turbo_confirm: "Remove this AI provider?" },
+                      class: "inline-flex items-center px-3 py-1 border border-red-200 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50" %>
+              </div>
+            </div>
+          <% end %>
         </div>
       <% end %>
+
+      <!-- Add new provider form -->
+      <details class="group" <%= 'open' unless @account.ai_provider_configs.any? %>>
+        <summary class="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-500 flex items-center">
+          <svg class="w-4 h-4 mr-1 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          Add AI Provider
+        </summary>
+
+        <div class="mt-4" data-controller="ai-provider-form" data-ai-provider-form-models-url-value="<%= models_account_settings_ai_provider_configs_path %>">
+          <%= form_with(model: AiProviderConfig.new, url: account_settings_ai_provider_configs_path, method: :post, local: true, class: "space-y-4") do |form| %>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="ai_provider_config_provider" class="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+                <%= form.select :provider,
+                      [["Anthropic", "anthropic"], ["OpenAI", "openai"], ["Google Gemini", "gemini"]],
+                      { prompt: "Select provider..." },
+                      { class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
+                        data: { ai_provider_form_target: "provider", action: "ai-provider-form#providerChanged" } } %>
+              </div>
+
+              <div>
+                <label for="ai_provider_config_api_key" class="block text-sm font-medium text-gray-700 mb-1">
+                  API Key
+                  <span class="text-red-500">*</span>
+                </label>
+                <%= form.password_field :api_key,
+                      placeholder: "sk-...",
+                      required: true,
+                      class: "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+              </div>
+
+              <div class="relative">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Fast Model</label>
+                <%= form.hidden_field :fast_model, data: { ai_provider_form_target: "fastModel" } %>
+                <button type="button" data-action="ai-provider-form#toggleFast"
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-left sm:text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 flex items-center justify-between">
+                  <span data-ai-provider-form-target="fastDisplay" class="text-gray-400">Select a provider first</span>
+                  <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div class="hidden absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg" data-dropdown-wrapper data-dropdown-type="fast">
+                  <div class="p-2 border-b border-gray-100">
+                    <input type="text" data-ai-provider-form-target="fastSearch" data-action="input->ai-provider-form#filterFast"
+                      placeholder="Search models..." class="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                  </div>
+                  <div data-ai-provider-form-target="fastDropdown" class="max-h-48 overflow-y-auto"></div>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Used for summaries, branch names</p>
+              </div>
+
+              <div class="relative">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Power Model</label>
+                <%= form.hidden_field :power_model, data: { ai_provider_form_target: "powerModel" } %>
+                <button type="button" data-action="ai-provider-form#togglePower"
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-left sm:text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 flex items-center justify-between">
+                  <span data-ai-provider-form-target="powerDisplay" class="text-gray-400">Select a provider first</span>
+                  <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div class="hidden absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg" data-dropdown-wrapper data-dropdown-type="power">
+                  <div class="p-2 border-b border-gray-100">
+                    <input type="text" data-ai-provider-form-target="powerSearch" data-action="input->ai-provider-form#filterPower"
+                      placeholder="Search models..." class="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                  </div>
+                  <div data-ai-provider-form-target="powerDropdown" class="max-h-48 overflow-y-auto"></div>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Used for code fixes, PR generation</p>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <%= form.submit "Add Provider",
+                    class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+            </div>
+          <% end %>
+        </div>
+      </details>
     </div>
   </div>
 

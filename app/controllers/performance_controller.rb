@@ -618,7 +618,7 @@ class PerformanceController < ApplicationController
         p95_ms: (@p95_response_time&.round(1))
       }
       sample = @selected_event || @events.first
-      result = AiPerformanceSummaryService.new(target: @target, stats: stats, sample_event: sample).call
+      result = AiPerformanceSummaryService.new(account: current_account, target: @target, stats: stats, sample_event: sample).call
 
       if result[:summary].present?
         @performance_summary = result[:summary]

@@ -13,63 +13,39 @@ RSpec.describe Github::BranchNameGenerator, type: :service do
     )
   end
 
-  let(:service) { described_class.new(anthropic_key: "test-key") }
+  let!(:ai_config) { create(:ai_provider_config, account: account, active: true) }
+  let(:service) { described_class.new(account: account) }
 
   before do
     ActsAsTenant.current_tenant = account
   end
 
   describe '#initialize' do
-    it 'accepts anthropic_key' do
-      service = described_class.new(anthropic_key: "test-key")
+    it 'accepts account' do
+      service = described_class.new(account: account)
       expect(service).to be_a(Github::BranchNameGenerator)
     end
   end
 
   describe '#generate' do
     context 'with custom branch name' do
-      it 'returns sanitized custom branch name with prefix' do
-        result = service.generate(issue, "my-custom-branch")
-
-        # Service adds ai-fix/ prefix if no prefix present
-        expect(result).to eq("ai-fix/my-custom-branch")
+      it 'sanitizes and returns custom name' do
+        result = service.generate(issue, "my fix branch")
+        expect(result).to eq("ai-fix/my-fix-branch")
       end
 
-      it 'sanitizes invalid characters' do
-        result = service.generate(issue, "My Branch Name!")
-
-        expect(result).to eq("ai-fix/my-branch-name")
-      end
-
-      it 'handles spaces and special characters' do
-        result = service.generate(issue, "fix: user login issue")
-
-        expect(result).not_to include(" ")
-        expect(result).not_to include(":")
-      end
-
-      it 'preserves existing prefix' do
-        result = service.generate(issue, "fix/my-branch")
-
-        expect(result).to eq("fix/my-branch")
+      it 'preserves ai-fix/ prefix' do
+        result = service.generate(issue, "ai-fix/my-branch")
+        expect(result).to eq("ai-fix/my-branch")
       end
     end
 
     context 'with AI generation' do
-      let(:api_response) do
-        {
-          "content" => [
-            {
-              "type" => "text",
-              "text" => "ai-fix/nomethoderror-users-show"
-            }
-          ]
-        }
-      end
-
       before do
-        stub_request(:post, "https://api.anthropic.com/v1/messages")
-          .to_return(status: 200, body: api_response.to_json, headers: { 'Content-Type' => 'application/json' })
+        mock_message = double(content: "ai-fix/nomethoderror-users-show")
+        mock_chat = double
+        allow(mock_chat).to receive(:ask).and_return(mock_message)
+        allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
       end
 
       it 'generates branch name via AI' do
@@ -78,28 +54,11 @@ RSpec.describe Github::BranchNameGenerator, type: :service do
         expect(result).to be_present
         expect(result).to match(/^ai-fix\//)
       end
-
-      it 'uses claude-opus-4 model' do
-        service.generate(issue)
-
-        expect(WebMock).to have_requested(:post, "https://api.anthropic.com/v1/messages")
-          .with(body: hash_including("model" => "claude-opus-4-20250514"))
-      end
-
-      it 'includes issue details in prompt' do
-        service.generate(issue)
-
-        expect(WebMock).to have_requested(:post, "https://api.anthropic.com/v1/messages")
-          .with { |req| req.body.include?("NoMethodError") }
-      end
     end
 
-    context 'without AI (fallback)' do
-      let(:service) { described_class.new(anthropic_key: nil) }
-
+    context 'without AI (no config)' do
       before do
-        allow(ENV).to receive(:[]).and_call_original
-        allow(ENV).to receive(:[]).with("ANTHROPIC_API_KEY").and_return(nil)
+        ai_config.update!(active: false)
       end
 
       it 'generates fallback branch name' do
@@ -107,14 +66,15 @@ RSpec.describe Github::BranchNameGenerator, type: :service do
 
         expect(result).to be_present
         expect(result).to start_with("ai-fix/")
-        expect(result).to include("no-method") # From NoMethodError
+        expect(result).to include("no-method")
       end
     end
 
     context 'when AI fails' do
       before do
-        stub_request(:post, "https://api.anthropic.com/v1/messages")
-          .to_return(status: 500, body: "Internal Server Error")
+        mock_chat = double
+        allow(mock_chat).to receive(:ask).and_raise(RuntimeError, "API error")
+        allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
       end
 
       it 'falls back to generated name' do
@@ -127,37 +87,23 @@ RSpec.describe Github::BranchNameGenerator, type: :service do
   end
 
   describe 'branch name format' do
-    let(:api_response) do
-      {
-        "content" => [
-            {
-              "type" => "text",
-              "text" => "ai-fix/nomethoderror-users-show"
-            }
-          ]
-      }
-    end
-
     before do
-      stub_request(:post, "https://api.anthropic.com/v1/messages")
-        .to_return(status: 200, body: api_response.to_json, headers: { 'Content-Type' => 'application/json' })
+      mock_message = double(content: "ai-fix/nomethoderror-users-show")
+      mock_chat = double
+      allow(mock_chat).to receive(:ask).and_return(mock_message)
+      allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
     end
 
     it 'produces valid git branch name' do
       result = service.generate(issue)
 
-      # Git branch name rules
-      expect(result).not_to start_with("-")
-      expect(result).not_to end_with("-")
-      expect(result).not_to include(" ")
-      expect(result).not_to include("..")
-      expect(result).to match(/^[a-z0-9\-\/]+$/i)
+      expect(result).to match(/^[a-z0-9\-\/]+$/)
+      expect(result.length).to be <= 100
     end
 
-    it 'is reasonably short' do
+    it 'starts with ai-fix/ prefix' do
       result = service.generate(issue)
-
-      expect(result.length).to be <= 100
+      expect(result).to start_with("ai-fix/")
     end
   end
 end

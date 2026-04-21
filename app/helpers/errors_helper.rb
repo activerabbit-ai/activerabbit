@@ -79,18 +79,19 @@ module ErrorsHelper
       raw: raw || "#{file}:#{line}:in `#{method_name}'",
       in_app: in_app,
       frame_type: frame_type,
-      source_context: normalize_source_context(source_context)
+      source_context: normalize_source_context(source_context, line&.to_i)
     }
   end
 
   # Normalize source context from client
-  def normalize_source_context(ctx)
+  def normalize_source_context(ctx, frame_line = nil)
     return nil if ctx.blank?
 
     lines_before = ctx["lines_before"] || ctx[:lines_before] || []
     line_content = ctx["line_content"] || ctx[:line_content]
     lines_after = ctx["lines_after"] || ctx[:lines_after] || []
-    start_line = ctx["start_line"] || ctx[:start_line]
+    start_line = ctx["start_line"] || ctx[:start_line] ||
+                 (frame_line ? frame_line - lines_before.length : 1)
 
     return nil if line_content.blank?
 

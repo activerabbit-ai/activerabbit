@@ -4,9 +4,11 @@ module Github
   # Simple, reliable code fix applier using line-based replacement
   # Replaces the complex heuristic-based approach with a straightforward diff-like system
   class SimpleCodeFixApplier
-    def initialize(api_client:, anthropic_key: nil, source_branch: nil)
+    include AiProviderChat
+
+    def initialize(api_client:, account:, source_branch: nil)
       @api_client = api_client
-      @anthropic_key = anthropic_key || ENV["ANTHROPIC_API_KEY"]
+      @account = account
       @source_branch = source_branch
     end
 
@@ -517,7 +519,7 @@ module Github
         Rails.logger.info "[SimpleFixApplier] FAST PATH failed, falling back to AI"
       end
 
-      return nil unless @anthropic_key.present?
+      return nil unless @account.ai_configured?
 
       # Build context around error - expand to 30 lines for better understanding
       lines = file_content.lines
@@ -824,7 +826,7 @@ module Github
 
     # Generate fix for a file that's different from the error location
     def generate_fix_for_file(file_path, file_content, issue, existing_fix_code)
-      return nil unless @anthropic_key.present?
+      return nil unless @account.ai_configured?
 
       lines = file_content.lines
       # Show first 50 lines for context (usually enough for a model file)
@@ -902,34 +904,14 @@ module Github
     end
 
     def claude_completion(prompt)
-      require "net/http"
-      require "json"
+      chat = ai_chat(@account, model_type: :power)
+      return nil unless chat
 
-      uri = URI.parse("https://api.anthropic.com/v1/messages")
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.read_timeout = 30
-
-      body = {
-        model: "claude-opus-4-20250514",
-        max_tokens: 2500,
-        messages: [{ role: "user", content: prompt }]
-      }
-
-      req = Net::HTTP::Post.new(uri.request_uri)
-      req["x-api-key"] = @anthropic_key
-      req["anthropic-version"] = "2023-06-01"
-      req["Content-Type"] = "application/json"
-      req.body = JSON.dump(body)
-
-      res = http.request(req)
-      unless res.code.to_i.between?(200, 299)
-        Rails.logger.error "[SimpleFixApplier] Claude API error: #{res.code} - #{res.body.first(200)}"
-        return nil
-      end
-
-      json = JSON.parse(res.body)
-      json.dig("content", 0, "text")
+      response = chat.ask(prompt)
+      response.content
+    rescue => e
+      Rails.logger.error "[SimpleFixApplier] AI API error: #{e.class}: #{e.message}"
+      nil
     end
   end
 end

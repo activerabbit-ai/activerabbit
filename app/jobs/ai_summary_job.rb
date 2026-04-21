@@ -30,7 +30,7 @@ class AiSummaryJob
     end
 
     github_client = build_github_client(project)
-    ai = AiSummaryService.new(issue: issue, sample_event: event, github_client: github_client).call
+    ai = AiSummaryService.new(account: account, issue: issue, sample_event: event, github_client: github_client).call
     if ai[:summary].present?
       issue.update(ai_summary: ai[:summary], ai_summary_generated_at: Time.current)
 

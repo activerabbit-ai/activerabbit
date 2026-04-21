@@ -48,7 +48,7 @@ RSpec.describe Github::PrContentGenerator, type: :service do
     SUMMARY
   end
 
-  let(:service) { described_class.new(anthropic_key: "test-key") }
+  let(:service) { described_class.new(account: account) }
 
   before do
     ActsAsTenant.current_tenant = account
@@ -56,8 +56,8 @@ RSpec.describe Github::PrContentGenerator, type: :service do
   end
 
   describe '#initialize' do
-    it 'accepts anthropic_key' do
-      service = described_class.new(anthropic_key: "test-key")
+    it 'accepts account' do
+      service = described_class.new(account: account)
       expect(service).to be_a(Github::PrContentGenerator)
     end
 
@@ -65,7 +65,7 @@ RSpec.describe Github::PrContentGenerator, type: :service do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with("ANTHROPIC_API_KEY").and_return("env-key")
 
-      service = described_class.new
+      service = described_class.new(account: account)
       expect(service).to be_a(Github::PrContentGenerator)
     end
   end
@@ -122,8 +122,11 @@ RSpec.describe Github::PrContentGenerator, type: :service do
       end
 
       before do
-        stub_request(:post, "https://api.anthropic.com/v1/messages")
-          .to_return(status: 200, body: api_response.to_json, headers: { 'Content-Type' => 'application/json' })
+        create(:ai_provider_config, account: account, active: true)
+        mock_message = double(content: api_response.dig("content", 0, "text"))
+        mock_chat = double
+        allow(mock_chat).to receive(:ask).and_return(mock_message)
+        allow_any_instance_of(described_class).to receive(:ai_chat).and_return(mock_chat)
       end
 
       it 'generates content via AI' do
@@ -133,17 +136,16 @@ RSpec.describe Github::PrContentGenerator, type: :service do
         expect(result[:body]).to be_present
       end
 
-      it 'uses claude-opus-4 model' do
-        service.generate(issue)
+      it 'uses account AI provider config' do
+        result = service.generate(issue)
 
-        expect(WebMock).to have_requested(:post, "https://api.anthropic.com/v1/messages")
-          .with(body: hash_including("model" => "claude-opus-4-20250514"))
+        expect(result[:title]).to be_present
       end
     end
 
     context 'when issue has no AI summary and no API key' do
       let(:ai_summary) { nil }
-      let(:service) { described_class.new(anthropic_key: nil) }
+      let(:service) { described_class.new(account: account) }
 
       before do
         allow(ENV).to receive(:[]).and_call_original

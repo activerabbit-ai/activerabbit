@@ -12,6 +12,7 @@ class Account < ApplicationRecord
   has_many :users, dependent: :destroy
   has_many :projects, dependent: :destroy
   has_many :api_tokens, through: :projects
+  has_many :ai_provider_configs, dependent: :destroy
 
   # Scopes
   scope :active, -> { where(active: true) }
@@ -116,6 +117,16 @@ class Account < ApplicationRecord
 
   def active_subscription?
     active_subscription_record.present?
+  end
+
+  # AI provider configuration
+  # Database config takes precedence; ENV is fallback only
+  def ai_provider_config
+    ai_provider_configs.active.first || env_ai_provider_config
+  end
+
+  def ai_configured?
+    ai_provider_config.present?
   end
 
   # Account-wide Slack notification settings
@@ -232,6 +243,19 @@ class Account < ApplicationRecord
   end
 
   private
+
+  def env_ai_provider_config
+    if ENV["ANTHROPIC_API_KEY"].present?
+      AiProviderConfig.new(provider: "anthropic", api_key: ENV["ANTHROPIC_API_KEY"],
+        fast_model: "claude-haiku-4-5-20251001", power_model: "claude-sonnet-4-6")
+    elsif ENV["OPENAI_API_KEY"].present?
+      AiProviderConfig.new(provider: "openai", api_key: ENV["OPENAI_API_KEY"],
+        fast_model: "gpt-4o-mini", power_model: "gpt-4o")
+    elsif ENV["GEMINI_API_KEY"].present?
+      AiProviderConfig.new(provider: "gemini", api_key: ENV["GEMINI_API_KEY"],
+        fast_model: "gemini-2.0-flash", power_model: "gemini-2.5-pro")
+    end
+  end
 
   def check_stripe_payment_methods
     # Ensure API key is set

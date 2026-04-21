@@ -101,8 +101,10 @@
           <div data-controller="markdown" data-markdown-content-value="<%= CGI.escapeHTML(@ai_result[:summary]) %>"></div>
         </div>
       </div>
-    <% elsif defined?(@ai_result) && @ai_result && @ai_result[:error] == 'missing_api_key' %>
-      <div class="text-sm text-gray-600">Set <code>OPENAI_API_KEY</code> to enable AI summaries.</div>
+    <% elsif defined?(@ai_result) && @ai_result && @ai_result[:error] == 'missing_config' %>
+      <div class="text-sm text-gray-600">
+        <%= link_to "Configure an AI provider", account_settings_path, class: "text-indigo-600 hover:text-indigo-500" %> in Settings to enable AI summaries.
+      </div>
     <% elsif defined?(@ai_result) && @ai_result && @ai_result[:error] %>
       <div class="text-sm text-red-600">AI summary failed: <%= @ai_result[:message] %></div>
     <% else %>

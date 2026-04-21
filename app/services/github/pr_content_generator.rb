@@ -3,8 +3,10 @@
 module Github
   # Generates PR content (title, body, code fix) using AI or existing summaries
   class PrContentGenerator
-    def initialize(anthropic_key: nil)
-      @anthropic_key = anthropic_key || ENV["ANTHROPIC_API_KEY"]
+    include AiProviderChat
+
+    def initialize(account:)
+      @account = account
     end
 
     def generate(issue)
@@ -26,7 +28,7 @@ module Github
           file_fixes: parsed[:file_fixes],
           related_changes: parsed[:related_changes]
         }
-      elsif @anthropic_key.present?
+      elsif @account.ai_configured?
         # Generate fresh AI analysis for the PR
         ai_result = generate_ai_pr_analysis(issue, sample_event)
         title = ai_result[:title] || "Fix #{issue.exception_class} in #{issue.controller_action}"
@@ -397,13 +399,14 @@ module Github
     end
 
     def generate_ai_pr_analysis(issue, sample_event)
-      return {} unless @anthropic_key.present?
+      chat = ai_chat(@account, model_type: :power)
+      return {} unless chat
 
       prompt = build_pr_prompt(issue, sample_event)
 
       begin
-        response = claude_chat_completion(prompt)
-        parse_ai_pr_response(response, issue, sample_event)
+        response = chat.ask(prompt)
+        parse_ai_pr_response(response.content, issue, sample_event)
       rescue => e
         Rails.logger.error "[GitHub PR] AI analysis failed: #{e.message}"
         {}
@@ -479,37 +482,6 @@ module Github
       result[:body] = build_enhanced_pr_body(issue, sample_event, parsed)
 
       result
-    end
-
-    def claude_chat_completion(prompt)
-      require "net/http"
-      require "json"
-
-      uri = URI.parse("https://api.anthropic.com/v1/messages")
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.read_timeout = 30
-
-      body = {
-        model: "claude-opus-4-20250514",
-        max_tokens: 2000,
-        system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
-        messages: [
-          { role: "user", content: prompt }
-        ]
-      }
-
-      req = Net::HTTP::Post.new(uri.request_uri)
-      req["x-api-key"] = @anthropic_key
-      req["anthropic-version"] = "2023-06-01"
-      req["Content-Type"] = "application/json"
-      req.body = JSON.dump(body)
-
-      res = http.request(req)
-      raise "Claude error: #{res.code}" unless res.code.to_i.between?(200, 299)
-
-      json = JSON.parse(res.body)
-      json.dig("content", 0, "text")
     end
 
     def validate_method_structure(code)

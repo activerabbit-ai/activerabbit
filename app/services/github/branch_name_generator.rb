@@ -3,8 +3,10 @@
 module Github
   # Generates branch names for GitHub PRs
   class BranchNameGenerator
-    def initialize(anthropic_key: nil)
-      @anthropic_key = anthropic_key || ENV["ANTHROPIC_API_KEY"]
+    include AiProviderChat
+
+    def initialize(account:)
+      @account = account
     end
 
     def generate(issue, custom_branch_name = nil)
@@ -16,8 +18,9 @@ module Github
       end
 
       # Try to generate a meaningful branch name using AI
-      if @anthropic_key.present?
-        ai_branch = generate_ai_branch_name(issue)
+      chat = ai_chat(@account)
+      if chat
+        ai_branch = generate_ai_branch_name(chat, issue)
         if ai_branch.present?
           Rails.logger.info "[GitHub API] Using AI-generated branch name: #{ai_branch}"
           return ai_branch
@@ -54,7 +57,7 @@ module Github
       sanitized
     end
 
-    def generate_ai_branch_name(issue)
+    def generate_ai_branch_name(chat, issue)
       prompt = <<~PROMPT
         Generate a short, descriptive git branch name for fixing this error.
 
@@ -78,11 +81,11 @@ module Github
       PROMPT
 
       begin
-        response = claude_chat_completion(prompt)
-        return nil if response.blank?
+        response = chat.ask(prompt)
+        return nil if response.content.blank?
 
         # Clean up the response
-        branch = response.strip
+        branch = response.content.strip
           .gsub(/^["']|["']$/, "")  # Remove quotes
           .gsub(/\s+/, "-")          # Replace spaces with dashes
           .downcase
@@ -134,35 +137,5 @@ module Github
       "#{branch}-#{Time.now.strftime('%m%d%H%M')}"
     end
 
-    def claude_chat_completion(prompt)
-      require "net/http"
-      require "json"
-
-      uri = URI.parse("https://api.anthropic.com/v1/messages")
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.read_timeout = 30
-
-      body = {
-        model: "claude-opus-4-20250514",
-        max_tokens: 2000,
-        system: "You are a senior Rails developer helping fix bugs. Be concise and practical.",
-        messages: [
-          { role: "user", content: prompt }
-        ]
-      }
-
-      req = Net::HTTP::Post.new(uri.request_uri)
-      req["x-api-key"] = @anthropic_key
-      req["anthropic-version"] = "2023-06-01"
-      req["Content-Type"] = "application/json"
-      req.body = JSON.dump(body)
-
-      res = http.request(req)
-      raise "Claude error: #{res.code}" unless res.code.to_i.between?(200, 299)
-
-      json = JSON.parse(res.body)
-      json.dig("content", 0, "text")
-    end
   end
 end

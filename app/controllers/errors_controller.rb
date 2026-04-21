@@ -344,7 +344,7 @@ class ErrorsController < ApplicationController
       else
         # First-time attempt only
         github_client = github_client_for_issue(@issue)
-        result = AiSummaryService.new(issue: @issue, sample_event: @selected_event, github_client: github_client).call
+        result = AiSummaryService.new(account: current_account, issue: @issue, sample_event: @selected_event, github_client: github_client).call
         if result[:summary].present?
           @issue.update(ai_summary: result[:summary], ai_summary_generated_at: Time.current)
         else
@@ -385,7 +385,7 @@ class ErrorsController < ApplicationController
 
     # Force regeneration by clearing the previous summary
     github_client = github_client_for_issue(@issue)
-    result = AiSummaryService.new(issue: @issue, sample_event: @selected_event, github_client: github_client).call
+    result = AiSummaryService.new(account: current_account, issue: @issue, sample_event: @selected_event, github_client: github_client).call
 
     if result[:summary].present?
       @issue.update(ai_summary: result[:summary], ai_summary_generated_at: Time.current)

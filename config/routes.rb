@@ -72,6 +72,14 @@ Rails.application.routes.draw do
   resource :account_settings, path: "account/settings", only: [:show, :update] do
     post :test_notification
     patch :update_user_preferences
+    resources :ai_provider_configs, only: [:create, :update, :destroy] do
+      collection do
+        get :models
+      end
+      member do
+        post :activate
+      end
+    end
   end
 
   # Top-level Performance routes (no /admin or /projects/:id required)

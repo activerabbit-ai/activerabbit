@@ -46,12 +46,11 @@ RSpec.describe Github::PrService, type: :service do
 
   let(:service) { described_class.new(project) }
 
+  let!(:ai_config) { create(:ai_provider_config, account: account, active: true) }
+
   before do
     ActsAsTenant.current_tenant = account
     issue.events << event
-
-    allow(ENV).to receive(:[]).and_call_original
-    allow(ENV).to receive(:[]).with("ANTHROPIC_API_KEY").and_return("test-anthropic-key")
   end
 
   describe '#initialize' do

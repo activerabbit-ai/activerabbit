@@ -1,62 +1,31 @@
 class AiPerformanceSummaryService
+  include AiProviderChat
+
   SYSTEM_PROMPT = <<~PROMPT
     You are a senior Rails performance engineer. Analyze the performance target, recent stats, and a sample event.
     Provide a concise Root Cause Analysis (RCA), concrete optimization steps, and suggested tests/monitoring.
     Focus on controller action and database usage; include specific ActiveRecord or N+1 guidance when applicable.
   PROMPT
 
-  def initialize(target:, stats:, sample_event: nil)
+  def initialize(account:, target:, stats:, sample_event: nil)
+    @account = account
     @target = target
     @stats = stats || {}
     @event = sample_event
   end
 
   def call
-    return { error: "missing_api_key", message: "ANTHROPIC_API_KEY not configured" } if api_key.blank?
+    chat = ai_chat(@account)
+    return { error: "missing_config", message: "No AI provider configured" } unless chat
 
-    content = build_content
-    response = client_completion(content)
-    { summary: response }
+    response = chat.with_instructions(SYSTEM_PROMPT).ask(build_content)
+    { summary: response.content }
   rescue => e
     Rails.logger.error("AI perf summary failed: #{e.class}: #{e.message}")
     { error: "ai_error", message: e.message }
   end
 
   private
-
-  def api_key
-    ENV["ANTHROPIC_API_KEY"]
-  end
-
-  def client_completion(content)
-    require "net/http"
-    require "json"
-
-    uri = URI.parse("https://api.anthropic.com/v1/messages")
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-
-    body = {
-      model: "claude-opus-4-20250514",
-      max_tokens: 2000,
-      system: SYSTEM_PROMPT,
-      messages: [
-        { role: "user", content: content }
-      ]
-    }
-
-    req = Net::HTTP::Post.new(uri.request_uri)
-    req["x-api-key"] = api_key
-    req["anthropic-version"] = "2023-06-01"
-    req["Content-Type"] = "application/json"
-    req.body = JSON.dump(body)
-
-    res = http.request(req)
-    raise "Claude error: #{res.code} #{res.body}" unless res.code.to_i.between?(200, 299)
-
-    json = JSON.parse(res.body)
-    json.dig("content", 0, "text")
-  end
 
   def build_content
     parts = []
