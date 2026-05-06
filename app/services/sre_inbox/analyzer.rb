@@ -236,6 +236,16 @@ module SreInbox
         sre_analysis: analysis
       }
       @issue.update!(attrs.compact)
+      reset_skipped_low_confidence_if_now_eligible
+    end
+
+    def reset_skipped_low_confidence_if_now_eligible
+      return unless @issue.auto_fix_status == "skipped_low_confidence"
+      project = @issue.project
+      threshold = project.auto_pr_confidence_threshold.to_i
+      return if @issue.sre_confidence.to_i < threshold
+      @issue.update_columns(auto_fix_status: nil)
+      AutoFixJob.perform_async(@issue.id, project.id)
     end
 
     # ── Helpers ─────────────────────────────────────────────────────────
