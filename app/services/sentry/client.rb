@@ -10,6 +10,19 @@ module Sentry
       get("/").is_a?(Hash) && @last_status == 200
     end
 
+    def list_projects
+      response = get("/projects/")
+      return [] unless @last_status == 200
+      Array(response).map do |p|
+        {
+          org_slug: p.dig("organization", "slug"),
+          project_slug: p["slug"],
+          name: p["name"],
+          platform: p["platform"]
+        }
+      end
+    end
+
     private
 
     def get(path, query: {})
