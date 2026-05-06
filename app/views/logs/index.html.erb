@@ -55,7 +55,7 @@
   <div class="bg-white rounded-lg shadow">
     <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
       <h3 class="text-lg font-medium text-gray-900">Log Entries</h3>
-      <%= link_to onboarding_install_gem_path(project_id: @project.id), class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium" do %>
+      <%= link_to project_settings_path(@project), class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium" do %>
         Install SDK
       <% end %>
     </div>
@@ -201,7 +201,7 @@ console.log(await response.json());</code></pre>
 
                   <% if @project %>
                     <div class="mt-4 text-center">
-                      <%= link_to onboarding_install_gem_path(project_id: @project.id),
+                      <%= link_to project_settings_path(@project),
                                   class: "text-sm text-indigo-600 hover:text-indigo-800 font-medium" do %>
                         View full setup guide &rarr;
                       <% end %>

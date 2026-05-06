@@ -14,15 +14,19 @@ Rails.application.routes.draw do
     }
   root "sre_inbox#index"
 
-  # Onboarding routes for new users
-  get "onboarding/welcome", to: "onboarding#welcome", as: "onboarding_welcome"
-  get "onboarding/connect_github", to: "onboarding#connect_github", as: "onboarding_connect_github"
-  get "onboarding/new_project", to: "onboarding#new_project", as: "onboarding_new_project"
-  post "onboarding/create_project", to: "onboarding#create_project", as: "onboarding_create_project"
-  get "onboarding/install_gem/:project_id", to: "onboarding#install_gem", as: "onboarding_install_gem"
-  post "onboarding/verify_gem/:project_id", to: "onboarding#verify_gem", as: "onboarding_verify_gem"
-  get "onboarding/setup_github/:project_id", to: "onboarding#setup_github", as: "onboarding_setup_github"
-  post "onboarding/setup_github/:project_id", to: "onboarding#setup_github"
+  # Onboarding wizard (single-page flow)
+  get  "onboarding",                 to: "onboarding_wizard#show",                as: :onboarding
+  post "onboarding/source",          to: "onboarding_wizard#submit_source",       as: :onboarding_submit_source
+  post "onboarding/sentry/verify",   to: "onboarding_wizard#verify_sentry_token", as: :onboarding_verify_sentry_token
+  post "onboarding/sentry/import",   to: "onboarding_wizard#start_sentry_import", as: :onboarding_start_sentry_import
+  post "onboarding/complete",        to: "onboarding_wizard#complete",            as: :onboarding_complete
+
+  # 301s for any bookmarked legacy URLs
+  get "onboarding/welcome",     to: redirect("/onboarding")
+  get "onboarding/new_project", to: redirect("/onboarding")
+
+  # Sentry webhook
+  post "webhooks/sentry/:project_id", to: "sentry/webhooks#receive", as: :sentry_webhook
 
   # Top-level replacements for admin pages (no /admin in URLs)
   get "dashboard", to: "dashboard#index", as: "dashboard"
