@@ -19,12 +19,18 @@ RSpec.describe Project, type: :model do
   describe 'validations' do
     it { is_expected.to validate_presence_of(:name) }
     it { is_expected.to validate_presence_of(:environment) }
-    it { is_expected.to validate_presence_of(:url) }
 
-    it 'validates URL format' do
+    it 'validates URL format when URL is present' do
       project.url = 'not-a-url'
       expect(project).not_to be_valid
       project.url = 'https://example.com'
+      expect(project).to be_valid
+    end
+
+    it 'allows blank URL' do
+      project.url = nil
+      expect(project).to be_valid
+      project.url = ''
       expect(project).to be_valid
     end
 
