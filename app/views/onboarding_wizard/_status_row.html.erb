@@ -1,4 +1,27 @@
-<%# Placeholder partial — Task 22 will replace with the real onboarding status row.
-    Renders a no-op div so Turbo Stream broadcasts in earlier tasks (e.g. Sentry::ImportService)
-    can render without raising ActionView::MissingTemplate. -%>
-<div data-onboarding-status-row data-kind="<%= local_assigns[:kind] %>"></div>
+<li class="px-4 py-3 flex items-start gap-3">
+  <% case kind %>
+  <% when :issue_imported %>
+    <span class="text-yellow-600">●</span>
+    <div>
+      <div class="font-medium"><%= issue.exception_class.presence || issue.sample_message&.truncate(60) %></div>
+      <div class="text-xs text-gray-500">imported · analyzing…</div>
+    </div>
+  <% when :pr_drafted %>
+    <span class="text-green-600">●</span>
+    <div>
+      <div class="font-medium">PR drafted</div>
+      <div class="text-xs"><%= link_to "##{pr_number}", pr_url, target: "_blank", class: "text-indigo-600 underline" %> · <%= issue.exception_class %></div>
+    </div>
+  <% when :import_complete %>
+    <span class="text-blue-600">●</span>
+    <div>
+      <div class="font-medium">Imported <%= count %> issues from Sentry</div>
+      <div class="text-xs text-gray-500">drafting fixes for the top high-confidence ones…</div>
+    </div>
+  <% when :error %>
+    <span class="text-red-600">●</span>
+    <div>
+      <div class="font-medium text-red-700"><%= local_assigns[:message] %></div>
+    </div>
+  <% end %>
+</li>

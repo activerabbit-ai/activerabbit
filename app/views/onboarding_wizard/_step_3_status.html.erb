@@ -1,1 +1,21 @@
-<div data-step="step-3">Step 3 — placeholder (filled in Task 22)</div>
+<div data-step="step-3" class="max-w-3xl mx-auto p-8">
+  <%= turbo_stream_from "project:#{project.id}:onboarding" %>
+
+  <h1 class="text-2xl font-bold mb-2">
+    <% if project.settings.to_h["sentry_org_slug"].present? %>
+      Importing errors from Sentry…
+    <% else %>
+      Waiting for your first event…
+    <% end %>
+  </h1>
+  <p class="text-gray-600 mb-6">
+    We're analyzing each error and drafting fixes for the highest-confidence ones.
+    PRs appear here as they open.
+  </p>
+
+  <ul id="status_rows" class="divide-y divide-gray-100 border rounded-lg bg-white"></ul>
+
+  <div class="mt-6 text-sm text-gray-600">
+    Done? <%= link_to "Take me to the inbox →", inbox_path, class: "text-indigo-600 underline" %>
+  </div>
+</div>
