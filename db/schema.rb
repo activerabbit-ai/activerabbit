@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_15_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -326,6 +326,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
     t.datetime "auto_fix_merged_at"
     t.text "auto_fix_error"
     t.string "source", default: "backend", null: false
+    t.string "resolution_status"
+    t.integer "sre_confidence"
+    t.jsonb "root_cause"
+    t.text "fix_diff"
+    t.boolean "safe_to_auto_merge"
+    t.datetime "sre_analyzed_at"
+    t.jsonb "sre_analysis"
     t.index ["account_id", "status", "last_seen_at"], name: "idx_issues_account_status_last_seen"
     t.index ["account_id"], name: "index_issues_on_account_id"
     t.index ["auto_fix_status"], name: "index_issues_on_auto_fix_status", where: "(auto_fix_status IS NOT NULL)"
@@ -336,8 +343,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
     t.index ["project_id", "fingerprint"], name: "index_issues_on_project_id_and_fingerprint", unique: true
     t.index ["project_id", "last_seen_at"], name: "idx_issues_project_last_seen", order: { last_seen_at: :desc }
     t.index ["project_id"], name: "index_issues_on_project_id"
+    t.index ["resolution_status"], name: "index_issues_on_resolution_status"
     t.index ["severity"], name: "index_issues_on_severity"
     t.index ["source"], name: "index_issues_on_source"
+    t.index ["sre_analyzed_at"], name: "index_issues_on_sre_analyzed_at"
     t.index ["status"], name: "index_issues_on_status"
   end
 

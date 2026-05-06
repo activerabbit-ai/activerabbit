@@ -1,0 +1,239 @@
+<% content_for :page_title do %>
+  SRE Inbox
+<% end %>
+
+<%
+  # Build tab URLs preserving project scope
+  tab_url = ->(tab_key) {
+    if @current_project
+      "/#{@current_project.slug}/sre_inbox2#{tab_key == 'needs_review' ? '' : "?tab=#{tab_key}"}"
+    else
+      tab_key == "needs_review" ? sre_inbox2_path : sre_inbox2_path(tab: tab_key)
+    end
+  }
+
+  # Map issue → short error tag (NoMethodError, Timeout, Memory, N+1, Race condition, etc.)
+  short_error_tag = ->(issue) {
+    triggered = issue.root_cause.is_a?(Hash) ? issue.root_cause["triggered_by"].to_s : ""
+    klass = issue.exception_class.to_s
+
+    return "Race condition" if triggered == "race_condition" || klass.match?(/Deadlock/i)
+    return "Memory"         if klass.match?(/(NoMemory|MemoryError|Memlimit)/i)
+    return "Timeout"        if klass.match?(/(Timeout|ReadTimeout|OpenTimeout)/i)
+    return "Connection"     if klass.match?(/Connection|ConnectionBad/i)
+    return "Database"       if klass.match?(/^PG::|StatementInvalid|RecordInvalid|RecordNotUnique/i)
+    return "N+1"            if (issue.controller_action.to_s.include?("dashboard") && triggered == "config")
+    return "Auth"           if klass.match?(/(Authentication|Unauthorized|JWT)/i)
+
+    # Fallback to last segment of exception class
+    klass.split("::").last.presence || "Error"
+  }
+
+  # Map severity → number of bars to fill (signal-strength style)
+  severity_bars = ->(sev) {
+    case sev
+    when "critical" then [3, "text-red-500"]
+    when "high"     then [3, "text-orange-400"]
+    when "medium"   then [2, "text-amber-400"]
+    when "low"      then [1, "text-gray-500"]
+    else                 [1, "text-gray-600"]
+    end
+  }
+
+  # Status indicator (after ERR-id): orange "in-progress" semicircle, red exclamation, green check
+  status_for_tab = ->(issue, tab) {
+    case tab
+    when "shipped"
+      :shipped
+    when "needs_review"
+      issue.resolution_status == "needs_attention" && issue.auto_fix_status.nil? ? :blocked : :review
+    when "agent_working"
+      :working
+    else
+      if issue.auto_fix_status == "merged" || (issue.resolution_status == "resolved" && issue.auto_fix_status.nil?)
+        :shipped
+      elsif issue.resolution_status == "needs_attention" && issue.auto_fix_status.nil?
+        :blocked
+      elsif issue.auto_fix_status == "pr_created_review_needed"
+        :review
+      else
+        :working
+      end
+    end
+  }
+
+  # Compact ERR id (zero-padded for visual alignment in the screenshot)
+  err_id = ->(issue) { "ERR-#{issue.id.to_s.rjust(4, '0')}" }
+
+  # Compact "time ago" — "2h", "3h", "5h", "1d"
+  short_ago = ->(t) {
+    return "—" if t.nil?
+    secs = (Time.current - t).to_i
+    if   secs < 60          then "#{secs}s"
+    elsif secs < 3600       then "#{secs / 60}m"
+    elsif secs < 86_400     then "#{secs / 3600}h"
+    elsif secs < 604_800    then "#{secs / 86_400}d"
+    else                         "#{secs / 604_800}w"
+    end
+  }
+
+  # Issue link — prefer project-scoped if available
+  issue_path = ->(issue) {
+    if @current_project
+      "/#{@current_project.slug}/errors/#{issue.id}"
+    else
+      error_path(issue)
+    end
+  }
+
+  # Optional human assignee letter (for "needs_review" rows that need a human handoff)
+  handoff_letter = ->(issue) {
+    return nil unless issue.sre_analysis.is_a?(Hash) && issue.sre_analysis["human_decision_required"]
+    reason = issue.sre_analysis["human_decision_reason"].to_s
+    return "M" if reason.match?(/migration|database|data/i)
+    return "A" if reason.match?(/auth|security/i)
+    return "B" if reason.match?(/billing|payment|stripe/i)
+    "H"
+  }
+%>
+
+<div class="bg-[#0d1117] rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+  <!-- Tabs -->
+  <div class="flex items-center gap-1 px-4 pt-3 border-b border-white/[0.06]">
+    <% @tabs.each do |key, label| %>
+      <%
+        active = key == @active_tab
+        tab_classes = "relative inline-flex items-center gap-2 px-3 pb-3 pt-1 text-sm transition-colors #{active ? 'text-white' : 'text-gray-400 hover:text-gray-200'}"
+      %>
+      <%= link_to tab_url.call(key), class: tab_classes do %>
+        <span class="font-medium tracking-tight"><%= label %></span>
+        <% if @counts[key].to_i > 0 %>
+          <span class="text-xs <%= active ? 'text-gray-400' : 'text-gray-500' %> tabular-nums">
+            <%= @counts[key] %>
+          </span>
+        <% end %>
+        <% if active %>
+          <span class="absolute left-0 right-0 -bottom-px h-0.5 bg-white"></span>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Rows -->
+  <% if @issues.any? %>
+    <ul class="divide-y divide-white/[0.05]">
+      <% @issues.each do |issue| %>
+        <%
+          status   = status_for_tab.call(issue, @active_tab)
+          bars, bar_color = severity_bars.call(issue.severity)
+          pr_number  = issue.auto_fix_pr_number
+          handoff    = handoff_letter.call(issue)
+          headline   = issue.root_cause.is_a?(Hash) && issue.root_cause["summary"].present? ?
+                         issue.root_cause["summary"] : (issue.title.presence || issue.sample_message.to_s)
+        %>
+        <li>
+          <%= link_to issue_path.call(issue), class: "flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors group" do %>
+            <!-- Severity bars (signal-strength style) -->
+            <span class="inline-flex items-end gap-[2px] w-4 h-4 shrink-0" title="Severity: <%= issue.severity || 'unknown' %>">
+              <% [1, 2, 3].each do |i| %>
+                <span class="w-[3px] rounded-sm <%= i <= bars ? bar_color : 'text-gray-700' %>"
+                      style="background: currentColor; height: <%= 4 + (i * 3) %>px;"></span>
+              <% end %>
+            </span>
+
+            <!-- ERR id -->
+            <span class="font-mono text-xs text-gray-400 tabular-nums shrink-0 w-[72px]">
+              <%= err_id.call(issue) %>
+            </span>
+
+            <!-- Status indicator -->
+            <span class="shrink-0 w-4 h-4 flex items-center justify-center" aria-hidden="true">
+              <% if status == :shipped %>
+                <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.78 5.97l-4.5 4.5a.75.75 0 01-1.06 0l-2-2a.75.75 0 011.06-1.06L6.75 8.94l3.97-3.97a.75.75 0 011.06 1.06z"/>
+                </svg>
+              <% elsif status == :blocked %>
+                <svg class="w-3.5 h-3.5 text-red-500" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 3a1 1 0 011 1v4a1 1 0 11-2 0V4a1 1 0 011-1zm0 9.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/>
+                </svg>
+              <% elsif status == :review %>
+                <!-- amber half-filled circle (in progress / awaiting review) -->
+                <svg class="w-3.5 h-3.5" viewBox="0 0 16 16">
+                  <circle cx="8" cy="8" r="7" fill="none" stroke="#d97706" stroke-width="1.5"/>
+                  <path d="M8 1a7 7 0 010 14V1z" fill="#d97706"/>
+                </svg>
+              <% else %>
+                <!-- working: dashed ring -->
+                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="6" stroke-dasharray="3 3"/>
+                  <path d="M8 1a7 7 0 010 14V1z" fill="currentColor" opacity="0.6"/>
+                </svg>
+              <% end %>
+            </span>
+
+            <!-- Title -->
+            <span class="flex-1 truncate text-sm text-gray-100 group-hover:text-white">
+              <%= headline %>
+            </span>
+
+            <!-- Branch / PR tag -->
+            <% if pr_number.present? %>
+              <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/5 text-[11px] text-gray-300 font-medium">
+                <svg class="w-3 h-3 text-gray-400" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M1.5 3.25a2.25 2.25 0 113 2.122v5.256a2.25 2.25 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zm10.5 9.5a.75.75 0 100 1.5.75.75 0 000-1.5zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm0 9.5a.75.75 0 100 1.5.75.75 0 000-1.5zm5.927-8.927l2.396 2.396a.25.25 0 010 .354l-2.396 2.396a.25.25 0 01-.427-.177V6h-1V4.604a.25.25 0 01.427-.177z"/>
+                </svg>
+                #<%= pr_number %>
+              </span>
+            <% end %>
+
+            <!-- Error type tag -->
+            <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/5 text-[11px] text-gray-300 font-medium max-w-[140px] truncate">
+              <%= short_error_tag.call(issue) %>
+            </span>
+
+            <!-- AI agent avatar (+ optional handoff to human) -->
+            <span class="shrink-0 inline-flex items-center gap-1">
+              <span class="w-5 h-5 rounded-full bg-gray-800 border border-white/10 flex items-center justify-center" title="Diagnosed by AI agent">
+                <svg class="w-3 h-3 text-gray-200" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2zm6 10l.9 2.6L21.5 16l-2.6.9L18 19.5l-.9-2.6L14.5 16l2.6-.9L18 12zM5 13l.7 2.1L7.5 16l-1.8.9L5 19l-.7-2.1L2.5 16l1.8-.9L5 13z"/>
+                </svg>
+              </span>
+              <% if handoff %>
+                <svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+                <span class="w-5 h-5 rounded-full <%= handoff == 'M' ? 'bg-sky-500' : handoff == 'A' ? 'bg-emerald-500' : handoff == 'B' ? 'bg-violet-500' : 'bg-rose-500' %> text-white text-[10px] font-semibold flex items-center justify-center" title="Reassigned to human">
+                  <%= handoff %>
+                </span>
+              <% end %>
+            </span>
+
+            <!-- Time ago -->
+            <span class="shrink-0 text-xs text-gray-500 tabular-nums w-[34px] text-right">
+              <%= short_ago.call(issue.last_seen_at || issue.first_seen_at) %>
+            </span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="px-6 py-16 text-center">
+      <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
+        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h4 class="text-sm font-medium text-gray-100">Inbox zero</h4>
+      <p class="mt-1 text-sm text-gray-500">
+        <%=
+          case @active_tab
+          when "needs_review"  then "Nothing needs a human right now."
+          when "agent_working" then "The agent isn't working on anything at the moment."
+          when "shipped"       then "No fixes shipped yet."
+          else                      "No issues in this account."
+          end
+        %>
+      </p>
+    </div>
+  <% end %>
+</div>

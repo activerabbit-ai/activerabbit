@@ -1,0 +1,264 @@
+<% content_for :page_title do %>
+  SRE Inbox
+<% end %>
+
+<!-- Stat strip: 4 always-visible KPIs -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <!-- AI resolved today -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">AI resolved today</p>
+        <p class="mt-2 text-3xl font-semibold text-green-600"><%= number_with_delimiter(@ai_resolved_today) %></p>
+        <p class="mt-1 text-xs text-gray-500">Issues AI diagnosed and prepared a fix for.</p>
+      </div>
+      <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Needs attention -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Needs attention</p>
+        <p class="mt-2 text-3xl font-semibold <%= @needs_attention_count.positive? ? 'text-red-600' : 'text-gray-400' %>">
+          <%= number_with_delimiter(@needs_attention_count) %>
+        </p>
+        <p class="mt-1 text-xs text-gray-500">Requires human decision. Trend toward zero.</p>
+      </div>
+      <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avg resolution time -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Avg resolution time</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">
+          <%= @avg_resolution_seconds.to_i.positive? ? distance_of_time_in_words(@avg_resolution_seconds).sub(/\Aabout /, "") : "—" %>
+        </p>
+        <p class="mt-1 text-xs text-gray-500">
+          <% if @baseline_resolution_seconds %>
+            vs <%= distance_of_time_in_words(@baseline_resolution_seconds).sub(/\Aabout /, "") %> baseline
+          <% else %>
+            First occurrence → fix ready.
+          <% end %>
+        </p>
+      </div>
+      <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRs opened by AI -->
+  <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">PRs opened by AI</p>
+        <p class="mt-2 text-3xl font-semibold text-indigo-600"><%= number_with_delimiter(@prs_opened_this_month) %></p>
+        <p class="mt-1 text-xs text-gray-500">
+          <span class="text-green-600 font-medium"><%= @prs_merged_this_month %> merged</span>
+          <span class="text-gray-400">·</span>
+          <span class="text-amber-600 font-medium"><%= @prs_pending_this_month %> pending</span>
+          <span class="text-gray-400">this month</span>
+        </p>
+      </div>
+      <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Resolved section (green, open by default) -->
+<details open class="bg-white rounded-xl shadow border border-green-200 mb-6 overflow-hidden group">
+  <summary class="px-6 py-4 bg-green-50 border-b border-green-100 flex items-center justify-between cursor-pointer list-none">
+    <div class="flex items-center">
+      <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <h3 class="text-sm font-semibold text-green-900 uppercase tracking-wide">Resolved</h3>
+      <span class="ml-3 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <%= @resolved_issues.size %>
+      </span>
+    </div>
+    <svg class="w-4 h-4 text-green-700 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </summary>
+
+  <% if @resolved_issues.any? %>
+    <div class="overflow-x-auto">
+      <table class="w-full divide-y divide-gray-200 min-w-[800px]">
+        <thead class="bg-white border-b border-gray-200">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+            <th class="w-[100px] px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
+            <th class="w-[80px]  px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+            <th class="w-[140px] px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Resolved</th>
+            <th class="w-[160px] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">PR</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @resolved_issues.each do |issue| %>
+            <% pr_status = issue.auto_fix_status %>
+            <% pr_url = issue.auto_fix_pr_url %>
+            <% headline = issue.root_cause.is_a?(Hash) && issue.root_cause["summary"].present? ? issue.root_cause["summary"] : issue.title %>
+            <tr class="hover:bg-green-50/60 cursor-pointer transition-colors"
+                onclick="window.location.href='<%= error_path(issue) %>'">
+              <!-- Issue -->
+              <td class="px-6 py-4 overflow-hidden">
+                <div class="flex items-start gap-3">
+                  <svg class="w-4 h-4 text-green-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate"><%= headline %></p>
+                    <p class="mt-0.5 text-xs text-gray-500 truncate"><%= issue.exception_class %> · <%= issue.controller_action %></p>
+                  </div>
+                </div>
+              </td>
+              <!-- Confidence -->
+              <td class="px-3 py-4 text-right text-xs text-green-700 font-medium tabular-nums whitespace-nowrap cursor-help"
+                  title="AI confidence that the diagnosed root cause is correct">
+                <%= issue.sre_confidence ? "#{issue.sre_confidence}%" : "—" %>
+              </td>
+              <!-- Count -->
+              <td class="px-3 py-4 text-right text-xs text-gray-500 tabular-nums whitespace-nowrap cursor-help"
+                  title="Total occurrences of this error since it was first seen">
+                <%= number_with_delimiter(issue.count) %>×
+              </td>
+              <!-- Resolved -->
+              <td class="px-3 py-4 text-right text-xs text-gray-500 tabular-nums whitespace-nowrap cursor-help"
+                  title="When the AI diagnosed this issue and prepared the fix<%= issue.sre_analyzed_at ? " (#{issue.sre_analyzed_at.strftime('%b %-d, %Y at %H:%M %Z')})" : "" %>">
+                <%= issue.sre_analyzed_at ? "#{time_ago_in_words(issue.sre_analyzed_at).sub(/\Aabout /, "")} ago" : "—" %>
+              </td>
+              <!-- PR (right side) -->
+              <td class="px-6 py-4 text-right whitespace-nowrap">
+                <% if pr_url.present? %>
+                  <%= link_to pr_url, target: "_blank", rel: "noopener noreferrer",
+                        onclick: "event.stopPropagation()",
+                        title: "Open pull request ##{issue.auto_fix_pr_number} on GitHub",
+                        class: "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors text-xs #{pr_status == 'merged' ? 'text-purple-700' : 'text-green-700'}" do %>
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/>
+                    </svg>
+                    <span class="font-medium">#<%= issue.auto_fix_pr_number || "—" %></span>
+                    <span class="text-gray-500"><%= pr_status == 'merged' ? 'merged' : 'open' %></span>
+                  <% end %>
+                <% elsif pr_status.present? %>
+                  <span class="text-xs font-medium <%= pr_status == 'merged' ? 'text-purple-700' : 'text-blue-700' %>">
+                    PR <%= pr_status == 'merged' ? 'merged' : 'open' %>
+                  </span>
+                <% else %>
+                  <span class="text-xs text-gray-400">—</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="px-6 py-10 text-center text-sm text-gray-500">
+      No AI-resolved issues yet. Fixes prepared by the agent will show up here.
+    </div>
+  <% end %>
+</details>
+
+<!-- Needs Attention section (amber, always expanded) -->
+<div class="bg-white rounded-xl shadow border border-amber-200 overflow-hidden">
+  <div class="px-6 py-4 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+    <div class="flex items-center">
+      <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+      </svg>
+      <h3 class="text-sm font-semibold text-amber-900 uppercase tracking-wide">Needs Attention</h3>
+      <span class="ml-3 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+        <%= @needs_attention_issues.size %>
+      </span>
+    </div>
+  </div>
+
+  <% if @needs_attention_issues.any? %>
+    <div class="overflow-x-auto">
+      <table class="w-full divide-y divide-gray-200 min-w-[800px]">
+        <thead class="bg-white border-b border-gray-200">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+            <th class="w-[140px] px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="w-[100px] px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
+            <th class="w-[80px]  px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
+            <th class="w-[160px] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">First seen</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @needs_attention_issues.each do |issue| %>
+            <% is_critical = issue.severity == 'critical' %>
+            <% headline = issue.root_cause.is_a?(Hash) && issue.root_cause["summary"].present? ? issue.root_cause["summary"] : issue.title %>
+            <% affected_users = issue.unique_users_affected_24h %>
+            <tr class="hover:bg-amber-50/60 cursor-pointer transition-colors"
+                onclick="window.location.href='<%= error_path(issue) %>'">
+              <!-- Issue -->
+              <td class="px-6 py-4 overflow-hidden">
+                <div class="flex items-start gap-3">
+                  <svg class="w-4 h-4 shrink-0 mt-0.5 <%= is_critical ? 'text-red-500' : 'text-amber-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                  </svg>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate"><%= headline %></p>
+                    <p class="mt-0.5 text-xs text-gray-500 truncate"><%= issue.exception_class %> · <%= issue.controller_action %></p>
+                  </div>
+                </div>
+              </td>
+              <!-- Status -->
+              <td class="px-3 py-4 text-right text-xs font-medium whitespace-nowrap cursor-help <%= is_critical ? 'text-red-700' : 'text-amber-700' %>"
+                  title="Requires human review before a fix can be deployed (e.g. touches billing, auth, or data migrations)">
+                Needs decision
+              </td>
+              <!-- Confidence -->
+              <td class="px-3 py-4 text-right text-xs text-amber-700 font-medium tabular-nums whitespace-nowrap cursor-help"
+                  title="AI confidence that the diagnosed root cause is correct">
+                <%= issue.sre_confidence ? "#{issue.sre_confidence}%" : "—" %>
+              </td>
+              <!-- Users -->
+              <td class="px-3 py-4 text-right text-xs text-gray-500 tabular-nums whitespace-nowrap cursor-help"
+                  title="Unique users affected in the last 24 hours">
+                <%= affected_users.to_i.positive? ? pluralize(affected_users, "user") : "—" %>
+              </td>
+              <!-- First seen -->
+              <td class="px-6 py-4 text-right text-xs text-gray-500 tabular-nums whitespace-nowrap cursor-help"
+                  title="When the first occurrence was recorded<%= issue.first_seen_at ? " (#{issue.first_seen_at.strftime('%b %-d, %Y at %H:%M %Z')})" : "" %>">
+                <%= issue.first_seen_at ? "#{time_ago_in_words(issue.first_seen_at).sub(/\Aabout /, "")} ago" : "—" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+      <div class="px-6 py-12 text-center">
+        <div class="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h4 class="text-sm font-medium text-gray-900">Inbox zero</h4>
+        <p class="mt-1 text-sm text-gray-500">Nothing needs a human right now.</p>
+      </div>
+  <% end %>
+</div>
