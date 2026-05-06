@@ -117,6 +117,12 @@ if defined?(Sidekiq::Cron) && ENV["REDIS_URL"].present? && !ActiveModel::Type::B
       "cron_timezone" => "America/Los_Angeles"
     },
 
+    "auto_fix_drain_queue" => {
+      "class" => "AutoFix::DrainQueueJob",
+      "cron"  => "0 * * * *",  # Hourly - drain skipped_capped issues when 7-day cap window opens
+      "queue" => "default"
+    },
+
     # ========================================
     # Uptime Monitoring
     # ========================================
