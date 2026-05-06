@@ -8,7 +8,12 @@ class OnboardingWizardController < ApplicationController
   def show
     @project = current_account.projects.order(:created_at).last
     @step = decide_step(@project)
+    @github_install_url = Github::InstallationService.app_install_url(project_id: @project&.id) if @step == 2
     render :show
+  end
+
+  def complete
+    redirect_to inbox_path
   end
 
   def submit_source

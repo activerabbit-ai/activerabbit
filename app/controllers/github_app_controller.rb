@@ -38,8 +38,8 @@ class GithubAppController < ApplicationController
       project.update(settings: settings)
       reenqueue_skipped_no_github_issues(project)
 
-      redirect_to project_settings_path(project),
-                  notice: "GitHub App installed successfully! Repository: #{github_info[:repository]}"
+      redirect_to onboarding_path,
+                  notice: "GitHub connected. Repo: #{github_info[:repository]}"
     else
       # Still save the installation_id even if we couldn't fetch repo info
       settings = project.settings || {}
@@ -47,7 +47,7 @@ class GithubAppController < ApplicationController
       project.update(settings: settings)
       reenqueue_skipped_no_github_issues(project)
 
-      redirect_to project_settings_path(project),
+      redirect_to onboarding_path,
                   notice: "GitHub App installed. Installation ID saved. #{github_info[:error]}"
     end
   end
