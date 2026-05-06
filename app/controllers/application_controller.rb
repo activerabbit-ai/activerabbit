@@ -5,6 +5,7 @@ class ApplicationController < ActionController::Base
   # Controllers that should be accessible even without projects (during onboarding)
   ONBOARDING_EXEMPT_CONTROLLERS = %w[
     onboarding
+    onboarding_wizard
     projects
     pricing
     billing_portal

@@ -1,0 +1,4 @@
+<% content_for :page_title do %>Onboarding<% end %>
+<turbo-frame id="wizard">
+  <%= render partial: "step_#{@step}_#{step_partial_suffix(@step)}", locals: { project: @project } %>
+</turbo-frame>
