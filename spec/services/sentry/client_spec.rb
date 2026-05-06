@@ -62,4 +62,16 @@ RSpec.describe Sentry::Client do
       expect(issues.first[:title]).to eq("NoMethodError")
     end
   end
+
+  describe "#register_internal_integration" do
+    it "POSTs sentry-app spec for the org and returns id + token" do
+      stub_request(:post, "https://sentry.io/api/0/organizations/acme/sentry-apps/")
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+        .to_return(status: 201, body: JSON.dump({ "uuid" => "app-uuid", "slug" => "ar-acme" }))
+      stub_request(:post, "https://sentry.io/api/0/sentry-apps/ar-acme/api-tokens/")
+        .to_return(status: 201, body: JSON.dump({ "token" => "internal-token" }))
+      result = client.register_internal_integration(org: "acme", webhook_url: "https://app.example.com/webhooks/sentry/1", name: "ActiveRabbit (Acme P1)")
+      expect(result).to include(integration_uuid: "app-uuid", api_token: "internal-token")
+    end
+  end
 end
