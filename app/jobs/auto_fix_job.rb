@@ -21,6 +21,20 @@ class AutoFixJob
       return
     end
 
+    case gate_check(issue, project)
+    when :skipped_no_github
+      issue.update_columns(auto_fix_status: "skipped_no_github")
+      return
+    when :skipped_low_confidence
+      issue.update_columns(auto_fix_status: "skipped_low_confidence")
+      return
+    when :skipped_capped
+      issue.update_columns(auto_fix_status: "skipped_capped")
+      return
+    when :off
+      return
+    end
+
     # Prevent duplicate PRs (idempotency)
     dedup_key = "auto_fix:#{issue.id}"
     locked = Sidekiq.redis { |c| c.set(dedup_key, "1", nx: true, ex: 1.hour.to_i) }
@@ -114,5 +128,21 @@ class AutoFixJob
   def schedule_monitor(issue, project)
     # Wait 2 minutes for CI to start, then begin monitoring
     AutoFixMonitorJob.perform_in(2.minutes, issue.id, project.id)
+  end
+
+  def gate_check(issue, project)
+    return :skipped_no_github     if project.settings.to_h["github_installation_id"].blank?
+    return :off                   if project.auto_pr_confidence_threshold.to_i.zero?
+    return :skipped_low_confidence if issue.sre_confidence.to_i < project.auto_pr_confidence_threshold.to_i
+    return :skipped_capped        if cap_reached?(project)
+    :pass
+  end
+
+  def cap_reached?(project)
+    used = project.issues
+                  .where.not(auto_fix_status: nil)
+                  .where("auto_fix_attempted_at > ?", 7.days.ago)
+                  .count
+    used >= project.auto_pr_weekly_cap.to_i
   end
 end
