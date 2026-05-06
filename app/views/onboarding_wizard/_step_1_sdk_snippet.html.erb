@@ -1,0 +1,13 @@
+<div class="p-6 border rounded-lg bg-gray-50">
+  <%= form_with url: onboarding_submit_source_path, method: :post, data: { turbo_frame: "sdk_card" } do |f| %>
+    <%= f.hidden_field :source, value: "sdk" %>
+    <%= f.hidden_field :app_name, id: "sdk_app_name_hidden" %>
+    <h3 class="font-semibold mb-2">1. Add the gem</h3>
+    <pre class="bg-white p-3 rounded text-sm border">gem "activerabbit"</pre>
+    <h3 class="font-semibold mt-4 mb-2">2. Configure the DSN (we'll show you the DSN after we create your project)</h3>
+    <p class="text-sm text-gray-600">You can come back here once it's deployed — this step won't block onboarding.</p>
+    <div class="mt-4">
+      <%= f.submit "Continue → Connect GitHub", class: "px-4 py-2 bg-indigo-600 text-white rounded-md cursor-pointer" %>
+    </div>
+  <% end %>
+</div>
