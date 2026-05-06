@@ -152,14 +152,14 @@
               base_errors_path = "/#{menu_project.slug}/errors?period=7d"
               base_performance_path = "/#{menu_project.slug}/performance"
               base_logs_path = "/#{menu_project.slug}/logs"
-              base_sre_inbox_path = "/#{menu_project.slug}/sre_inbox"
+              base_sre_inbox_path = inbox_path
             else
               # Fallback to global paths if no projects exist
               base_deploys_path = deploys_path
               base_errors_path = errors_path(period: "7d")
               base_performance_path = performance_path
               base_logs_path = logs_path
-              base_sre_inbox_path = sre_inbox_path
+              base_sre_inbox_path = inbox_path
             end
           %>
 
