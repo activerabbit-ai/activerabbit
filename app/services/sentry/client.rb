@@ -23,6 +23,29 @@ module Sentry
       end
     end
 
+    def list_issues(org:, project_slug:, days: 7, limit: 100)
+      response = get(
+        "/projects/#{org}/#{project_slug}/issues/",
+        query: { "statsPeriod" => "#{days}d", "limit" => limit.to_s, "query" => "is:unresolved" }
+      )
+      return [] unless @last_status == 200
+      Array(response).map do |i|
+        {
+          sentry_issue_id: i["id"],
+          title: i["title"],
+          culprit: i["culprit"],
+          exception_class: i.dig("metadata", "type"),
+          exception_message: i.dig("metadata", "value"),
+          permalink: i["permalink"],
+          platform: i["platform"],
+          last_seen: i["lastSeen"],
+          event_count: i["count"].to_i,
+          user_count: i["userCount"].to_i,
+          raw: i
+        }
+      end
+    end
+
     private
 
     def get(path, query: {})
