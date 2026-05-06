@@ -1,0 +1,27 @@
+<div class="p-6 border-2 border-purple-600 rounded-lg bg-purple-50">
+  <h3 class="font-semibold mb-3">Pick the Sentry project to import</h3>
+  <%= form_with url: onboarding_start_sentry_import_path, method: :post, local: true do |f| %>
+    <%= f.hidden_field :token, value: token %>
+    <%= f.hidden_field :app_name, value: app_name %>
+    <% if projects.size == 1 %>
+      <% p = projects.first %>
+      <%= f.hidden_field :org_slug,     value: p[:org_slug] %>
+      <%= f.hidden_field :project_slug, value: p[:project_slug] %>
+      <%= f.hidden_field :platform,     value: p[:platform] %>
+      <p class="mb-3"><strong><%= p[:org_slug] %>/<%= p[:project_slug] %></strong> &mdash; <%= p[:name] %></p>
+    <% else %>
+      <select name="combined" class="w-full mb-3 border rounded-md px-3 py-2"
+              onchange="this.form.org_slug.value=this.value.split('|')[0]; this.form.project_slug.value=this.value.split('|')[1]; this.form.platform.value=this.value.split('|')[2];">
+        <% projects.each do |p| %>
+          <option value="<%= "#{p[:org_slug]}|#{p[:project_slug]}|#{p[:platform]}" %>">
+            <%= p[:org_slug] %>/<%= p[:project_slug] %> (<%= p[:platform] %>)
+          </option>
+        <% end %>
+      </select>
+      <%= f.hidden_field :org_slug,     value: projects.first[:org_slug] %>
+      <%= f.hidden_field :project_slug, value: projects.first[:project_slug] %>
+      <%= f.hidden_field :platform,     value: projects.first[:platform] %>
+    <% end %>
+    <%= f.submit "Import last 7 days →", class: "px-4 py-2 bg-purple-600 text-white rounded-md cursor-pointer" %>
+  <% end %>
+</div>
