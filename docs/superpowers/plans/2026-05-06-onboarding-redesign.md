@@ -12,6 +12,44 @@
 
 ---
 
+## REVISION 2026-05-06 (mid-execution)
+
+After Task 1, discovered the codebase already has a full `AutoFixJob` /
+`AutoFixMonitorJob` pipeline that wraps `Github::PrService`, plus richer
+`auto_fix_*` columns on `Issue`. **Phase 3 is rewritten** to *gate the
+existing pipeline* rather than build a parallel one. Specifically:
+
+- **Tasks 10 & 11 are deleted** (no `AutoPrEvent` table, no `Github::PrCreationJob`).
+- **Task 12 becomes "Add cap + confidence gates to `AutoFixJob#eligible?`"**.
+- **Task 13 unchanged** (analyzer hands off to AutoFixJob — already wired
+  via `AiSummaryJob`; we add a re-trigger when confidence flips above threshold).
+- **Task 14 (DrainQueueJob) keeps purpose, queries `Issue` instead of `AutoPrEvent`**.
+- **Task 15 (GitHub callback reconciler) queries Issues with new `skipped_no_github` status**.
+- **Task 25 (Settings panel) reuses existing `settings["auto_fix"]` flags** plus the new threshold + cap columns.
+- **A new Task 30b is added at the end: drop unused `auto_pr_events` table**.
+
+New `auto_fix_status` enum values added (alongside the existing 11):
+`skipped_low_confidence`, `skipped_capped`, `skipped_no_github`,
+`skipped_no_analysis`. The `awaiting_*` semantics from the original plan
+collapse into these.
+
+Cap math:
+```ruby
+project.issues
+  .where.not(auto_fix_status: nil)
+  .where(auto_fix_status: %w[creating_pr pr_created pr_created_review_needed ci_pending ci_passed ci_failed ci_timeout merged merge_failed failed monitor_error])
+  .where("auto_fix_attempted_at > ?", 7.days.ago)
+  .count
+```
+(Counts every PR-creation attempt in the last 7 days, regardless of
+final outcome — so failed PRs still consume a slot, preventing churn.)
+
+The revised Phase 3 task definitions follow inline at the bottom of this
+plan in the "REVISED PHASE 3" section. Use those, NOT the original Tasks
+10–15 above.
+
+---
+
 ## Phase 1 — Schema
 
 ### Task 1: Add auto-fix columns and `auto_pr_events` table
@@ -2498,3 +2536,448 @@ git push -u origin agent-part
 ```
 
 (User to run `gh pr create` themselves to title/describe the PR — see project guidance.)
+
+---
+
+## REVISED PHASE 3 (use these instead of original Tasks 10–15)
+
+### Task 10R: Add new gate-skipped enum values to `AUTO_FIX_STATUSES`
+
+**Files:**
+- Modify: `app/models/issue.rb` — find the `AUTO_FIX_STATUSES` constant (referenced at `validates :auto_fix_status, inclusion: { in: AUTO_FIX_STATUSES }`)
+- Create: `spec/models/issue_auto_fix_statuses_spec.rb`
+
+- [ ] **Step 1: Find current values**
+
+```bash
+grep -n "AUTO_FIX_STATUSES" app/models/issue.rb
+```
+
+Read the constant. Existing values: `creating_pr pr_created pr_created_review_needed ci_pending ci_passed ci_failed ci_timeout merged failed merge_failed monitor_error`.
+
+- [ ] **Step 2: Spec**
+
+```ruby
+require "rails_helper"
+
+RSpec.describe Issue, "auto_fix_status enum" do
+  let(:account) { Account.create!(name: "Acme") }
+  let(:project) { ActsAsTenant.with_tenant(account) { Project.create!(name: "P", environment: "production") } }
+
+  %w[skipped_low_confidence skipped_capped skipped_no_github skipped_no_analysis].each do |val|
+    it "accepts #{val}" do
+      ActsAsTenant.with_tenant(account) do
+        issue = project.issues.create!(message: "x", fingerprint: "fp-#{val}", auto_fix_status: val)
+        expect(issue).to be_valid
+      end
+    end
+  end
+end
+```
+
+- [ ] **Step 3: Run, see fail**
+
+```bash
+docker exec activerabbit-web-1 bin/rspec spec/models/issue_auto_fix_statuses_spec.rb
+```
+
+- [ ] **Step 4: Add the new values**
+
+In `app/models/issue.rb`, append the four new values to the `AUTO_FIX_STATUSES` array.
+
+- [ ] **Step 5: Run, see pass; commit**
+
+```bash
+git add app/models/issue.rb spec/models/issue_auto_fix_statuses_spec.rb
+git commit -m "feat(autofix): add gate-skipped enum values"
+```
+
+---
+
+### Task 11R: Add cap + confidence gates to `AutoFixJob#eligible?`
+
+**Files:**
+- Modify: `app/jobs/auto_fix_job.rb` — `eligible?` (line 82-89) and add a small helper for cap math
+- Create: `spec/jobs/auto_fix_job_gates_spec.rb`
+
+- [ ] **Step 1: Spec**
+
+```ruby
+require "rails_helper"
+
+RSpec.describe AutoFixJob, "gating" do
+  let(:account) { Account.create!(name: "Acme") }
+  let(:project) do
+    ActsAsTenant.with_tenant(account) do
+      Project.create!(name: "P", environment: "production",
+                      auto_pr_weekly_cap: 5,
+                      auto_pr_confidence_threshold: 80,
+                      settings: { "auto_fix" => { "enabled" => true },
+                                  "github_repo" => "acme/p",
+                                  "github_installation_id" => "1" })
+    end
+  end
+  let(:issue) do
+    ActsAsTenant.with_tenant(account) do
+      project.issues.create!(message: "x", fingerprint: "fp", status: "open",
+                             ai_summary: "summary", sre_confidence: 90)
+    end
+  end
+
+  before do
+    allow(Github::PrService).to receive(:new).and_return(double(create_pr_for_issue: { success: true, pr_url: "https://x/pull/1", branch_name: "x", actual_fix_applied: true }))
+    allow(Sidekiq).to receive(:redis).and_yield(double(set: true))
+  end
+
+  it "marks skipped_no_github when github_installation_id missing" do
+    project.update!(settings: project.settings.merge("github_installation_id" => nil))
+    AutoFixJob.new.perform(issue.id, project.id)
+    expect(issue.reload.auto_fix_status).to eq("skipped_no_github")
+  end
+
+  it "marks skipped_low_confidence when below threshold" do
+    issue.update!(sre_confidence: 50)
+    AutoFixJob.new.perform(issue.id, project.id)
+    expect(issue.reload.auto_fix_status).to eq("skipped_low_confidence")
+  end
+
+  it "marks skipped_capped when 7-day cap hit" do
+    5.times do |i|
+      ActsAsTenant.with_tenant(account) do
+        project.issues.create!(message: "x#{i}", fingerprint: "fpc#{i}",
+                               status: "open", auto_fix_status: "pr_created",
+                               auto_fix_attempted_at: i.hours.ago)
+      end
+    end
+    AutoFixJob.new.perform(issue.id, project.id)
+    expect(issue.reload.auto_fix_status).to eq("skipped_capped")
+  end
+
+  it "proceeds when all gates pass (existing happy path)" do
+    AutoFixJob.new.perform(issue.id, project.id)
+    expect(issue.reload.auto_fix_status).to eq("pr_created")
+  end
+
+  it "no-op when threshold is 0 (off)" do
+    project.update!(auto_pr_confidence_threshold: 0)
+    AutoFixJob.new.perform(issue.id, project.id)
+    # Should skip auto-fix entirely; auto_fix_status stays nil OR existing eligibility path takes over.
+    # If existing project.auto_fix_enabled? still gates, this returns early.
+    # Assertion: did NOT call Github::PrService
+    expect(Github::PrService).not_to have_received(:new)
+  end
+end
+```
+
+- [ ] **Step 2: Run, see fail**
+
+- [ ] **Step 3: Modify `app/jobs/auto_fix_job.rb`**
+
+Replace `eligible?` and add helper methods. New logic:
+
+```ruby
+  private
+
+  def eligible?(issue, project)
+    return false unless project.auto_fix_enabled?
+    return false unless issue.ai_summary.present?
+    return false unless issue.auto_fix_status.nil?
+    return false unless issue.status == "open"
+    return false if issue.count > 1 && !issue.auto_fix_status.nil?
+    true
+  end
+
+  # New: gate checks that mark issue with skipped_* status
+  def gate_check(issue, project)
+    return :skipped_no_github     if project.settings.to_h["github_installation_id"].blank?
+    return :off                   if project.auto_pr_confidence_threshold.to_i.zero?
+    return :skipped_low_confidence if issue.sre_confidence.to_i < project.auto_pr_confidence_threshold.to_i
+    return :skipped_capped        if cap_reached?(project)
+    :pass
+  end
+
+  def cap_reached?(project)
+    used = project.issues
+                  .where.not(auto_fix_status: nil)
+                  .where("auto_fix_attempted_at > ?", 7.days.ago)
+                  .count
+    used >= project.auto_pr_weekly_cap.to_i
+  end
+```
+
+In `perform`, after `unless eligible?(issue, project) return` block and before the dedup lock (line ~24), insert:
+
+```ruby
+    case gate_check(issue, project)
+    when :skipped_no_github
+      issue.update_columns(auto_fix_status: "skipped_no_github")
+      return
+    when :skipped_low_confidence
+      issue.update_columns(auto_fix_status: "skipped_low_confidence")
+      return
+    when :skipped_capped
+      issue.update_columns(auto_fix_status: "skipped_capped")
+      return
+    when :off
+      return
+    end
+```
+
+- [ ] **Step 4: Run, see pass**
+
+```bash
+docker exec activerabbit-web-1 bin/rspec spec/jobs/auto_fix_job_gates_spec.rb
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/jobs/auto_fix_job.rb spec/jobs/auto_fix_job_gates_spec.rb
+git commit -m "feat(autofix): cap + confidence gates in AutoFixJob"
+```
+
+---
+
+### Task 12R: GitHub callback reconciler — reset `skipped_no_github`
+
+**Files:**
+- Modify: `app/controllers/github_app_controller.rb` (after `project.update(settings: settings)` in `callback`)
+- Create: `spec/requests/github_callback_reconciler_spec.rb`
+
+- [ ] **Step 1: Spec**
+
+```ruby
+require "rails_helper"
+
+RSpec.describe "GitHub callback reconciler", type: :request do
+  let(:account) { Account.create!(name: "Acme") }
+  let(:project) { ActsAsTenant.with_tenant(account) { Project.create!(name: "P", environment: "production") } }
+  let!(:issue)  { ActsAsTenant.with_tenant(account) { project.issues.create!(message: "x", fingerprint: "fp", auto_fix_status: "skipped_no_github") } }
+  let(:user)    { account.users.create!(email: "u@x.com", password: "secret123") }
+
+  before do
+    allow_any_instance_of(Github::InstallationService).to receive(:fetch_installation_info)
+      .and_return(success: true, repository: "acme/p", default_branch: "main")
+    sign_in user
+  end
+
+  it "resets skipped_no_github issues so AutoFixJob re-evaluates and re-enqueues them" do
+    expect(AutoFixJob).to receive(:perform_async).with(issue.id, project.id)
+    get "/github/app/callback", params: { installation_id: "12345", state: project.id }
+    expect(issue.reload.auto_fix_status).to be_nil
+  end
+end
+```
+
+- [ ] **Step 2: Run, see fail**
+
+- [ ] **Step 3: Edit `app/controllers/github_app_controller.rb`** — after each `project.update(settings: settings)` call in `callback`, add:
+
+```ruby
+      project.issues.where(auto_fix_status: "skipped_no_github").find_each do |i|
+        i.update_columns(auto_fix_status: nil)
+        AutoFixJob.perform_async(i.id, project.id)
+      end
+```
+
+- [ ] **Step 4: Change the success/fallback redirect to `onboarding_path`** (so the wizard resumes — depends on Task 16 landing first; coordinate ordering or skip the redirect-change subcommit).
+
+- [ ] **Step 5: Run, see pass; commit**
+
+```bash
+git add app/controllers/github_app_controller.rb spec/requests/github_callback_reconciler_spec.rb
+git commit -m "feat(autofix): re-enqueue skipped_no_github issues on GitHub callback"
+```
+
+---
+
+### Task 13R: Re-trigger AutoFix when analyzer raises confidence
+
+**Files:**
+- Modify: `app/services/sre_inbox/analyzer.rb` `persist!` (around line 238)
+
+- [ ] **Step 1: Spec** — extend `spec/services/sre_inbox/analyzer_spec.rb` (or create new):
+
+```ruby
+require "rails_helper"
+
+RSpec.describe SreInbox::Analyzer, "auto-fix re-trigger" do
+  let(:account) { Account.create!(name: "Acme") }
+  let(:project) { ActsAsTenant.with_tenant(account) { Project.create!(name: "P", environment: "production", auto_pr_confidence_threshold: 80, settings: { "auto_fix" => { "enabled" => true }, "github_repo" => "x/y", "github_installation_id" => "1" }) } }
+
+  it "re-enqueues AutoFixJob when previously-skipped issue now meets threshold" do
+    issue = ActsAsTenant.with_tenant(account) do
+      project.issues.create!(message: "x", fingerprint: "fp", ai_summary: "ok",
+                             auto_fix_status: "skipped_low_confidence", sre_confidence: 50)
+    end
+
+    analyzer = described_class.new(issue)
+    expect(AutoFixJob).to receive(:perform_async).with(issue.id, project.id)
+    analyzer.send(:persist!, { "resolution_status" => "open", "confidence" => 90 })
+    expect(issue.reload.auto_fix_status).to be_nil
+  end
+end
+```
+
+- [ ] **Step 2: Edit `Analyzer#persist!`** — after `@issue.update!(attrs.compact)`:
+
+```ruby
+      reset_skipped_low_confidence_if_now_eligible
+```
+
+And add private method:
+
+```ruby
+    def reset_skipped_low_confidence_if_now_eligible
+      return unless @issue.auto_fix_status == "skipped_low_confidence"
+      project = @issue.project
+      threshold = project.auto_pr_confidence_threshold.to_i
+      return if @issue.sre_confidence.to_i < threshold
+      @issue.update_columns(auto_fix_status: nil)
+      AutoFixJob.perform_async(@issue.id, project.id)
+    end
+```
+
+- [ ] **Step 3: Run, see pass; commit**
+
+```bash
+git add app/services/sre_inbox/analyzer.rb spec/services/sre_inbox/
+git commit -m "feat(autofix): re-trigger AutoFixJob when analyzer raises confidence"
+```
+
+---
+
+### Task 14R: DrainQueueJob — drain `skipped_capped` when window opens
+
+**Files:**
+- Create: `app/jobs/auto_fix/drain_queue_job.rb`
+- Create: `spec/jobs/auto_fix/drain_queue_job_spec.rb`
+- Modify: `config/initializers/sidekiq_cron.rb`
+
+- [ ] **Step 1: Spec**
+
+```ruby
+require "rails_helper"
+
+RSpec.describe AutoFix::DrainQueueJob do
+  let(:account) { Account.create!(name: "Acme") }
+  let(:project) do
+    ActsAsTenant.with_tenant(account) do
+      Project.create!(name: "P", environment: "production", auto_pr_weekly_cap: 5,
+                      settings: { "github_installation_id" => "1", "auto_fix" => { "enabled" => true } })
+    end
+  end
+
+  it "re-enqueues oldest skipped_capped issue when cap window has opened" do
+    queued = ActsAsTenant.with_tenant(account) do
+      project.issues.create!(message: "old", fingerprint: "old",
+                             ai_summary: "s", auto_fix_status: "skipped_capped")
+    end
+    # 5 PRs all >7 days old → cap window is open
+    5.times do |i|
+      ActsAsTenant.with_tenant(account) do
+        project.issues.create!(message: "x#{i}", fingerprint: "fpc#{i}",
+                               auto_fix_status: "pr_created",
+                               auto_fix_attempted_at: 8.days.ago - i.hours)
+      end
+    end
+    expect(AutoFixJob).to receive(:perform_async).with(queued.id, project.id)
+    described_class.perform_now
+    expect(queued.reload.auto_fix_status).to be_nil
+  end
+end
+```
+
+- [ ] **Step 2: Implement**
+
+```ruby
+module AutoFix
+  class DrainQueueJob < ApplicationJob
+    queue_as :default
+
+    def perform
+      Project.find_each do |project|
+        ActsAsTenant.with_tenant(project.account) { drain(project) }
+      end
+    end
+
+    private
+
+    def drain(project)
+      used = project.issues
+                    .where.not(auto_fix_status: nil)
+                    .where("auto_fix_attempted_at > ?", 7.days.ago)
+                    .count
+      return if used >= project.auto_pr_weekly_cap.to_i
+
+      slots = project.auto_pr_weekly_cap.to_i - used
+      project.issues
+             .where(auto_fix_status: "skipped_capped")
+             .order(:created_at)
+             .limit(slots)
+             .each do |issue|
+        issue.update_columns(auto_fix_status: nil)
+        AutoFixJob.perform_async(issue.id, project.id)
+      end
+    end
+  end
+end
+```
+
+- [ ] **Step 3: Schedule hourly** in `config/initializers/sidekiq_cron.rb`:
+
+```ruby
+  "auto_fix_drain_queue" => {
+    "class" => "AutoFix::DrainQueueJob",
+    "cron"  => "0 * * * *",
+    "queue" => "default"
+  }
+```
+
+- [ ] **Step 4: Run, see pass; commit**
+
+```bash
+git add app/jobs/auto_fix/drain_queue_job.rb spec/jobs/auto_fix/drain_queue_job_spec.rb config/initializers/sidekiq_cron.rb
+git commit -m "feat(autofix): hourly DrainQueueJob to clear capped issues"
+```
+
+---
+
+### Task 30b: Drop unused `auto_pr_events` table
+
+**Files:**
+- Create: `db/migrate/<timestamp>_drop_auto_pr_events.rb`
+
+- [ ] **Step 1: Generate migration**
+
+```bash
+docker exec activerabbit-web-1 bin/rails g migration DropAutoPrEvents
+```
+
+- [ ] **Step 2: Write**
+
+```ruby
+class DropAutoPrEvents < ActiveRecord::Migration[8.0]
+  def change
+    drop_table :auto_pr_events do |t|
+      t.references :project, null: false, foreign_key: true
+      t.references :issue,   null: false, foreign_key: true
+      t.datetime   :opened_at, null: false
+      t.integer    :github_pr_number, null: false
+      t.string     :github_pr_url, null: false
+      t.timestamps
+      t.index [:project_id, :opened_at]
+    end
+  end
+end
+```
+
+- [ ] **Step 3: Migrate, commit**
+
+```bash
+docker exec activerabbit-web-1 bin/rails db:migrate
+git add db/migrate/ db/schema.rb
+git commit -m "chore(autofix): drop unused auto_pr_events table"
+```
+
+---

@@ -4,6 +4,27 @@
 **Status:** Design — pending user review
 **Owner:** @shapalov
 
+## Revision 2026-05-06 (during implementation)
+
+**Discovery during Task 1**: the codebase already has a full auto-fix pipeline:
+- `AutoFixJob` (creates PR via `Github::PrService` when `Project.auto_fix_enabled?`)
+- `AutoFixMonitorJob` (polls CI, auto-merges)
+- `AutoFixBatchMergeJob`, `AutoFixCleanupJob`
+- `Issue` columns: `auto_fix_status`, `auto_fix_pr_url`, `auto_fix_pr_number`, `auto_fix_branch`, `auto_fix_attempted_at`, `auto_fix_merged_at`, `auto_fix_error`
+- Existing enum values: `creating_pr`, `pr_created`, `pr_created_review_needed`, `ci_pending`, `ci_passed`, `ci_failed`, `ci_timeout`, `merged`, `failed`, `merge_failed`, `monitor_error`
+- Trigger: `AiSummaryJob` enqueues `AutoFixJob.perform_async(issue.id, project.id)` when summary is ready
+- Project settings: `settings["auto_fix"]` with `enabled`, `auto_merge`, `skip_ci`, `min_severity`
+
+**Implications for this design:**
+1. **Drop `AutoFix::OrchestratorJob`** — instead, *extend* `AutoFixJob#eligible?` with two new gates: `auto_pr_confidence_threshold` (against `Issue.sre_confidence`) and the rolling 7-day cap.
+2. **Drop `Github::PrCreationJob`** — `AutoFixJob` already wraps `Github::PrService`.
+3. **Drop the `auto_pr_events` table** — cap math reads `Issue.where(project: p).where.not(auto_fix_status: nil).where("auto_fix_attempted_at > ?", 7.days.ago).count`.
+4. **Add new `auto_fix_status` enum values for the gate-skipped cases**: `skipped_low_confidence`, `skipped_capped`, `skipped_no_github` (the `awaiting_*` semantics fold into these — when GitHub or analysis becomes available, a reconciler resets the issue to `auto_fix_status = nil` so `eligible?` re-runs).
+5. **Reconcilers**: GitHub callback resets `skipped_no_github` issues to `nil`; SRE analyzer completion resets `skipped_low_confidence` issues to `nil` if new confidence is above threshold (only if confidence improved — most won't trigger this). DrainQueueJob clears the oldest `skipped_capped` issues to `nil` when the rolling 7-day window opens up.
+6. **Settings panel** surfaces the existing `settings["auto_fix"]` structure (`enabled`, `auto_merge`, `skip_ci`, `min_severity`) alongside the new `auto_pr_weekly_cap` and `auto_pr_confidence_threshold` columns.
+
+The migration in commit `9529a25` already added `auto_pr_weekly_cap` and `auto_pr_confidence_threshold` to `projects` (kept) and `auto_pr_events` table (will be dropped in revised cleanup task). The composite index on `issues(project_id, auto_fix_status)` is also useful and kept.
+
 ## Goal
 
 Replace the current 5-page onboarding (`welcome → new_project → install_gem → verify_gem → setup_github`) with a single Turbo-driven wizard that delivers a "WOW first impression" within minutes of signup: imported errors, a connected GitHub repo, and auto-drafted PRs for the highest-confidence fixes.
