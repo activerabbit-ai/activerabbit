@@ -149,6 +149,8 @@ Rails.application.routes.draw do
       post :sync_all_errors
       delete :disconnect_github
       delete :disconnect_discord
+      delete :disconnect_sentry
+      post   :reimport_sentry
     end
 
     resources :issues do

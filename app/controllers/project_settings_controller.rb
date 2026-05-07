@@ -132,6 +132,22 @@ class ProjectSettingsController < ApplicationController
     end
   end
 
+  def disconnect_sentry
+    settings = @project.settings.except(
+      "sentry_org_slug", "sentry_project_slug", "sentry_auth_token",
+      "sentry_webhook_secret", "sentry_internal_integration_uuid",
+      "sentry_internal_integration_token", "sentry_initial_import_completed_at",
+      "sentry_initial_import_count"
+    )
+    @project.update!(settings: settings)
+    redirect_to project_settings_path(@project), notice: "Sentry disconnected."
+  end
+
+  def reimport_sentry
+    Sentry::ImportProjectJob.perform_later(@project.id)
+    redirect_to project_settings_path(@project), notice: "Re-importing last 7 days from Sentry…"
+  end
+
   private
 
   def set_project
