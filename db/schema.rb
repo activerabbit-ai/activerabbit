@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_06_223225) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_07_002913) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -146,19 +146,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_223225) do
     t.index ["project_id", "active"], name: "index_api_tokens_on_project_id_and_active"
     t.index ["project_id"], name: "index_api_tokens_on_project_id"
     t.index ["token"], name: "index_api_tokens_on_token", unique: true
-  end
-
-  create_table "auto_pr_events", force: :cascade do |t|
-    t.bigint "project_id", null: false
-    t.bigint "issue_id", null: false
-    t.datetime "opened_at", null: false
-    t.integer "github_pr_number", null: false
-    t.string "github_pr_url", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["issue_id"], name: "index_auto_pr_events_on_issue_id"
-    t.index ["project_id", "opened_at"], name: "index_auto_pr_events_on_project_id_and_opened_at"
-    t.index ["project_id"], name: "index_auto_pr_events_on_project_id"
   end
 
   create_table "check_in_pings", force: :cascade do |t|
@@ -809,8 +796,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_223225) do
   add_foreign_key "alert_rules", "projects"
   add_foreign_key "api_tokens", "accounts"
   add_foreign_key "api_tokens", "projects"
-  add_foreign_key "auto_pr_events", "issues"
-  add_foreign_key "auto_pr_events", "projects"
   add_foreign_key "check_in_pings", "accounts"
   add_foreign_key "check_in_pings", "check_ins"
   add_foreign_key "check_ins", "accounts"
