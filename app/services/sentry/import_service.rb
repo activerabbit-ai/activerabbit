@@ -28,11 +28,32 @@ module Sentry
       end
 
       stamp_completion!(issues.size)
+      register_internal_integration!(client)
       broadcast_complete(issues.size)
       { imported: issues.size }
     end
 
     private
+
+    def register_internal_integration!(client)
+      return if @project.settings.to_h["sentry_internal_integration_uuid"].present?
+      webhook_url = Rails.application.routes.url_helpers.sentry_webhook_url(
+        project_id: @project.id,
+        host: ENV.fetch("APP_HOST", "app.activerabbit.com"),
+        protocol: "https"
+      )
+      result = client.register_internal_integration(
+        org: @project.settings["sentry_org_slug"],
+        webhook_url: webhook_url,
+        name: "ActiveRabbit (#{@project.name})"
+      )
+      return if result[:integration_uuid].blank?
+      settings = @project.settings.merge(
+        "sentry_internal_integration_uuid" => result[:integration_uuid],
+        "sentry_internal_integration_token" => result[:api_token]
+      )
+      @project.update!(settings: settings)
+    end
 
     def stamp_completion!(count)
       settings = @project.settings || {}
