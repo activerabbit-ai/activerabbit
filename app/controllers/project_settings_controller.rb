@@ -33,6 +33,7 @@ class ProjectSettingsController < ApplicationController
     ok &&= copy_github_from_project if params[:project]&.dig(:copy_github_from_project_id).present?
     ok &&= update_github_settings if github_params_present?
     ok &&= update_auto_fix_settings if auto_fix_params_present?
+    ok &&= update_auto_pr_settings if auto_pr_params_present?
     ok &&= update_fizzy_settings if fizzy_params_present?
     ok &&= update_auto_ai_summary_settings if params[:project]&.dig(:auto_ai_summary)
     ok &&= update_notification_preferences if params[:preferences].present?
@@ -129,6 +130,22 @@ class ProjectSettingsController < ApplicationController
       redirect_to project_settings_path(@project),
                   alert: "Failed to disconnect GitHub repository."
     end
+  end
+
+  def disconnect_sentry
+    settings = @project.settings.except(
+      "sentry_org_slug", "sentry_project_slug", "sentry_auth_token",
+      "sentry_webhook_secret", "sentry_internal_integration_uuid",
+      "sentry_internal_integration_token", "sentry_initial_import_completed_at",
+      "sentry_initial_import_count"
+    )
+    @project.update!(settings: settings)
+    redirect_to project_settings_path(@project), notice: "Sentry disconnected."
+  end
+
+  def reimport_sentry
+    Sentry::ImportProjectJob.perform_later(@project.id)
+    redirect_to project_settings_path(@project), notice: "Re-importing last 7 days from Sentry…"
   end
 
   private
@@ -360,6 +377,22 @@ class ProjectSettingsController < ApplicationController
     %i[auto_fix_enabled auto_merge_enabled auto_fix_skip_ci auto_fix_min_severity].any? do |key|
       project_params.key?(key)
     end
+  end
+
+  def auto_pr_params_present?
+    project_params = params[:project]
+    return false unless project_params
+
+    %i[auto_pr_weekly_cap auto_pr_confidence_threshold].any? do |key|
+      project_params.key?(key)
+    end
+  end
+
+  def update_auto_pr_settings
+    permitted = params.require(:project).permit(:auto_pr_weekly_cap, :auto_pr_confidence_threshold)
+    return true if permitted.blank?
+
+    @project.update(permitted)
   end
 
   def update_auto_fix_settings

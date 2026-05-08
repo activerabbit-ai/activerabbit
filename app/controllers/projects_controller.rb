@@ -38,7 +38,7 @@ class ProjectsController < ApplicationController
       @project.create_default_alert_rules!
 
       # For additional projects, also show gem installation instructions
-      redirect_to onboarding_install_gem_path(@project), notice: "Project created! Now let's set up monitoring for this project."
+      redirect_to project_settings_path(@project), notice: "Project created. Add the ActiveRabbit SDK or connect Sentry from this settings page."
     else
       render :new, status: :unprocessable_entity
     end

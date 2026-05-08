@@ -30,27 +30,29 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  # ── Root redirect tests ─────────────────────────────────────────────
+  # ── Root path tests (root now renders the SRE inbox, not a redirect) ─
 
-  test "root path redirects to first project errors page" do
+  test "root path renders the SRE inbox" do
     get root_path
-    assert_redirected_to project_slug_errors_path(@project.slug)
+    assert_response :success
+    assert_select "title", text: /SRE Inbox/i
   end
 
-  test "root path redirects to last visited project from cookie" do
+  test "root path scopes to last visited project from session" do
     second_project = projects(:with_slack)
-    cookies[:last_project_slug] = second_project.slug
+    # Establish session[:selected_project_slug] = second_project.slug
+    get project_slug_errors_path(second_project.slug)
 
     get root_path
-    assert_redirected_to project_slug_errors_path(second_project.slug)
+    assert_response :success
+    assert_equal second_project.id, controller.instance_variable_get(:@project_scope)&.id
   end
 
-  test "root path falls back to first project if cookie project is deleted" do
+  test "root path falls back gracefully when no project is selected" do
+    # Fresh session, unknown cookie. The inbox should still render.
     cookies[:last_project_slug] = "deleted-project-slug"
-
     get root_path
-    first_project = @account.projects.order(:name).first
-    assert_redirected_to project_slug_errors_path(first_project.slug)
+    assert_response :success
   end
 
   test "dashboard path does not redirect" do

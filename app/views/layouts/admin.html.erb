@@ -152,24 +152,36 @@
               base_errors_path = "/#{menu_project.slug}/errors?period=7d"
               base_performance_path = "/#{menu_project.slug}/performance"
               base_logs_path = "/#{menu_project.slug}/logs"
+              base_sre_inbox_path = inbox_path
             else
               # Fallback to global paths if no projects exist
               base_deploys_path = deploys_path
               base_errors_path = errors_path(period: "7d")
               base_performance_path = performance_path
               base_logs_path = logs_path
+              base_sre_inbox_path = inbox_path
             end
           %>
 
-          <!-- Always show Dashboard link -->
-          <%= link_to dashboard_path,
-              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(dashboard_path)}" do %>
+          <% if false # Dashboard link temporarily hidden — do not delete %>
+            <%= link_to dashboard_path,
+                class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if current_page?(dashboard_path)}" do %>
+              <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"></path>
+              </svg>
+              <span data-sidebar-target="navText">Dashboard</span>
+              <span class="sidebar-tooltip">Dashboard</span>
+            <% end %>
+          <% end %>
+
+          <%= link_to base_sre_inbox_path,
+              class: "sidebar-nav-item group relative flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors #{'bg-gray-800 text-white' if controller_name == 'sre_inbox'}" do %>
             <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
             </svg>
-            <span data-sidebar-target="navText">Dashboard</span>
-            <span class="sidebar-tooltip">Dashboard</span>
+            <span data-sidebar-target="navText">SRE Inbox</span>
+            <span class="sidebar-tooltip">SRE Inbox</span>
           <% end %>
 
 

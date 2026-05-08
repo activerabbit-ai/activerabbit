@@ -36,16 +36,18 @@ class GithubAppController < ApplicationController
       settings["github_repo"] = github_info[:repository]
       settings["github_base_branch"] = github_info[:default_branch]
       project.update(settings: settings)
+      reenqueue_skipped_no_github_issues(project)
 
-      redirect_to project_settings_path(project),
-                  notice: "GitHub App installed successfully! Repository: #{github_info[:repository]}"
+      redirect_to onboarding_path,
+                  notice: "GitHub connected. Repo: #{github_info[:repository]}"
     else
       # Still save the installation_id even if we couldn't fetch repo info
       settings = project.settings || {}
       settings["github_installation_id"] = installation_id
       project.update(settings: settings)
+      reenqueue_skipped_no_github_issues(project)
 
-      redirect_to project_settings_path(project),
+      redirect_to onboarding_path,
                   notice: "GitHub App installed. Installation ID saved. #{github_info[:error]}"
     end
   end
@@ -97,5 +99,14 @@ class GithubAppController < ApplicationController
 
     # Always respond with 200 OK to acknowledge receipt
     head :ok
+  end
+
+  private
+
+  def reenqueue_skipped_no_github_issues(project)
+    project.issues.where(auto_fix_status: "skipped_no_github").find_each do |issue|
+      issue.update_columns(auto_fix_status: nil)
+      AutoFixJob.perform_async(issue.id, project.id)
+    end
   end
 end

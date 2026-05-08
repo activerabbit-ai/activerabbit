@@ -7,12 +7,14 @@ RSpec.describe AutoFixJob, type: :job do
     create(:project, account: account, settings: {
       "github_repo" => "owner/repo",
       "github_pat" => "ghp_test",
+      "github_installation_id" => "1",
       "auto_fix" => { "enabled" => true, "auto_merge" => false, "min_severity" => "low" }
     })
   end
   let(:issue) do
     create(:issue, project: project, account: account,
-           status: "open", ai_summary: "## Root Cause\nBug\n## Fix\n```ruby\nfix\n```")
+           status: "open", ai_summary: "## Root Cause\nBug\n## Fix\n```ruby\nfix\n```",
+           sre_confidence: 90)
   end
 
   before do

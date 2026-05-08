@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
 
   # Controllers that should be accessible even without projects (during onboarding)
   ONBOARDING_EXEMPT_CONTROLLERS = %w[
-    onboarding
+    onboarding_wizard
     projects
     pricing
     billing_portal
@@ -143,12 +143,12 @@ class ApplicationController < ActionController::Base
 
     begin
       if current_user.needs_onboarding?
-        redirect_to new_project_path
+        redirect_to onboarding_path
       end
     rescue ActsAsTenant::Errors::NoTenantSet
       # If tenant isn't set, check if user has projects without tenant scoping
       has_projects = ActsAsTenant.without_tenant { current_user.account&.projects&.exists? }
-      redirect_to new_project_path unless has_projects
+      redirect_to onboarding_path unless has_projects
     end
   end
 

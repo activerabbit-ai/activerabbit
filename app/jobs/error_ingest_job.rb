@@ -107,6 +107,14 @@ class ErrorIngestJob
       end
     end
 
+    # SRE Inbox auto-analysis: ONLY for first occurrence of a fingerprint.
+    # The 19k pre-existing backlog never enters this branch (their count is
+    # already >1 when this code first runs in prod). For the demo set, see
+    # `bin/rails sre_inbox:backfill`.
+    if issue && issue.count == 1 && issue.sre_analyzed_at.blank? && ENV["ANTHROPIC_API_KEY"].present?
+      AnalyzeIssueJob.perform_async(issue.id)
+    end
+
     Rails.logger.info "Processed error event for project #{project.slug}: #{event.id}"
 
   rescue ActiveRecord::RecordNotFound => e

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_07_002913) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -326,6 +326,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
     t.datetime "auto_fix_merged_at"
     t.text "auto_fix_error"
     t.string "source", default: "backend", null: false
+    t.string "resolution_status"
+    t.integer "sre_confidence"
+    t.jsonb "root_cause"
+    t.text "fix_diff"
+    t.boolean "safe_to_auto_merge"
+    t.datetime "sre_analyzed_at"
+    t.jsonb "sre_analysis"
     t.index ["account_id", "status", "last_seen_at"], name: "idx_issues_account_status_last_seen"
     t.index ["account_id"], name: "index_issues_on_account_id"
     t.index ["auto_fix_status"], name: "index_issues_on_auto_fix_status", where: "(auto_fix_status IS NOT NULL)"
@@ -333,11 +340,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
     t.index ["exception_class"], name: "index_issues_on_exception_class"
     t.index ["is_job_failure"], name: "index_issues_on_is_job_failure", where: "(is_job_failure = true)"
     t.index ["last_seen_at"], name: "index_issues_on_last_seen_at"
+    t.index ["project_id", "auto_fix_status"], name: "index_issues_on_project_id_and_auto_fix_status"
     t.index ["project_id", "fingerprint"], name: "index_issues_on_project_id_and_fingerprint", unique: true
     t.index ["project_id", "last_seen_at"], name: "idx_issues_project_last_seen", order: { last_seen_at: :desc }
     t.index ["project_id"], name: "index_issues_on_project_id"
+    t.index ["resolution_status"], name: "index_issues_on_resolution_status"
     t.index ["severity"], name: "index_issues_on_severity"
     t.index ["source"], name: "index_issues_on_source"
+    t.index ["sre_analyzed_at"], name: "index_issues_on_sre_analyzed_at"
     t.index ["status"], name: "index_issues_on_status"
   end
 
@@ -578,6 +588,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_02_120000) do
     t.string "slack_team_id"
     t.string "slack_team_name"
     t.string "slack_channel_id"
+    t.integer "auto_pr_weekly_cap", default: 5, null: false
+    t.integer "auto_pr_confidence_threshold", default: 80, null: false
     t.index ["account_id"], name: "index_projects_on_account_id"
     t.index ["active"], name: "index_projects_on_active"
     t.index ["environment"], name: "index_projects_on_environment"

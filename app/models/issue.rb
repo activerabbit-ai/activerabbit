@@ -28,6 +28,10 @@ class Issue < ApplicationRecord
     merge_failed
     failed
     monitor_error
+    skipped_low_confidence
+    skipped_capped
+    skipped_no_github
+    skipped_no_analysis
   ].freeze
 
   validates :auto_fix_status, inclusion: { in: AUTO_FIX_STATUSES }, allow_nil: true

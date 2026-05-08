@@ -12,20 +12,28 @@ Rails.application.routes.draw do
       sign_out: "signout",
       sign_up: "signup"
     }
-  root "dashboard#index"
+  root "sre_inbox#index"
 
-  # Onboarding routes for new users
-  get "onboarding/welcome", to: "onboarding#welcome", as: "onboarding_welcome"
-  get "onboarding/connect_github", to: "onboarding#connect_github", as: "onboarding_connect_github"
-  get "onboarding/new_project", to: "onboarding#new_project", as: "onboarding_new_project"
-  post "onboarding/create_project", to: "onboarding#create_project", as: "onboarding_create_project"
-  get "onboarding/install_gem/:project_id", to: "onboarding#install_gem", as: "onboarding_install_gem"
-  post "onboarding/verify_gem/:project_id", to: "onboarding#verify_gem", as: "onboarding_verify_gem"
-  get "onboarding/setup_github/:project_id", to: "onboarding#setup_github", as: "onboarding_setup_github"
-  post "onboarding/setup_github/:project_id", to: "onboarding#setup_github"
+  # Onboarding wizard (single-page flow)
+  get  "onboarding",                 to: "onboarding_wizard#show",                as: :onboarding
+  post "onboarding/source",          to: "onboarding_wizard#submit_source",       as: :onboarding_submit_source
+  post "onboarding/sentry/verify",   to: "onboarding_wizard#verify_sentry_token", as: :onboarding_verify_sentry_token
+  post "onboarding/sentry/import",   to: "onboarding_wizard#start_sentry_import", as: :onboarding_start_sentry_import
+  post "onboarding/complete",        to: "onboarding_wizard#complete",            as: :onboarding_complete
+
+  # 301s for any bookmarked legacy URLs
+  get "onboarding/welcome",     to: redirect("/onboarding")
+  get "onboarding/new_project", to: redirect("/onboarding")
+
+  # Sentry webhook
+  post "webhooks/sentry/:project_id", to: "sentry/webhooks#receive", as: :sentry_webhook
 
   # Top-level replacements for admin pages (no /admin in URLs)
   get "dashboard", to: "dashboard#index", as: "dashboard"
+  get "inbox", to: "sre_inbox#index", as: "inbox"
+  # Legacy /sre_inbox and /sre_inbox2 → /inbox (preserve query params)
+  get "sre_inbox",  to: redirect { |_p, req| "/inbox#{"?#{req.query_string}" if req.query_string.present?}" }, as: "sre_inbox"
+  get "sre_inbox2", to: redirect { |_p, req| "/inbox#{"?#{req.query_string}" if req.query_string.present?}" }
   get "deploys", to: "deploys#index", as: "deploys"
   get "errors", to: "errors#index", as: "errors"
   get "errors/all", to: "errors#all_errors", as: "all_errors"
@@ -141,6 +149,8 @@ Rails.application.routes.draw do
       post :sync_all_errors
       delete :disconnect_github
       delete :disconnect_discord
+      delete :disconnect_sentry
+      post   :reimport_sentry
     end
 
     resources :issues do
@@ -323,6 +333,9 @@ Rails.application.routes.draw do
   get ":project_slug/check_ins", to: "check_ins#index", as: "project_slug_check_ins"
   get ":project_slug/settings", to: "project_settings#show", as: "project_slug_settings"
   get ":project_slug/logs", to: "logs#index", as: "project_slug_logs"
+  # Legacy /:project_slug/sre_inbox(2) → /inbox (controller stashes slug to session)
+  get ":project_slug/sre_inbox",  to: "sre_inbox#redirect_to_inbox", as: "project_slug_sre_inbox"
+  get ":project_slug/sre_inbox2", to: "sre_inbox#redirect_to_inbox"
   get ":project_slug/replays", to: "replays#index", as: "project_replays"
   get ":project_slug/replays/:id", to: "replays#show", as: "project_replay"
   get ":project_slug/replays/:id/data", to: "replays#data", as: "project_replay_data"
