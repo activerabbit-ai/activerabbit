@@ -58,7 +58,7 @@ gem "faraday"
 gem "aws-sdk-s3"
 
 # GitHub App JWT
-gem "jwt", "~> 2.8"
+gem "jwt", "~> 3.1"
 
 # Slack notifications
 gem "slack-notifier"
